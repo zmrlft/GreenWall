@@ -1,0 +1,23 @@
+@mixin mobile-layout {
+	@media screen and (max-width: 768px) {
+		@content;
+	}
+}
+
+@mixin pc-layout {
+	@media screen and (min-width: 768px) {
+		@content;
+	}
+}
+
+@mixin tablet-layout {
+	@media screen and (max-width: 1200px) {
+		@content;
+	}
+}
+
+/* 手机屏下的文字区域左右边距 */
+$margin-mobile: 12px;
+
+/* 限制最大内容宽度，人的视角有限，文字内容太长不好阅读。*/
+$max-content: 900px;
