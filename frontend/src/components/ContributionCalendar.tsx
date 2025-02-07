@@ -4,23 +4,37 @@ import styles from "./ContributionCalendar.module.scss";
 
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// 生成气泡提示的内容，主要就是处理英语就的复数词尾，中文就没这破事。
+// 根据贡献数量计算level
+function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
+    if (count >= 1 && count <= 2) return 1;
+    if (count >= 3 && count <= 5) return 2;
+    if (count >= 6 && count <= 8) return 3;
+    if (count > 8) return 4;
+    return 0;
+}
+
 export type OneDay = { level: number; count: number; date: string };
 
 function getTooltip(oneDay: OneDay, date: Date) {
 	const s = date.toISOString().split("T")[0];
 	switch (oneDay.count) {
 		case 0:
-			return `No contributions on ${s}`;
-		case 1:
-			return `1 contribution on ${s}`;
+			return `No contributions on ${s} - Click to add!`;
 		default:
 			return `${oneDay.count} contributions on ${s}`;
 	}
 }
 
 /**
- * 仿 GitHub 的贡献图，数据可以用 /script/fetch-contributions.js 抓取。
+ * 仿 GitHub 的贡献图，支持交互式点击设置贡献次数。
+ *
+ * 功能说明：
+ * - 点击任意格子弹循环切换贡献次数：0 -> 1 -> 2 -> 3 -> 4 -> 0
+ * - 数字越大，绿色越深，最多4级
+ * - 可以选择不同年份查看
+ * - 清除按钮会重置所有用户设置
+ *
+ * 数据可以用 /script/fetch-contributions.js 抓取。
  *
  * @example
  * const data = [{ level: 1, count: 5, date: 1728272654618 }, ...];
@@ -31,19 +45,62 @@ type Props = {
 	className?: string;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-function ContributionCalendar({ contributions, className, ...rest }: Props) {
-	if (!contributions || contributions.length === 0) return null;
+function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
 
-	const firstDate = new Date(contributions[0].date);
+	// 选中日期状态 - 改为存储每个日期的贡献次数
+	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
+	const [year, setYear] = React.useState<number>(new Date().getFullYear());
+
+	// 允许选择年份，过滤贡献数据
+	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
+	const filteredContributions = originalContributions.filter(c => new Date(c.date).getFullYear() === year);
+
+	// 清除所有选中
+	const handleReset = () => setUserContributions(new Map());
+	
+	if (!filteredContributions || filteredContributions.length === 0) return null;
+
+	// 计算总贡献次数（考虑用户设置的数据）
+	const total = filteredContributions.reduce((sum, c) => {
+		const userContribution = userContributions.get(c.date) || 0;
+		const displayCount = userContribution > 0 ? userContribution : c.count;
+		return sum + displayCount;
+	}, 0);
+
+	const firstDate = new Date(filteredContributions[0].date);
 	const startRow = firstDate.getDay();
 	const months: (React.ReactElement | undefined)[] = [];
-	let total = 0;
 	let latestMonth = -1;
 
-	const tiles = contributions.map((c, i) => {
+	const handleTileClick = (dateStr: string) => {
+		setUserContributions(prev => {
+			const newMap = new Map(prev);
+			const currentCount = newMap.get(dateStr) || 0;
+
+			// 定义合理的贡献切换序列：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
+			// 这样可以覆盖所有颜色等级
+			const levels = [0, 1, 3, 6, 9, 12];
+			const currentIndex = levels.indexOf(currentCount);
+			const nextIndex = (currentIndex + 1) % levels.length;
+			const nextCount = levels[nextIndex];
+
+			if (nextCount === 0) {
+				newMap.delete(dateStr);
+			} else {
+				newMap.set(dateStr, nextCount);
+			}
+
+			return newMap;
+		});
+	};
+
+	const tiles = filteredContributions.map((c, i) => {
 		const date = new Date(c.date);
 		const month = date.getMonth();
-		total += c.count;
+
+		// 计算实际显示的贡献次数（用户设置的优先）
+		const userContribution = userContributions.get(c.date) || 0;
+		const displayCount = userContribution > 0 ? userContribution : c.count;
 
 		// 在星期天的月份出现变化的列上面显示月份。
 		if (date.getDay() === 0 && month !== latestMonth) {
@@ -60,12 +117,21 @@ function ContributionCalendar({ contributions, className, ...rest }: Props) {
 				</span>,
 			);
 		}
+
+		// 计算显示的level：用户设置的优先，否则用原始数据
+		const displayLevel = userContribution > 0 ? calculateLevel(userContribution) : c.level;
+
+		// 创建新的tip信息，反映用户设置的贡献次数
+		const displayOneDay = { level: displayLevel, count: displayCount, date: c.date };
+
 		return (
 			<i
 				className={styles.tile}
 				key={i}
-				data-level={c.level}
-				title={getTooltip(c, date)}
+				data-level={displayLevel}
+				title={getTooltip(displayOneDay, date)}
+				onClick={() => handleTileClick(c.date)}
+				style={{ cursor: 'pointer' }}
 			/>
 		);
 	});
@@ -109,6 +175,38 @@ function ContributionCalendar({ contributions, className, ...rest }: Props) {
 
 	return (
 		<div {...rest} className={clsx(styles.container, className)}>
+			{/* 年份选择器和清除按钮 */}
+			<div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+				<div>
+					<label htmlFor="year-select">年份：</label>
+					<select
+						id="year-select"
+						value={year}
+						onChange={e => setYear(Number(e.target.value))}
+						style={{ marginLeft: 4 }}
+					>
+						{years.map(y => (
+							<option key={y} value={y}>{y}</option>
+						))}
+					</select>
+				</div>
+				<button
+					type="button"
+					onClick={handleReset}
+					style={{
+						padding: '4px 12px',
+						fontSize: 12,
+						borderRadius: 6,
+						border: '1px solid #d0d7de',
+						background: '#f6f8fa',
+						cursor: 'pointer',
+						transition: 'all 0.2s ease'
+					}}
+					title="清除所有用户设置的贡献数据"
+				>
+					清除设置
+				</button>
+			</div>
 			{renderedMonths}
 			<span className={styles.week}>Mon</span>
 			<span className={styles.week}>Wed</span>
@@ -117,7 +215,7 @@ function ContributionCalendar({ contributions, className, ...rest }: Props) {
 			<div className={styles.tiles}>{tiles}</div>
 
 			<div className={styles.total}>
-				{total} contributions in the last year
+				{total} contributions in {year}
 			</div>
 			<div className={styles.legend}>
 				Less
