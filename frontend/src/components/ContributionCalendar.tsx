@@ -31,7 +31,7 @@ function getTooltip(oneDay: OneDay, date: Date) {
  * 功能说明：
  * - 点击任意格子弹循环切换贡献次数：0 -> 1 -> 2 -> 3 -> 4 -> 0
  * - 数字越大，绿色越深，最多4级
- * - 可以选择不同年份查看
+ * - 可以输入不同年份查看（2008年-当前年份）
  * - 清除按钮会重置所有用户设置
  *
  * 数据可以用 /script/fetch-contributions.js 抓取。
@@ -57,7 +57,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
-	
+
 	if (!filteredContributions || filteredContributions.length === 0) return null;
 
 	// 计算总贡献次数（考虑用户设置的数据）
@@ -175,20 +175,24 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	return (
 		<div {...rest} className={clsx(styles.container, className)}>
-			{/* 年份选择器和清除按钮 */}
+			{/* 年份输入和清除按钮 */}
 			<div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
 				<div>
-					<label htmlFor="year-select">年份：</label>
-					<select
-						id="year-select"
+					<label htmlFor="year-input">年份：</label>
+					<input
+						id="year-input"
+						type="number"
+						min="2008"
+						max={new Date().getFullYear()}
 						value={year}
-						onChange={e => setYear(Number(e.target.value))}
-						style={{ marginLeft: 4 }}
-					>
-						{years.map(y => (
-							<option key={y} value={y}>{y}</option>
-						))}
-					</select>
+						onChange={e => {
+							const newYear = Number(e.target.value);
+							if (newYear >= 2008 && newYear <= new Date().getFullYear()) {
+								setYear(newYear);
+							}
+						}}
+						style={{ marginLeft: 4, width: 80 }}
+					/>
 				</div>
 				<button
 					type="button"
