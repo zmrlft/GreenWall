@@ -26,13 +26,15 @@ function getTooltip(oneDay: OneDay, date: Date) {
 }
 
 /**
- * 仿 GitHub 的贡献图，支持交互式点击设置贡献次数。
+ * 仿 GitHub 的贡献图，支持交互式点击和拖拽绘制贡献次数。
  *
  * 功能说明：
- * - 点击任意格子弹循环切换贡献次数：0 -> 1 -> 2 -> 3 -> 4 -> 0
+ * - 画笔模式：点击或拖拽绘制格子，循环切换贡献次数：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
+ * - 橡皮擦模式：点击或拖擦清除格子贡献
  * - 数字越大，绿色越深，最多4级
  * - 可以输入不同年份查看（2008年-当前年份）
  * - 清除按钮会重置所有用户设置
+ * - 支持鼠标左键长按拖拽连续绘制
  *
  * 数据可以用 /script/fetch-contributions.js 抓取。
  *
@@ -45,11 +47,19 @@ type Props = {
 	className?: string;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+type DrawMode = 'pen' | 'eraser';
+
 function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
 
 	// 选中日期状态 - 改为存储每个日期的贡献次数
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
+
+	// 绘画模式状态
+	const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
+	const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
+	const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
+	const [hasDragged, setHasDragged] = React.useState<boolean>(false);
 
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
@@ -72,27 +82,79 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const months: (React.ReactElement | undefined)[] = [];
 	let latestMonth = -1;
 
-	const handleTileClick = (dateStr: string) => {
-		setUserContributions(prev => {
-			const newMap = new Map(prev);
-			const currentCount = newMap.get(dateStr) || 0;
+	// 处理格子点击或绘制
+	const handleTileAction = (dateStr: string) => {
+		if (drawMode === 'pen') {
+			setUserContributions(prev => {
+				const newMap = new Map(prev);
+				const currentCount = newMap.get(dateStr) || 0;
 
-			// 定义合理的贡献切换序列：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
-			// 这样可以覆盖所有颜色等级
-			const levels = [0, 1, 3, 6, 9, 12];
-			const currentIndex = levels.indexOf(currentCount);
-			const nextIndex = (currentIndex + 1) % levels.length;
-			const nextCount = levels[nextIndex];
+				// 定义合理的贡献切换序列：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
+				// 这样可以覆盖所有颜色等级
+				const levels = [0, 1, 3, 6, 9];
+				const currentIndex = levels.indexOf(currentCount);
+				const nextIndex = (currentIndex + 1) % levels.length;
+				const nextCount = levels[nextIndex];
 
-			if (nextCount === 0) {
+				if (nextCount === 0) {
+					newMap.delete(dateStr);
+				} else {
+					newMap.set(dateStr, nextCount);
+				}
+
+				return newMap;
+			});
+		} else if (drawMode === 'eraser') {
+			setUserContributions(prev => {
+				const newMap = new Map(prev);
 				newMap.delete(dateStr);
-			} else {
-				newMap.set(dateStr, nextCount);
-			}
-
-			return newMap;
-		});
+				return newMap;
+			});
+		}
 	};
+
+	const handleTileClick = (dateStr: string) => {
+		// 只有在没有拖拽的情况下才执行点击动作
+		if (!hasDragged) {
+			handleTileAction(dateStr);
+		}
+	};
+
+	// 鼠标事件处理
+	const handleMouseDown = (dateStr: string) => {
+		setIsDrawing(true);
+		setLastHoveredDate(dateStr);
+		setHasDragged(false);
+		handleTileAction(dateStr);
+	};
+
+	const handleMouseEnter = (dateStr: string) => {
+		if (isDrawing && dateStr !== lastHoveredDate) {
+			setLastHoveredDate(dateStr);
+			setHasDragged(true);
+			handleTileAction(dateStr);
+		}
+	};
+
+	const handleMouseUp = () => {
+		setIsDrawing(false);
+		setLastHoveredDate(null);
+		// 延迟重置hasDragged，确保onClick事件能够正确检测
+		setTimeout(() => setHasDragged(false), 10);
+	};
+
+	React.useEffect(() => {
+		const handleGlobalMouseUp = () => {
+			setIsDrawing(false);
+			setLastHoveredDate(null);
+			setTimeout(() => setHasDragged(false), 10);
+		};
+
+		window.addEventListener('mouseup', handleGlobalMouseUp);
+		return () => {
+			window.removeEventListener('mouseup', handleGlobalMouseUp);
+		};
+	}, []);
 
 	const tiles = filteredContributions.map((c, i) => {
 		const date = new Date(c.date);
@@ -130,8 +192,14 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				key={i}
 				data-level={displayLevel}
 				title={getTooltip(displayOneDay, date)}
-				onClick={() => handleTileClick(c.date)}
-				style={{ cursor: 'pointer' }}
+				// onClick={() => handleTileClick(c.date)}
+				onMouseDown={() => handleMouseDown(c.date)}
+				onMouseEnter={() => handleMouseEnter(c.date)}
+				onMouseUp={handleMouseUp}
+				style={{
+					cursor: drawMode === 'pen' ? 'crosshair' : 'grab',
+					// userSelect: 'none'
+				}}
 			/>
 		);
 	});
@@ -174,8 +242,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const renderedMonths = months.filter(Boolean) as React.ReactElement[];
 
 	return (
-		<div {...rest} className={clsx(styles.container, className)}>
-			{/* 年份输入和清除按钮 */}
+		<div {...rest} className={clsx(styles.container, className)} onMouseUp={handleMouseUp}>
+			{/* 年份输入、绘画模式和清除按钮 */}
 			<div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
 				<div>
 					<label htmlFor="year-input">年份：</label>
@@ -193,6 +261,47 @@ function ContributionCalendar({ contributions: originalContributions, className,
 						}}
 						style={{ marginLeft: 4, width: 80 }}
 					/>
+				</div>
+				{/* 绘画模式切换按钮 */}
+				<div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+					<button
+						type="button"
+						onClick={() => setDrawMode('pen')}
+						style={{
+							padding: '4px 8px',
+							fontSize: 12,
+							borderRadius: 6,
+							border: drawMode === 'pen' ? '2px solid #0969da' : '1px solid #d0d7de',
+							background: drawMode === 'pen' ? '#ddf4ff' : '#f6f8fa',
+							cursor: 'pointer',
+							transition: 'all 0.2s ease',
+							display: 'flex',
+							alignItems: 'center',
+							gap: 4
+						}}
+						title="画笔模式 - 点击或拖动增加贡献"
+					>
+						✏️ 画笔
+					</button>
+					<button
+						type="button"
+						onClick={() => setDrawMode('eraser')}
+						style={{
+							padding: '4px 8px',
+							fontSize: 12,
+							borderRadius: 6,
+							border: drawMode === 'eraser' ? '2px solid #cf222e' : '1px solid #d0d7de',
+							background: drawMode === 'eraser' ? '#ffebe9' : '#f6f8fa',
+							cursor: 'pointer',
+							transition: 'all 0.2s ease',
+							display: 'flex',
+							alignItems: 'center',
+							gap: 4
+						}}
+						title="橡皮擦模式 - 点击或拖动清除贡献"
+					>
+						🧹 橡皮擦
+					</button>
 				</div>
 				<button
 					type="button"
