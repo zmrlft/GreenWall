@@ -242,103 +242,103 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const renderedMonths = months.filter(Boolean) as React.ReactElement[];
 
 	return (
-		<div {...rest} className={clsx(styles.container, className)} onMouseUp={handleMouseUp}>
-			{/* 年份输入、绘画模式和清除按钮 */}
-			<div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-				<div>
-					<label htmlFor="year-input">年份：</label>
-					<input
-						id="year-input"
-						type="number"
-						min="2008"
-						max={new Date().getFullYear()}
-						value={year}
-						onChange={e => {
-							const newYear = Number(e.target.value);
-							if (newYear >= 2008 && newYear <= new Date().getFullYear()) {
-								setYear(newYear);
-							}
-						}}
-						style={{ marginLeft: 4, width: 80 }}
-					/>
-				</div>
-				{/* 绘画模式切换按钮 */}
-				<div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-					<button
-						type="button"
-						onClick={() => setDrawMode('pen')}
-						style={{
-							padding: '4px 8px',
-							fontSize: 12,
-							borderRadius: 6,
-							border: drawMode === 'pen' ? '2px solid #0969da' : '1px solid #d0d7de',
-							background: drawMode === 'pen' ? '#ddf4ff' : '#f6f8fa',
-							cursor: 'pointer',
-							transition: 'all 0.2s ease',
-							display: 'flex',
-							alignItems: 'center',
-							gap: 4
-						}}
-						title="画笔模式 - 点击或拖动增加贡献"
-					>
-						✏️ 画笔
-					</button>
-					<button
-						type="button"
-						onClick={() => setDrawMode('eraser')}
-						style={{
-							padding: '4px 8px',
-							fontSize: 12,
-							borderRadius: 6,
-							border: drawMode === 'eraser' ? '2px solid #cf222e' : '1px solid #d0d7de',
-							background: drawMode === 'eraser' ? '#ffebe9' : '#f6f8fa',
-							cursor: 'pointer',
-							transition: 'all 0.2s ease',
-							display: 'flex',
-							alignItems: 'center',
-							gap: 4
-						}}
-						title="橡皮擦模式 - 点击或拖动清除贡献"
-					>
-						🧹 橡皮擦
-					</button>
-				</div>
-				<button
-					type="button"
-					onClick={handleReset}
-					style={{
-						padding: '4px 12px',
-						fontSize: 12,
-						borderRadius: 6,
-						border: '1px solid #d0d7de',
-						background: '#f6f8fa',
-						cursor: 'pointer',
-						transition: 'all 0.2s ease'
-					}}
-					title="清除所有用户设置的贡献数据"
-				>
-					清除设置
-				</button>
-			</div>
-			{renderedMonths}
-			<span className={styles.week}>Mon</span>
-			<span className={styles.week}>Wed</span>
-			<span className={styles.week}>Fri</span>
+		<div className="flex flex-col items-center space-y-6 px-6 py-4">
 
-			<div className={styles.tiles}>{tiles}</div>
 
-			<div className={styles.total}>
-				{total} contributions in {year}
+
+			<div {...rest} className={clsx(styles.container, className)} onMouseUp={handleMouseUp}>
+				{renderedMonths}
+				<span className={styles.week}>Mon</span>
+				<span className={styles.week}>Wed</span>
+				<span className={styles.week}>Fri</span>
+
+				<div className={styles.tiles}>{tiles}</div>
+				<div className={styles.total}>
+					{total} contributions in {year}
+				</div>
+				<div className={styles.legend}>
+					Less
+					<i className={styles.tile} data-level={0}/>
+					<i className={styles.tile} data-level={1}/>
+					<i className={styles.tile} data-level={2}/>
+					<i className={styles.tile} data-level={3}/>
+					<i className={styles.tile} data-level={4}/>
+					More
+				</div>
+
 			</div>
-			<div className={styles.legend}>
-				Less
-				<i className={styles.tile} data-level={0}/>
-				<i className={styles.tile} data-level={1}/>
-				<i className={styles.tile} data-level={2}/>
-				<i className={styles.tile} data-level={3}/>
-				<i className={styles.tile} data-level={4}/>
-				More
+			
+			<div className="w-full max-w-2xl">
+				<div className="bg-white rounded-none p-4 border border-black">
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						{/* Year Input */}
+						<div className="flex flex-col space-y-2">
+							<label htmlFor="year-input" className="text-sm font-medium text-black">年份</label>
+							<input
+								id="year-input"
+								type="number"
+								min="2008"
+								max={new Date().getFullYear()}
+								value={year}
+								onChange={e => {
+									const newYear = Number(e.target.value);
+									if (newYear >= 2008 && newYear <= new Date().getFullYear()) {
+										setYear(newYear);
+									}
+								}}
+								className="px-3 py-2 border border-black rounded-none focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
+							/>
+						</div>
+
+						{/* Drawing Mode */}
+						<div className="flex flex-col space-y-2">
+							<span className="text-sm font-medium text-black">绘制模式</span>
+							<div className="flex space-x-2">
+								<button
+									type="button"
+									onClick={() => setDrawMode('pen')}
+									className={clsx(
+										'px-3 py-2 text-sm font-medium rounded-none flex items-center justify-center gap-2 transition-all duration-200',
+										drawMode === 'pen'
+											? 'bg-black text-white shadow-lg transform scale-105'
+											: 'bg-white text-black border border-black hover:bg-gray-100'
+									)}
+									title="画笔模式 - 点击或拖动增加贡献"
+								>
+									✏️ 画笔
+								</button>
+								<button
+									type="button"
+									onClick={() => setDrawMode('eraser')}
+									className={clsx(
+										'px-3 py-2 text-sm font-medium rounded-none flex items-center justify-center gap-2 transition-all duration-200',
+										drawMode === 'eraser'
+											? 'bg-black text-white shadow-lg transform scale-105'
+											: 'bg-white text-black border border-black hover:bg-gray-100'
+									)}
+									title="橡皮擦模式 - 点击或拖动清除贡献"
+								>
+									🧹 橡皮擦
+								</button>
+							</div>
+						</div>
+
+						{/* Reset Button */}
+						<div className="flex flex-col space-y-2">
+							<span className="text-sm font-medium text-black invisible">操作</span>
+							<button
+								type="button"
+								onClick={handleReset}
+								className="px-4 py-2 text-sm font-medium bg-black text-white rounded-none hover:bg-gray-800 transition-colors duration-200"
+								title="清除所有用户设置的贡献数据"
+							>
+								🔄 清除设置
+							</button>
+						</div>
+					</div>
+				</div>
 			</div>
+
 		</div>
 	);
 }

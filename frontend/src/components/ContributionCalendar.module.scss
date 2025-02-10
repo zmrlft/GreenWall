@@ -8,9 +8,11 @@
 
 	width: fit-content;
 	font-size: 12px;
-	padding: 14px;
-	border: solid 1px #D1D9E0;
-	border-radius: 0.375rem;
+	padding: 20px;
+	border: solid 1px #000000;
+	border-radius: 0px;
+	background: #ffffff;
+	box-shadow: none;
 
 	@include mobile-layout {
 		display: none; /* 太长手机显示不下 */
@@ -20,6 +22,8 @@
 .month {
 	grid-row: 1/2;
 	margin-bottom: -3px;
+	color: #000000;
+	font-weight: 500;
 }
 
 .week {
@@ -27,6 +31,8 @@
 	grid-column: 1/2;
 	line-height: 10px;
 	margin-right: 3px;
+	color: #000000;
+	font-weight: 500;
 
 	& + .week {
 		grid-row: 5;
@@ -49,23 +55,53 @@
 
 .tile {
 	display: block;
-	width: 10px;
-	height: 10px;
-	border-radius: 2px;
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
 
 	outline: 1px solid rgba(27, 35, 36, 0.06);
 	outline-offset: -1px;
+	cursor: pointer;
+	transition: all 0.15s ease-in-out;
+	border: 1px solid transparent;
 
-	&[data-level="0"] { background: #EBEDF0; }
-	&[data-level="1"] { background: #9be9a8; }
-	&[data-level="2"] { background: #40C463; }
-	&[data-level="3"] { background: #30a14e; }
-	&[data-level="4"] { background: #216e39; }
+	&[data-level="0"] {
+		background: #EBEDF0;
+		border-color: rgba(235, 237, 240, 0.3);
+	}
+	&[data-level="1"] {
+		background: #9be9a8;
+		border-color: rgba(155, 233, 168, 0.3);
+	}
+	&[data-level="2"] {
+		background: #40C463;
+		border-color: rgba(64, 196, 99, 0.3);
+	}
+	&[data-level="3"] {
+		background: #30a14e;
+		border-color: rgba(48, 161, 78, 0.3);
+	}
+	&[data-level="4"] {
+		background: #216e39;
+		border-color: rgba(33, 110, 57, 0.3);
+	}
+
+	// Enhanced hover effects
+	&:hover {
+		outline: 2px solid #000000;
+		outline-offset: 1px;
+		transform: scale(1.2);
+		box-shadow: none;
+		z-index: 10;
+	}
 }
 
 .total {
 	grid-column: 2/30;
 	margin-top: 4px;
+	color: #000000 !important;
+	font-size: 16px;
+	font-weight: bold;
 }
 
 .legend {
@@ -73,7 +109,24 @@
 	margin-top: 4px;
 
 	display: flex;
-	gap: 5px;
+	gap: 6px;
 	justify-content: right;
 	align-items: center;
+	font-size: 11px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #000000 !important;
+
+	.tile {
+		cursor: default;
+		transition: none;
+
+		// Disable hover effects for legend tiles
+		&:hover {
+			outline: none;
+			transform: none;
+			box-shadow: none;
+		}
+	}
 }
