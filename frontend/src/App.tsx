@@ -39,6 +39,7 @@ function App() {
                 <header className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-black mb-2">GitHub Contribution Calendar</h1>
                     <p className="text-black">Visualize and customize your GitHub contribution history</p>
+                    <p className="text-black">在可视化画板上自定义你的GitHub贡献历史</p>
                 </header>
                 <main className="flex justify-center">
                     <div className="bg-white rounded-none shadow-none p-6 border border-black">
