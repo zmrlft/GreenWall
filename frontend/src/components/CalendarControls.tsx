@@ -1,3 +1,4 @@
+import React from "react";
 import clsx from "clsx";
 
 type Props = {
@@ -15,9 +16,46 @@ export const CalendarControls: React.FC<Props> = ({
     onDrawModeChange,
     onReset,
 }) => {
+    const [yearInput, setYearInput] = React.useState<string>(() =>
+        typeof year === 'number' ? String(year) : '',
+    );
+
+    React.useEffect(() => {
+        setYearInput(typeof year === 'number' ? String(year) : '');
+    }, [year]);
+
+    const handleYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = event.target;
+        setYearInput(value);
+
+        if (value === '') {
+            return;
+        }
+
+        const parsed = Number(value);
+        const currentYear = new Date().getFullYear();
+        if (!Number.isNaN(parsed) && parsed >= 2008 && parsed <= currentYear) {
+            onYearChange(parsed);
+        }
+    };
+
+    const handleYearBlur = () => {
+        const parsed = Number(yearInput);
+        const currentYear = new Date().getFullYear();
+        const isValid =
+            yearInput !== '' &&
+            !Number.isNaN(parsed) &&
+            parsed >= 2008 &&
+            parsed <= currentYear;
+
+        if (!isValid) {
+            setYearInput(typeof year === 'number' ? String(year) : '');
+        }
+    };
+
     return (
         <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="flex w-full max-w-sm flex-col space-y-2 sm:max-w-[160px]">
+            <div className="flex w-full flex-col space-y-2 sm:w-28">
                 <label htmlFor="year-input" className="text-sm font-medium text-black">
                     Year
                 </label>
@@ -26,8 +64,9 @@ export const CalendarControls: React.FC<Props> = ({
                     type="number"
                     min="2008"
                     max={new Date().getFullYear()}
-                    value={year ?? ''}
-                    onChange={(e) => onYearChange(Number(e.target.value))}
+                    value={yearInput}
+                    onChange={handleYearChange}
+                    onBlur={handleYearBlur}
                     className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
             </div>
