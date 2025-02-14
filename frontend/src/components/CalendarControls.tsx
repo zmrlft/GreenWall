@@ -7,6 +7,10 @@ type Props = {
     drawMode?: 'pen' | 'eraser';
     onDrawModeChange: (mode: 'pen' | 'eraser') => void;
     onReset?: () => void;
+    githubUsername: string;
+    githubEmail: string;
+    onGithubUsernameChange: (username: string) => void;
+    onGithubEmailChange: (email: string) => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -15,6 +19,10 @@ export const CalendarControls: React.FC<Props> = ({
     drawMode,
     onDrawModeChange,
     onReset,
+    githubUsername,
+    githubEmail,
+    onGithubUsernameChange,
+    onGithubEmailChange,
 }) => {
     const [yearInput, setYearInput] = React.useState<string>(() =>
         typeof year === 'number' ? String(year) : '',
@@ -55,6 +63,36 @@ export const CalendarControls: React.FC<Props> = ({
 
     return (
         <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="flex w-full flex-col space-y-2 sm:w-72">
+                <label htmlFor="github-username-input" className="text-sm font-medium text-black">
+                    GitHub Username
+                </label>
+                <input
+                    id="github-username-input"
+                    type="text"
+                    value={githubUsername}
+                    onChange={(event) => onGithubUsernameChange(event.target.value)}
+                    placeholder="octocat"
+                    autoComplete="username"
+                    className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+            </div>
+
+            <div className="flex w-full flex-col space-y-2 sm:w-72">
+                <label htmlFor="github-email-input" className="text-sm font-medium text-black">
+                    GitHub Email
+                </label>
+                <input
+                    id="github-email-input"
+                    type="email"
+                    value={githubEmail}
+                    onChange={(event) => onGithubEmailChange(event.target.value)}
+                    placeholder="monalisa@github.com"
+                    autoComplete="email"
+                    className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+            </div>
+
             <div className="flex w-full flex-col space-y-2 sm:w-28">
                 <label htmlFor="year-input" className="text-sm font-medium text-black">
                     Year

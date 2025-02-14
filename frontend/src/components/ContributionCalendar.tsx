@@ -55,6 +55,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 选中日期状态 - 改为存储每个日期的贡献次数
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
+	const [githubUsername, setGithubUsername] = React.useState<string>('');
+	const [githubEmail, setGithubEmail] = React.useState<string>('');
 
 	// 绘画模式状态
 	const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -278,6 +280,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onYearChange={setYear}
 					onDrawModeChange={setDrawMode}
 					onReset={handleReset}
+					githubUsername={githubUsername}
+					githubEmail={githubEmail}
+					onGithubUsernameChange={setGithubUsername}
+					onGithubEmailChange={setGithubEmail}
 				/>
 			</div>
 		</div>
