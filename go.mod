@@ -1,4 +1,4 @@
-module github-contributor
+module green-wall
 
 go 1.23
 

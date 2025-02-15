@@ -2,6 +2,8 @@ import React from "react";
 import clsx from "clsx";
 import styles from "./ContributionCalendar.module.scss";
 import { CalendarControls } from "./CalendarControls";
+import { GenerateRepo } from "../../wailsjs/go/main/App";
+import { main } from "../../wailsjs/go/models";
 
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -63,6 +65,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
 	const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
 	const [hasDragged, setHasDragged] = React.useState<boolean>(false);
+	const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
 
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
@@ -70,6 +73,52 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
+
+	const handleGenerateRepo = React.useCallback(async () => {
+		const trimmedUsername = githubUsername.trim();
+		const trimmedEmail = githubEmail.trim();
+
+		if (trimmedUsername === '' || trimmedEmail === '') {
+			window.alert('Please provide a GitHub username and email before generating a repository.');
+			return;
+		}
+
+		const contributionsForBackend = filteredContributions
+			.map((c) => {
+				const override = userContributions.get(c.date);
+				const finalCount = override !== undefined ? override : c.count;
+
+				return {
+					date: c.date,
+					count: finalCount,
+				};
+			})
+			.filter((entry) => entry.count > 0);
+
+		if (contributionsForBackend.length === 0) {
+			window.alert('No contributions to generate. Add contributions first.');
+			return;
+		}
+
+		setIsGeneratingRepo(true);
+		try {
+			const payload = main.GenerateRepoRequest.createFrom({
+				year,
+				githubUsername: trimmedUsername,
+				githubEmail: trimmedEmail,
+				repoName: '',
+				contributions: contributionsForBackend,
+			});
+			const result = await GenerateRepo(payload);
+			window.alert(`Repository created at ${result.repoPath} with ${result.commitCount} commits.`);
+		} catch (error) {
+			console.error('Failed to generate repository', error);
+			const message = error instanceof Error ? error.message : String(error);
+			window.alert(`Failed to generate repository: ${message}`);
+		} finally {
+			setIsGeneratingRepo(false);
+		}
+	}, [filteredContributions, githubEmail, githubUsername, userContributions, year]);
 
 	if (!filteredContributions || filteredContributions.length === 0) return null;
 
@@ -284,6 +333,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					githubEmail={githubEmail}
 					onGithubUsernameChange={setGithubUsername}
 					onGithubEmailChange={setGithubEmail}
+					onGenerateRepo={handleGenerateRepo}
+					isGeneratingRepo={isGeneratingRepo}
 				/>
 			</div>
 		</div>

@@ -11,6 +11,8 @@ type Props = {
     githubEmail: string;
     onGithubUsernameChange: (username: string) => void;
     onGithubEmailChange: (email: string) => void;
+    onGenerateRepo?: () => void;
+    isGeneratingRepo?: boolean;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -23,6 +25,8 @@ export const CalendarControls: React.FC<Props> = ({
     githubEmail,
     onGithubUsernameChange,
     onGithubEmailChange,
+    onGenerateRepo,
+    isGeneratingRepo,
 }) => {
     const [yearInput, setYearInput] = React.useState<string>(() =>
         typeof year === 'number' ? String(year) : '',
@@ -59,6 +63,17 @@ export const CalendarControls: React.FC<Props> = ({
         if (!isValid) {
             setYearInput(typeof year === 'number' ? String(year) : '');
         }
+    };
+
+    const disableGenerateRepo =
+        !onGenerateRepo ||
+        isGeneratingRepo ||
+        githubUsername.trim() === '' ||
+        githubEmail.trim() === '';
+
+    const handleGenerateRepo = () => {
+        if (!onGenerateRepo) return;
+        onGenerateRepo();
     };
 
     return (
@@ -150,6 +165,24 @@ export const CalendarControls: React.FC<Props> = ({
                     title="Clear all customised contribution data"
                 >
                     Reset
+                </button>
+            </div>
+
+            <div className="flex w-full flex-col space-y-2 sm:w-auto">
+                <span className="text-sm font-medium text-black sm:invisible">Generate</span>
+                <button
+                    type="button"
+                    onClick={handleGenerateRepo}
+                    disabled={disableGenerateRepo}
+                    className={clsx(
+                        'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
+                        disableGenerateRepo
+                            ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
+                            : 'border border-black bg-white text-black hover:bg-gray-100',
+                    )}
+                    title="Create a local git repository matching this contribution calendar"
+                >
+                    {isGeneratingRepo ? 'Generating...' : 'Generate Repo'}
                 </button>
             </div>
         </div>
