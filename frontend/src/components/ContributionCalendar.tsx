@@ -6,6 +6,37 @@ import { GenerateRepo } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
 
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const STORAGE_KEYS = {
+	username: "github-contributor.username",
+	email: "github-contributor.email",
+	repoName: "github-contributor.repoName",
+};
+
+function readStoredValue(key: string): string {
+	if (typeof window === "undefined") {
+		return "";
+	}
+	try {
+		return window.localStorage.getItem(key) ?? "";
+	} catch {
+		return "";
+	}
+}
+
+function writeStoredValue(key: string, value: string) {
+	if (typeof window === "undefined") {
+		return;
+	}
+	try {
+		if (value === "") {
+			window.localStorage.removeItem(key);
+		} else {
+			window.localStorage.setItem(key, value);
+		}
+	} catch {
+		// Ignore storage errors and keep runtime behaviour unaffected.
+	}
+}
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -57,8 +88,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 选中日期状态 - 改为存储每个日期的贡献次数
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
-	const [githubUsername, setGithubUsername] = React.useState<string>('');
-	const [githubEmail, setGithubEmail] = React.useState<string>('');
+	const [githubUsername, setGithubUsername] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.username));
+	const [githubEmail, setGithubEmail] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.email));
+	const [repoName, setRepoName] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.repoName));
 
 	// 绘画模式状态
 	const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -74,9 +106,22 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
 
+	React.useEffect(() => {
+		writeStoredValue(STORAGE_KEYS.username, githubUsername);
+	}, [githubUsername]);
+
+	React.useEffect(() => {
+		writeStoredValue(STORAGE_KEYS.email, githubEmail);
+	}, [githubEmail]);
+
+	React.useEffect(() => {
+		writeStoredValue(STORAGE_KEYS.repoName, repoName);
+	}, [repoName]);
+
 	const handleGenerateRepo = React.useCallback(async () => {
 		const trimmedUsername = githubUsername.trim();
 		const trimmedEmail = githubEmail.trim();
+		const trimmedRepoName = repoName.trim();
 
 		if (trimmedUsername === '' || trimmedEmail === '') {
 			window.alert('Please provide a GitHub username and email before generating a repository.');
@@ -106,7 +151,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				year,
 				githubUsername: trimmedUsername,
 				githubEmail: trimmedEmail,
-				repoName: '',
+				repoName: trimmedRepoName,
 				contributions: contributionsForBackend,
 			});
 			const result = await GenerateRepo(payload);
@@ -118,7 +163,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		} finally {
 			setIsGeneratingRepo(false);
 		}
-	}, [filteredContributions, githubEmail, githubUsername, userContributions, year]);
+	}, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year]);
 
 	if (!filteredContributions || filteredContributions.length === 0) return null;
 
@@ -331,8 +376,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onReset={handleReset}
 					githubUsername={githubUsername}
 					githubEmail={githubEmail}
+					repoName={repoName}
 					onGithubUsernameChange={setGithubUsername}
 					onGithubEmailChange={setGithubEmail}
+					onRepoNameChange={setRepoName}
 					onGenerateRepo={handleGenerateRepo}
 					isGeneratingRepo={isGeneratingRepo}
 				/>

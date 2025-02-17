@@ -9,8 +9,10 @@ type Props = {
     onReset?: () => void;
     githubUsername: string;
     githubEmail: string;
+    repoName: string;
     onGithubUsernameChange: (username: string) => void;
     onGithubEmailChange: (email: string) => void;
+    onRepoNameChange: (name: string) => void;
     onGenerateRepo?: () => void;
     isGeneratingRepo?: boolean;
 };
@@ -23,8 +25,10 @@ export const CalendarControls: React.FC<Props> = ({
     onReset,
     githubUsername,
     githubEmail,
+    repoName,
     onGithubUsernameChange,
     onGithubEmailChange,
+    onRepoNameChange,
     onGenerateRepo,
     isGeneratingRepo,
 }) => {
@@ -104,6 +108,21 @@ export const CalendarControls: React.FC<Props> = ({
                     onChange={(event) => onGithubEmailChange(event.target.value)}
                     placeholder="monalisa@github.com"
                     autoComplete="email"
+                    className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+            </div>
+
+            <div className="flex w-full flex-col space-y-2 sm:w-72">
+                <label htmlFor="repo-name-input" className="text-sm font-medium text-black">
+                    Repository Name
+                </label>
+                <input
+                    id="repo-name-input"
+                    type="text"
+                    value={repoName}
+                    onChange={(event) => onRepoNameChange(event.target.value)}
+                    placeholder="my-contributions"
+                    autoComplete="off"
                     className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
             </div>
