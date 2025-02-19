@@ -34,7 +34,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-white">
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-4 md:py-6">
                 {/* <header className="text-center mb-8">
                     
                 </header> */}
@@ -44,6 +44,25 @@ function App() {
                     </div>
                 </main>
             </div>
+
+            <a
+                href="https://github.com/zmrlft/GreenWall"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open GreenWall repository on GitHub"
+                className="fixed bottom-4 left-4 text-black transition-colors hover:text-gray-700"
+            >
+                <svg
+                    className="h-7 w-7"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        fill="currentColor"
+                        d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.257.82-.577 0-.285-.01-1.04-.015-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.776.42-1.305.763-1.605-2.665-.303-5.466-1.335-5.466-5.935 0-1.312.47-2.382 1.236-3.22-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23A11.5 11.5 0 0 1 12 5.8a11.5 11.5 0 0 1 3.003.404c2.292-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.873.118 3.176.77.838 1.236 1.908 1.236 3.22 0 4.61-2.804 5.628-5.475 5.923.431.372.816 1.103.816 2.222 0 1.605-.014 2.897-.014 3.293 0 .322.218.694.825.576C20.565 21.796 24 17.297 24 12 24 5.37 18.63 0 12 0Z"
+                    />
+                </svg>
+            </a>
         </div>
     )
 }

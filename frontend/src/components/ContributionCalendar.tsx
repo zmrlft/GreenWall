@@ -339,7 +339,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const renderedMonths = months.filter(Boolean) as React.ReactElement[];
 
 	return (
-		<div className="flex w-full flex-col gap-6 px-4 py-4 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+		<div className="flex w-full flex-col gap-4 px-4 py-3 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
 			<div className="w-full overflow-x-auto lg:flex-1">
 				<div
 					{...rest}

@@ -175,34 +175,32 @@ export const CalendarControls: React.FC<Props> = ({
                 </div>
             </div>
 
-            <div className="flex w-full flex-col space-y-2 sm:ml-auto sm:w-auto">
-                <span className="text-sm font-medium text-black sm:invisible">Action</span>
-                <button
-                    type="button"
-                    onClick={onReset}
-                    className="w-full rounded-none bg-black px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-800 sm:w-auto"
-                    title="Clear all customised contribution data"
-                >
-                    Reset
-                </button>
-            </div>
-
-            <div className="flex w-full flex-col space-y-2 sm:w-auto">
-                <span className="text-sm font-medium text-black sm:invisible">Generate</span>
-                <button
-                    type="button"
-                    onClick={handleGenerateRepo}
-                    disabled={disableGenerateRepo}
-                    className={clsx(
-                        'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
-                        disableGenerateRepo
-                            ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
-                            : 'border border-black bg-white text-black hover:bg-gray-100',
-                    )}
-                    title="Create a local git repository matching this contribution calendar"
-                >
-                    {isGeneratingRepo ? 'Generating...' : 'Generate Repo'}
-                </button>
+            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
+                <span className="text-sm font-medium text-black sm:invisible">Actions</span>
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+                    <button
+                        type="button"
+                        onClick={onReset}
+                        className="w-full rounded-none bg-black px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-800 sm:w-auto"
+                        title="Clear all customised contribution data"
+                    >
+                        Reset
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleGenerateRepo}
+                        disabled={disableGenerateRepo}
+                        className={clsx(
+                            'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
+                            disableGenerateRepo
+                                ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
+                                : 'border border-black bg-white text-black hover:bg-gray-100',
+                        )}
+                        title="Create a local git repository matching this contribution calendar"
+                    >
+                        {isGeneratingRepo ? 'Generating...' : 'Generate Repo'}
+                    </button>
+                </div>
             </div>
         </div>
     );
