@@ -4,8 +4,7 @@ import styles from "./ContributionCalendar.module.scss";
 import { CalendarControls } from "./CalendarControls";
 import { GenerateRepo } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
-
-const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+import { useTranslations } from "../i18n";
 const STORAGE_KEYS = {
 	username: "github-contributor.username",
 	email: "github-contributor.email",
@@ -49,16 +48,6 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
 
 export type OneDay = { level: number; count: number; date: string };
 
-function getTooltip(oneDay: OneDay, date: Date) {
-	const s = date.toISOString().split("T")[0];
-	switch (oneDay.count) {
-		case 0:
-			return `No contributions on ${s} - Click to add!`;
-		default:
-			return `${oneDay.count} contributions on ${s}`;
-	}
-}
-
 /**
  * 仿 GitHub 的贡献图，支持交互式点击和拖拽绘制贡献次数。
  *
@@ -86,6 +75,18 @@ type DrawMode = 'pen' | 'eraser';
 function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
 
 	// 选中日期状态 - 改为存储每个日期的贡献次数
+	const { t, dictionary } = useTranslations();
+	const getTooltip = React.useCallback((oneDay: OneDay, date: Date) => {
+		const s = date.toISOString().split("T")[0];
+		if (oneDay.count === 0) {
+			return t("calendar.tooltipNone", { date: s });
+		}
+		return t("calendar.tooltipSome", { count: oneDay.count, date: s });
+	}, [t]);
+
+	const monthNames = dictionary.months;
+	const weekLabels = dictionary.weekdays;
+
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
 	const [githubUsername, setGithubUsername] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.username));
@@ -124,7 +125,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		const trimmedRepoName = repoName.trim();
 
 		if (trimmedUsername === '' || trimmedEmail === '') {
-			window.alert('Please provide a GitHub username and email before generating a repository.');
+			window.alert(t('messages.generateRepoMissing'));
 			return;
 		}
 
@@ -141,7 +142,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 			.filter((entry) => entry.count > 0);
 
 		if (contributionsForBackend.length === 0) {
-			window.alert('No contributions to generate. Add contributions first.');
+			window.alert(t('messages.noContributions'));
 			return;
 		}
 
@@ -159,7 +160,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		} catch (error) {
 			console.error('Failed to generate repository', error);
 			const message = error instanceof Error ? error.message : String(error);
-			window.alert(`Failed to generate repository: ${message}`);
+			window.alert(t('messages.generateRepoError', { message }));
 		} finally {
 			setIsGeneratingRepo(false);
 		}
@@ -272,7 +273,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					key={i}
 					style={{ gridColumn }}
 				>
-					{MONTH[date.getMonth()]}
+					{monthNames[date.getMonth()]}
 				</span>,
 			);
 		}
@@ -311,7 +312,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// Safely adjust months. Use optional chaining and avoid mutating props directly.
 	if (months.length > 0) {
 		const first = months[0];
-		if (first && MONTH[firstDate.getMonth()] === (first.props && first.props.children)) {
+		if (first && monthNames[firstDate.getMonth()] === (first.props && first.props.children)) {
 			// create a new element with adjusted style instead of mutating props
 			months[0] = React.cloneElement(first, {
 				style: { ...(first.props.style || {}), gridColumn: 2 },
@@ -353,16 +354,16 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 					<div className={styles.tiles}>{tiles}</div>
 					<div className={styles.total}>
-						{total} contributions in {year}
+						{t('calendar.totalContributions', { count: total, year })}
 					</div>
 					<div className={styles.legend}>
-						Less
+						{t('calendar.legendLess')}
 						<i className={styles.tile} data-level={0}/>
 						<i className={styles.tile} data-level={1}/>
 						<i className={styles.tile} data-level={2}/>
 						<i className={styles.tile} data-level={3}/>
 						<i className={styles.tile} data-level={4}/>
-						More
+						{t('calendar.legendMore')}
 					</div>
 				</div>
 			</div>
