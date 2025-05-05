@@ -87,6 +87,22 @@
 		border-color: rgba(33, 110, 57, 0.3);
 	}
 
+	&[data-future="true"] {
+		background: #000000 !important;
+		border-color: #000000 !important;
+		cursor: not-allowed;
+		outline: none;
+		outline-offset: 0;
+		transform: none;
+		box-shadow: none;
+
+		&:hover {
+			outline: none;
+			transform: none;
+			box-shadow: none;
+		}
+	}
+
 	// Enhanced hover effects
 	&:hover {
 		outline: 2px solid #000000;

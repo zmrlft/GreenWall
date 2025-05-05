@@ -76,16 +76,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	// 选中日期状态 - 改为存储每个日期的贡献次数
 	const { t, dictionary } = useTranslations();
-	const getTooltip = React.useCallback((oneDay: OneDay, date: Date) => {
-		const s = date.toISOString().split("T")[0];
-		if (oneDay.count === 0) {
-			return t("calendar.tooltipNone", { date: s });
-		}
-		return t("calendar.tooltipSome", { count: oneDay.count, date: s });
-	}, [t]);
-
 	const monthNames = dictionary.months;
-	const weekLabels = dictionary.weekdays;
 
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
@@ -103,6 +94,38 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
 	const filteredContributions = originalContributions.filter(c => new Date(c.date).getFullYear() === year);
+
+	// 计算当前日期与明天零点，用于判断未来日期
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const todayStart = new Date(currentYear, now.getMonth(), now.getDate());
+	const tomorrowStart = new Date(todayStart);
+	tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+	const tomorrowTime = tomorrowStart.getTime();
+	const isCurrentYear = year === currentYear;
+
+	const isFutureDate = React.useCallback(
+		(dateStr: string) => {
+			if (!isCurrentYear) {
+				return false;
+			}
+			const parsed = new Date(dateStr);
+			const localDate = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+			return localDate.getTime() >= tomorrowTime;
+		},
+		[isCurrentYear, tomorrowTime],
+	);
+
+	const getTooltip = React.useCallback((oneDay: OneDay, date: Date) => {
+		const s = date.toISOString().split("T")[0];
+		if (isFutureDate(oneDay.date)) {
+			return t("calendar.tooltipFuture", { date: s });
+		}
+		if (oneDay.count === 0) {
+			return t("calendar.tooltipNone", { date: s });
+		}
+		return t("calendar.tooltipSome", { count: oneDay.count, date: s });
+	}, [isFutureDate, t]);
 
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
@@ -182,6 +205,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	// 处理格子点击或绘制
 	const handleTileAction = (dateStr: string) => {
+		if (isFutureDate(dateStr)) {
+			return;
+		}
 		if (drawMode === 'pen') {
 			setUserContributions(prev => {
 				const newMap = new Map(prev);
@@ -220,6 +246,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	// 鼠标事件处理
 	const handleMouseDown = (dateStr: string) => {
+		if (isFutureDate(dateStr)) {
+			return;
+		}
 		setIsDrawing(true);
 		setLastHoveredDate(dateStr);
 		setHasDragged(false);
@@ -227,6 +256,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	};
 
 	const handleMouseEnter = (dateStr: string) => {
+		if (isFutureDate(dateStr)) {
+			return;
+		}
 		if (isDrawing && dateStr !== lastHoveredDate) {
 			setLastHoveredDate(dateStr);
 			setHasDragged(true);
@@ -257,6 +289,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const tiles = filteredContributions.map((c, i) => {
 		const date = new Date(c.date);
 		const month = date.getMonth();
+		const future = isFutureDate(c.date);
 
 		// 计算实际显示的贡献次数（用户设置的优先）
 		const userContribution = userContributions.get(c.date) || 0;
@@ -289,13 +322,14 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				className={styles.tile}
 				key={i}
 				data-level={displayLevel}
+				data-future={future ? "true" : undefined}
 				title={getTooltip(displayOneDay, date)}
 				// onClick={() => handleTileClick(c.date)}
 				onMouseDown={() => handleMouseDown(c.date)}
 				onMouseEnter={() => handleMouseEnter(c.date)}
 				onMouseUp={handleMouseUp}
 				style={{
-					cursor: drawMode === 'pen' ? 'crosshair' : 'grab',
+					cursor: future ? 'not-allowed' : (drawMode === 'pen' ? 'crosshair' : 'grab'),
 					// userSelect: 'none'
 				}}
 			/>
