@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-// configureCommand ensures spawned processes do not flash a console window.
-func configureCommand(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+// configureCommand applies platform specific process settings.
+func configureCommand(cmd *exec.Cmd, hideWindow bool) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: hideWindow}
 }

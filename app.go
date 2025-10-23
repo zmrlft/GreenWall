@@ -159,6 +159,10 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		}
 	}
 
+	if err := openDirectory(repoPath); err != nil {
+		return nil, fmt.Errorf("open repo directory: %w", err)
+	}
+
 	return &GenerateRepoResponse{
 		RepoPath:    repoPath,
 		CommitCount: totalCommits,
@@ -197,7 +201,7 @@ func appendToFile(path, content string) error {
 func runGitCommand(dir string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	configureCommand(cmd)
+	configureCommand(cmd, true)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -212,7 +216,7 @@ func runGitCommand(dir string, args ...string) error {
 func runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	configureCommand(cmd)
+	configureCommand(cmd, true)
 
 	env := os.Environ()
 	for key, value := range extraEnv {
