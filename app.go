@@ -104,7 +104,7 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 	}
 
 	readmePath := filepath.Join(repoPath, "README.md")
-	readmeContent := fmt.Sprintf("# %s\n\nGenerated with GitHub Contributor.\n", repoName)
+	readmeContent := fmt.Sprintf("# %s\n\nGenerated with https://github.com/zmrlft/GreenWall.\n", repoName)
 	if err := os.WriteFile(readmePath, []byte(readmeContent), 0o644); err != nil {
 		return nil, fmt.Errorf("write README: %w", err)
 	}

@@ -35,11 +35,14 @@ type TranslationDict = {
 	};
 	messages: {
 		generateRepoMissing: string;
+		generateRepoError: string;
+		noContributions: string;
 	};
 	calendar: {
 		totalContributions: string;
 		tooltipNone: string;
 		tooltipSome: string;
+		tooltipFuture: string;
 		legendLess: string;
 		legendMore: string;
 	};
@@ -97,6 +100,7 @@ const translations: Record<Language, TranslationDict> = {
 			totalContributions: "{{count}} contributions in {{year}}",
 			tooltipNone: "No contributions on {{date}} - Click to add!",
 			tooltipSome: "{{count}} contributions on {{date}}",
+			tooltipFuture: "Upcoming date {{date}} - editing disabled",
 			legendLess: "Less",
 			legendMore: "More",
 		},
@@ -151,6 +155,7 @@ const translations: Record<Language, TranslationDict> = {
 			totalContributions: "{{year}} 年共 {{count}} 次贡献",
 			tooltipNone: "{{date}} 没有贡献 - 点击添加！",
 			tooltipSome: "{{date}} 有 {{count}} 次贡献",
+			tooltipFuture: "{{date}} 为未来日期，禁止编辑",
 			legendLess: "较少",
 			legendMore: "更多",
 		},
