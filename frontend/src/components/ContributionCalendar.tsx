@@ -53,8 +53,8 @@ export type OneDay = { level: number; count: number; date: string };
  * 仿 GitHub 的贡献图，支持交互式点击和拖拽绘制贡献次数。
  *
  * 功能说明：
- * - 画笔模式：点击或拖拽绘制格子，循环切换贡献次数：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
- * - 橡皮擦模式：点击或拖擦清除格子贡献
+ * - 画笔模式：点击或拖拽绘制格子，贡献只会逐步加深：0 -> 1 -> 3 -> 6 -> 9；达到最深绿色（9）后不再变化。
+ * - 橡皮擦模式：点击或拖擦清除格子贡献（清零仅通过橡皮擦）。
  * - 数字越大，绿色越深，最多4级
  * - 可以输入不同年份查看（2008年-当前年份）
  * - 清除按钮会重置所有用户设置
@@ -98,6 +98,11 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
 	const filteredContributions = originalContributions.filter(c => new Date(c.date).getFullYear() === year);
+
+	// 映射当年原始数据，便于在画笔模式下参考基础贡献数
+	const originalCountMap = React.useMemo(() => {
+		return new Map(filteredContributions.map(c => [c.date, c.count] as const));
+	}, [filteredContributions]);
 
 	// 计算当前日期与明天零点，用于判断未来日期
 	const now = new Date();
@@ -323,22 +328,21 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		}
 		if (drawMode === 'pen') {
 			setUserContributions(prev => {
+				// 当前展示值：优先用户覆写，否则原始值
+				const effective = (prev.get(dateStr) ?? originalCountMap.get(dateStr) ?? 0);
+				// 已是最深绿色（>=9）则不再变化
+				if (effective >= 9) return prev;
+
+				// 步进仅基于用户当前覆写（若没有则从0开始）
+				const current = prev.get(dateStr) ?? 0;
+				let nextCount = 0;
+				if (current < 1) nextCount = 1;
+				else if (current < 3) nextCount = 3;
+				else if (current < 6) nextCount = 6;
+				else nextCount = 9;
+
 				const newMap = new Map(prev);
-				const currentCount = newMap.get(dateStr) || 0;
-
-				// 定义合理的贡献切换序列：0 -> 1 -> 3 -> 6 -> 9 -> 12 -> 0
-				// 这样可以覆盖所有颜色等级
-				const levels = [0, 1, 3, 6, 9];
-				const currentIndex = levels.indexOf(currentCount);
-				const nextIndex = (currentIndex + 1) % levels.length;
-				const nextCount = levels[nextIndex];
-
-				if (nextCount === 0) {
-					newMap.delete(dateStr);
-				} else {
-					newMap.set(dateStr, nextCount);
-				}
-
+				newMap.set(dateStr, nextCount);
 				return newMap;
 			});
 		} else if (drawMode === 'eraser') {
