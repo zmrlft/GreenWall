@@ -29,6 +29,10 @@ git push -u origin main
 
 我们可能会增加创建自定义语言仓库的功能，例如生成一个 Java 仓库并在你的主页语言占比中统计它。
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=zmrlft/GreenWall&type=date&legend=top-left)](https://www.star-history.com/#zmrlft/GreenWall&type=date&legend=top-left)
+
 ## 免责
 
 免责声明：本项目仅用于教育、演示及研究 GitHub 贡献机制，如用于求职造假，所造成后果自负。
