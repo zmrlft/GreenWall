@@ -1,10 +1,13 @@
-	@import "../css/mixins.scss";
-
+﻿	@import "../css/mixins.scss";
 .container {
+	--cell: 10px;
+	--gap: 3px;
+	--tile-extra: 2px;
+
 	display: grid;
-	grid-template-columns: auto repeat(53, 10px);
-	grid-template-rows: auto repeat(7, 10px) auto;
-	gap: 3px;
+	grid-template-columns: auto repeat(53, var(--cell));
+	grid-template-rows: auto repeat(7, var(--cell)) auto;
+	gap: var(--gap);
 
 	width: fit-content;
 	font-size: 12px;
@@ -15,11 +18,41 @@
 	background: #ffffff;
 	box-shadow: none;
 
+	// 当窗口更大（例如最大化）时，自动放大格子与字体
+	@media (min-width: 1280px) {
+		--cell: 14px;
+		--gap: 4px;
+		--tile-extra: 2px;
+		font-size: 14px;
+	}
+
+	@media (min-width: 1600px) {
+		--cell: 16px;
+		--gap: 5px;
+		--tile-extra: 2px;
+		font-size: 15px;
+	}
+
+	// 最大化窗口时进一步放大
+	&.maximized {
+		--cell: 20px;
+		--gap: 6px;
+		--tile-extra: 2px;
+		font-size: 16px;
+	}
+
+// 作为备用：单独的 maximized 类，确保样式可导出与应用
+.maximized {
+	--cell: 20px;
+	--gap: 6px;
+	--tile-extra: 2px;
+	font-size: 16px;
+}
+
 	@include mobile-layout {
 		display: none; /* 太长手机显示不下 */
 	}
 }
-
 .month {
 	grid-row: 1/2;
 	margin-bottom: -3px;
@@ -30,7 +63,7 @@
 .week {
 	grid-row: 3;
 	grid-column: 1/2;
-	line-height: 10px;
+	line-height: var(--cell);
 	margin-right: 3px;
 	color: #000000;
 	font-weight: 500;
@@ -56,9 +89,9 @@
 
 .tile {
 	display: block;
-	width: 12px;
-	height: 12px;
-	border-radius: 3px;
+	width: calc(var(--cell) + var(--tile-extra));
+	height: calc(var(--cell) + var(--tile-extra));
+	border-radius: calc((var(--cell) + var(--tile-extra)) / 4);
 
 	outline: 1px solid rgba(27, 35, 36, 0.06);
 	outline-offset: -1px;

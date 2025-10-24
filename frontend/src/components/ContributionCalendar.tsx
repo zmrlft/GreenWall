@@ -5,6 +5,7 @@ import { CalendarControls } from "./CalendarControls";
 import { GenerateRepo } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
 import { useTranslations } from "../i18n";
+import { WindowIsMaximised, WindowIsFullscreen } from "../../wailsjs/runtime/runtime";
 const STORAGE_KEYS = {
 	username: "github-contributor.username",
 	email: "github-contributor.email",
@@ -89,7 +90,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
 	const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
 	const [hasDragged, setHasDragged] = React.useState<boolean>(false);
-	const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
+    const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
+    const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const [containerVars, setContainerVars] = React.useState<React.CSSProperties>({});
 
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
@@ -141,6 +145,102 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	React.useEffect(() => {
 		writeStoredValue(STORAGE_KEYS.repoName, repoName);
 	}, [repoName]);
+
+    // 检测窗口是否最大化/全屏，用于切换布局与放大样式
+    React.useEffect(() => {
+        let disposed = false;
+        const check = async () => {
+            try {
+                const m = await WindowIsMaximised();
+                const f = await WindowIsFullscreen();
+                if (!disposed) setIsMaximized(m || f);
+            } catch {}
+        };
+        check();
+        const onResize = () => { check(); };
+        window.addEventListener('resize', onResize);
+        return () => {
+            disposed = true;
+            window.removeEventListener('resize', onResize);
+        };
+    }, []);
+
+    // 在最大化/全屏时，计算不超出窗口宽度的单元格尺寸，避免横向滚动
+    React.useEffect(() => {
+        const recalc = () => {
+            if (!isMaximized) {
+                setContainerVars({});
+                return;
+            }
+            const el = containerRef.current;
+            const wrapper = el?.parentElement; // 外层 overflow 容器
+            const wrapperWidth = wrapper?.clientWidth ?? window.innerWidth;
+
+            // 变量与常量（应尽量与样式中的值一致）
+            const paddingX = 40; // .container 左右 padding: 20 + 20
+            const borderX = 2;   // 左右边框近似 1px + 1px
+            const cols = 53;     // 一年最多 53 列
+            const gaps = 53;     // 列与列之间的 gap 数（54 列 -> 53 间隔），包含周标签列与第一列之间
+            const preferredGap = 6; // maximized 下默认 gap
+            const minGap = 2;    // 允许缩小的最小 gap
+            const preferredCell = 20; // maximized 下默认 cell
+            const minCell = 8;   // 兜底格子尺寸
+
+            // 估计左侧周标签列宽度：取三个星期标签的最大宽度
+            let labelW = 48; // 更保守的兜底
+            try {
+                const weeks = el?.querySelectorAll(`.${styles.week}`);
+                if (weeks && weeks.length) {
+                    weeks.forEach((node) => {
+                        const elem = node as HTMLElement;
+                        const w = elem.offsetWidth || 0;
+                        // 叠加 margin-right 作为 track 的近似宽度
+                        const cs = window.getComputedStyle(elem);
+                        const mr = parseFloat(cs.marginRight || '0') || 0;
+                        const track = w + mr;
+                        if (w > labelW) labelW = w;
+                        if (track > labelW) labelW = track;
+                    });
+                }
+            } catch {}
+
+            // 预留少量余量，避免四舍五入导致轻微溢出
+            const safety = 6;
+            const availForTracks = wrapperWidth - paddingX - borderX - labelW - safety;
+
+            // 先尽量用较大的 cell，再退而缩小 gap，最后兜底为最小 cell + 最小 gap
+            let finalGap = preferredGap;
+            let finalCell = preferredCell;
+
+            // 如果首选组合超出，按顺序降低
+            const fits = (cell: number, gap: number) => (cols * cell + gaps * gap) <= availForTracks;
+            if (!fits(finalCell, finalGap)) {
+                // 优先保证 cell 大小，计算允许的最大 gap
+                const maxGap = Math.floor((availForTracks - cols * minCell) / gaps);
+                finalGap = Math.max(minGap, Math.min(preferredGap, maxGap));
+                // 再计算在该 gap 下允许的最大 cell
+                const maxCell = Math.floor((availForTracks - gaps * finalGap) / cols);
+                finalCell = Math.max(minCell, Math.min(preferredCell, maxCell));
+                // 如仍不 fit，则进一步把 gap 降到最小并重算 cell
+                if (!fits(finalCell, finalGap)) {
+                    finalGap = minGap;
+                    const maxCell2 = Math.floor((availForTracks - gaps * finalGap) / cols);
+                    finalCell = Math.max(minCell, Math.min(preferredCell, maxCell2));
+                }
+            }
+
+            setContainerVars({
+                ['--cell' as any]: `${finalCell}px`,
+                ['--gap' as any]: `${finalGap}px`,
+                maxWidth: '100%'
+            } as React.CSSProperties);
+        };
+
+        recalc();
+        const onResize = () => recalc();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [isMaximized]);
 
 	const handleGenerateRepo = React.useCallback(async () => {
 		const trimmedUsername = githubUsername.trim();
@@ -374,13 +474,19 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	const renderedMonths = months.filter(Boolean) as React.ReactElement[];
 
 	return (
-		<div className="flex w-full flex-col gap-4 px-4 py-3 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
-			<div className="w-full overflow-x-auto lg:flex-1">
-				<div
-					{...rest}
-					className={clsx(styles.container, 'mx-auto lg:mx-0', className)}
-					onMouseUp={handleMouseUp}
-				>
+        <div className={clsx(
+            "flex w-full px-4 py-3",
+            // 最大化：上下布局，并稍微加大间距
+            isMaximized ? "flex-col gap-6 overflow-x-hidden" : "flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-10",
+        )}>
+            <div className={clsx("w-full lg:flex-1", isMaximized ? "overflow-x-hidden" : "overflow-x-auto") }>
+                <div
+                    {...rest}
+                    ref={containerRef}
+                    className={clsx(styles.container, isMaximized && styles.maximized, 'mx-auto lg:mx-0', className)}
+                    style={{ ...(((rest as any) && (rest as any).style) || {}), ...(isMaximized ? containerVars : {}) }}
+                    onMouseUp={handleMouseUp}
+                >
 					{renderedMonths}
 					<span className={styles.week}>Mon</span>
 					<span className={styles.week}>Wed</span>
@@ -402,7 +508,11 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				</div>
 			</div>
 
-			<div className="w-full lg:max-w-sm">
+			<div className={clsx(
+				"w-full",
+				// 最大化：放在下方并居中适度加宽；非最大化：右侧窄栏
+				isMaximized ? "max-w-3xl mx-auto" : "lg:max-w-sm",
+			)}>
 				<CalendarControls
 					year={year}
 					drawMode={drawMode}
