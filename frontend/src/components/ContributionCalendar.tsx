@@ -134,6 +134,19 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
 
+	// 将可编辑的格子全部填充为最深绿色计数为 9）
+	const handleFillAllGreen = () => {
+		setUserContributions((prev) => {
+			const newMap = new Map(prev);
+			for (const c of filteredContributions) {
+				if (!isFutureDate(c.date)) {
+					newMap.set(c.date, 9);
+				}
+			}
+			return newMap;
+		});
+	};
+
 	React.useEffect(() => {
 		writeStoredValue(STORAGE_KEYS.username, githubUsername);
 	}, [githubUsername]);
@@ -519,6 +532,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onYearChange={setYear}
 					onDrawModeChange={setDrawMode}
 					onReset={handleReset}
+					onFillAllGreen={handleFillAllGreen}
 					githubUsername={githubUsername}
 					githubEmail={githubEmail}
 					repoName={repoName}

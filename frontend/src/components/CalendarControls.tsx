@@ -8,6 +8,7 @@ type Props = {
 	drawMode?: "pen" | "eraser";
 	onDrawModeChange: (mode: "pen" | "eraser") => void;
 	onReset?: () => void;
+	onFillAllGreen?: () => void;
 	githubUsername: string;
 	githubEmail: string;
 	repoName: string;
@@ -24,6 +25,7 @@ export const CalendarControls: React.FC<Props> = ({
 	drawMode,
 	onDrawModeChange,
 	onReset,
+	onFillAllGreen,
 	githubUsername,
 	githubEmail,
 	repoName,
@@ -180,6 +182,14 @@ export const CalendarControls: React.FC<Props> = ({
 				<div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
 					<span className="text-sm font-medium text-black sm:invisible">{t("labels.actions")}</span>
 					<div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+						<button
+							type="button"
+							onClick={onFillAllGreen}
+							className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
+							title="全绿"
+						>
+							全绿
+						</button>
 						<button
 							type="button"
 							onClick={onReset}
