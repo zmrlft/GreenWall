@@ -1,15 +1,16 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"time"
+    "bytes"
+    "context"
+    "fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "regexp"
+    "sort"
+    "strings"
+    "time"
 )
 
 // App struct
@@ -119,45 +120,77 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		return nil, err
 	}
 
-	activityFileName := "activity.log"
-	activityFilePath := filepath.Join(repoPath, activityFileName)
+    // Optimize: use git fast-import to avoid spawning a process per commit.
+    // Also disable slow features for this repo.
+    _ = runGitCommand(repoPath, "config", "commit.gpgsign", "false")
+    _ = runGitCommand(repoPath, "config", "gc.auto", "0")
+    _ = runGitCommand(repoPath, "config", "core.autocrlf", "false")
+    _ = runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
 
-	totalCommits := 0
-	for _, day := range req.Contributions {
-		if day.Count <= 0 {
-			continue
-		}
-		parsedDate, err := time.Parse("2006-01-02", day.Date)
-		if err != nil {
-			return nil, fmt.Errorf("invalid date %q: %w", day.Date, err)
-		}
+    // Sort contributions by date ascending to produce chronological history
+    contribs := make([]ContributionDay, 0, len(req.Contributions))
+    for _, c := range req.Contributions {
+        if c.Count > 0 {
+            contribs = append(contribs, c)
+        }
+    }
+    sort.Slice(contribs, func(i, j int) bool { return contribs[i].Date < contribs[j].Date })
 
-		for i := 0; i < day.Count; i++ {
-			entry := fmt.Sprintf("%s commit %d\n", day.Date, i+1)
-			if err := appendToFile(activityFilePath, entry); err != nil {
-				return nil, fmt.Errorf("update activity log: %w", err)
-			}
+    // Build fast-import stream
+    var stream bytes.Buffer
+    // Create README blob once and mark it
+    fmt.Fprintf(&stream, "blob\nmark :1\n")
+    fmt.Fprintf(&stream, "data %d\n%s\n", len(readmeContent), readmeContent)
 
-			if err := runGitCommand(repoPath, "add", activityFileName, filepath.Base(readmePath)); err != nil {
-				return nil, err
-			}
+    // Prepare to accumulate activity log content across commits
+    var activityBuf bytes.Buffer
+    nextMark := 2
+    totalCommits := 0
+    branch := "refs/heads/main"
 
-			commitTime := parsedDate.Add(time.Duration(i) * time.Second)
-			env := map[string]string{
-				"GIT_AUTHOR_NAME":     username,
-				"GIT_AUTHOR_EMAIL":    email,
-				"GIT_COMMITTER_NAME":  username,
-				"GIT_COMMITTER_EMAIL": email,
-				"GIT_AUTHOR_DATE":     commitTime.Format(time.RFC3339),
-				"GIT_COMMITTER_DATE":  commitTime.Format(time.RFC3339),
-			}
-			message := fmt.Sprintf("Contribution on %s (%d/%d)", day.Date, i+1, day.Count)
-			if err := runGitCommandWithEnv(repoPath, env, "commit", "-m", message); err != nil {
-				return nil, err
-			}
-			totalCommits++
-		}
-	}
+    for _, day := range contribs {
+        parsedDate, err := time.Parse("2006-01-02", day.Date)
+        if err != nil {
+            return nil, fmt.Errorf("invalid date %q: %w", day.Date, err)
+        }
+        for i := 0; i < day.Count; i++ {
+            // Update activity content in-memory
+            entry := fmt.Sprintf("%s commit %d\n", day.Date, i+1)
+            activityBuf.WriteString(entry)
+
+            // Emit blob for activity.log
+            fmt.Fprintf(&stream, "blob\nmark :%d\n", nextMark)
+            act := activityBuf.Bytes()
+            fmt.Fprintf(&stream, "data %d\n", len(act))
+            stream.Write(act)
+            stream.WriteString("\n")
+
+            // Emit commit that points to README (:1) and activity (:nextMark)
+            commitTime := parsedDate.Add(time.Duration(i) * time.Second)
+            secs := commitTime.Unix()
+            tz := commitTime.Format("-0700")
+            msg := fmt.Sprintf("Contribution on %s (%d/%d)", day.Date, i+1, day.Count)
+            fmt.Fprintf(&stream, "commit %s\n", branch)
+            fmt.Fprintf(&stream, "author %s <%s> %d %s\n", username, email, secs, tz)
+            fmt.Fprintf(&stream, "committer %s <%s> %d %s\n", username, email, secs, tz)
+            fmt.Fprintf(&stream, "data %d\n%s\n", len(msg), msg)
+            fmt.Fprintf(&stream, "M 100644 :1 %s\n", filepath.Base(readmePath))
+            fmt.Fprintf(&stream, "M 100644 :%d activity.log\n", nextMark)
+
+            nextMark++
+            totalCommits++
+        }
+    }
+    stream.WriteString("done\n")
+
+    // Feed stream to fast-import
+    if totalCommits > 0 {
+        if err := runGitFastImport(repoPath, &stream); err != nil {
+            return nil, fmt.Errorf("fast-import failed: %w", err)
+        }
+        // Update working tree to the generated branch for user convenience
+        _ = runGitCommand(repoPath, "checkout", "-f", "main")
+    }
 
 	if err := openDirectory(repoPath); err != nil {
 		return nil, fmt.Errorf("open repo directory: %w", err)
@@ -232,4 +265,18 @@ func runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string
 	}
 
 	return nil
+}
+
+// runGitFastImport runs `git fast-import` with the given stream as stdin.
+func runGitFastImport(dir string, r *bytes.Buffer) error {
+    cmd := exec.Command("git", "fast-import", "--quiet")
+    cmd.Dir = dir
+    configureCommand(cmd, true)
+    cmd.Stdin = r
+    var stderr bytes.Buffer
+    cmd.Stderr = &stderr
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("git fast-import: %w (%s)", err, strings.TrimSpace(stderr.String()))
+    }
+    return nil
 }
