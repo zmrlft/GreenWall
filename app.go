@@ -11,7 +11,12 @@ import (
     "sort"
     "strings"
     "time"
-)
+   
+    "encoding/json"
+    "io/ioutil"
+   
+    "github.com/wailsapp/wails/v2/pkg/runtime"
+   )
 
 // App struct
 type App struct {
@@ -200,6 +205,76 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		RepoPath:    repoPath,
 		CommitCount: totalCommits,
 	}, nil
+}
+
+type ExportContributionsRequest struct {
+	Contributions []ContributionDay `json:"contributions"`
+}
+
+type ExportContributionsResponse struct {
+	FilePath string `json:"filePath"`
+}
+
+// ExportContributions exports the current contributions to a JSON file.
+func (a *App) ExportContributions(req ExportContributionsRequest) (*ExportContributionsResponse, error) {
+	data, err := json.MarshalIndent(req.Contributions, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshal contributions: %w", err)
+	}
+
+	// 使用对话框让用户选择保存位置
+	filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "导出贡献数据",
+		DefaultFilename: "contributions.json",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "JSON 文件 (*.json)", Pattern: "*.json"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("open save file dialog: %w", err)
+	}
+	if filePath == "" {
+		return nil, fmt.Errorf("export cancelled")
+	}
+
+	if err := ioutil.WriteFile(filePath, data, 0o644); err != nil {
+		return nil, fmt.Errorf("write contributions to file: %w", err)
+	}
+
+	return &ExportContributionsResponse{FilePath: filePath}, nil
+}
+
+type ImportContributionsResponse struct {
+	Contributions []ContributionDay `json:"contributions"`
+}
+
+// ImportContributions imports contributions from a JSON file.
+func (a *App) ImportContributions() (*ImportContributionsResponse, error) {
+	// 使用对话框让用户选择导入文件
+	filePath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "导入贡献数据",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "JSON 文件 (*.json)", Pattern: "*.json"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("open file dialog: %w", err)
+	}
+	if filePath == "" {
+		return nil, fmt.Errorf("import cancelled")
+	}
+
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("read contributions file: %w", err)
+	}
+
+	var contributions []ContributionDay
+	if err := json.Unmarshal(data, &contributions); err != nil {
+		return nil, fmt.Errorf("unmarshal contributions: %w", err)
+	}
+
+	return &ImportContributionsResponse{Contributions: contributions}, nil
 }
 
 func sanitiseRepoName(input string) string {
