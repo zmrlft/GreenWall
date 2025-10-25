@@ -13,7 +13,6 @@ import (
     "time"
    
     "encoding/json"
-    "io/ioutil"
    
     "github.com/wailsapp/wails/v2/pkg/runtime"
    )
@@ -237,7 +236,7 @@ func (a *App) ExportContributions(req ExportContributionsRequest) (*ExportContri
 		return nil, fmt.Errorf("export cancelled")
 	}
 
-	if err := ioutil.WriteFile(filePath, data, 0o644); err != nil {
+	if err := os.WriteFile(filePath, data, 0o644); err != nil {
 		return nil, fmt.Errorf("write contributions to file: %w", err)
 	}
 
@@ -264,7 +263,7 @@ func (a *App) ImportContributions() (*ImportContributionsResponse, error) {
 		return nil, fmt.Errorf("import cancelled")
 	}
 
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("read contributions file: %w", err)
 	}
