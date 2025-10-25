@@ -17,6 +17,8 @@ type Props = {
 	onRepoNameChange: (name: string) => void;
 	onGenerateRepo?: () => void;
 	isGeneratingRepo?: boolean;
+	onExportContributions?: () => void;
+	onImportContributions?: () => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -34,6 +36,8 @@ export const CalendarControls: React.FC<Props> = ({
 	onRepoNameChange,
 	onGenerateRepo,
 	isGeneratingRepo,
+	onExportContributions,
+	onImportContributions,
 }) => {
 	const { t } = useTranslations();
 	const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -175,6 +179,28 @@ export const CalendarControls: React.FC<Props> = ({
 							title={t("titles.eraser")}
 						>
 							{t("drawModes.eraser")}
+						</button>
+					</div>
+				</div>
+
+				<div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
+					<span className="text-sm font-medium text-black sm:invisible">{t("labels.dataActions")}</span>
+					<div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+						<button
+							type="button"
+							onClick={onExportContributions}
+							className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
+							title={t("titles.export")}
+						>
+							{t("buttons.export")}
+						</button>
+						<button
+							type="button"
+							onClick={onImportContributions}
+							className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
+							title={t("titles.import")}
+						>
+							{t("buttons.import")}
 						</button>
 					</div>
 				</div>

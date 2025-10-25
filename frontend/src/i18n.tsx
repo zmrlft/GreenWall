@@ -12,6 +12,7 @@ type TranslationDict = {
 		drawMode: string;
 		actions: string;
 		language: string;
+		dataActions: string;
 	};
 	placeholders: {
 		githubUsername: string;
@@ -26,17 +27,25 @@ type TranslationDict = {
 		reset: string;
 		generateRepo: string;
 		generating: string;
+		export: string;
+		import: string;
 	};
 	titles: {
 		pen: string;
 		eraser: string;
 		reset: string;
 		generate: string;
+		export: string;
+		import: string;
 	};
 	messages: {
 		generateRepoMissing: string;
 		generateRepoError: string;
 		noContributions: string;
+		exportSuccess: string;
+		exportError: string;
+		importSuccess: string;
+		importError: string;
 	};
 	calendar: {
 		totalContributions: string;
@@ -69,6 +78,7 @@ const translations: Record<Language, TranslationDict> = {
 			drawMode: "Draw Mode",
 			actions: "Actions",
 			language: "Language",
+			dataActions: "Data Actions",
 		},
 		placeholders: {
 			githubUsername: "octocat",
@@ -83,18 +93,26 @@ const translations: Record<Language, TranslationDict> = {
 			reset: "Reset",
 			generateRepo: "Generate Repo",
 			generating: "Generating...",
+			export: "Export",
+			import: "Import",
 		},
 		titles: {
 			pen: "Pen mode - click or drag to add contributions",
 			eraser: "Eraser mode - click or drag to clear contributions",
 			reset: "Clear all customised contribution data",
 			generate: "Create a local git repository matching this contribution calendar",
+			export: "Export current contributions to a JSON file",
+			import: "Import contributions from a JSON file",
 		},
 		messages: {
 			generateRepoMissing:
 				"Please provide a GitHub username and email before generating a repository.",
 			noContributions: "No contributions to generate. Add contributions first.",
 			generateRepoError: "Failed to generate repository: {{message}}",
+			exportSuccess: "Contributions exported to {{filePath}}",
+			exportError: "Failed to export contributions: {{message}}",
+			importSuccess: "Contributions imported successfully",
+			importError: "Failed to import contributions: {{message}}",
 		},
 		calendar: {
 			totalContributions: "{{count}} contributions in {{year}}",
@@ -125,6 +143,7 @@ const translations: Record<Language, TranslationDict> = {
 			drawMode: "绘制模式",
 			actions: "操作",
 			language: "语言",
+			dataActions: "数据操作",
 		},
 		placeholders: {
 			githubUsername: "octocat",
@@ -139,17 +158,25 @@ const translations: Record<Language, TranslationDict> = {
 			reset: "重置",
 			generateRepo: "生成仓库",
 			generating: "生成中...",
+			export: "导出",
+			import: "导入",
 		},
 		titles: {
 			pen: "画笔模式 - 点击或拖拽添加贡献",
 			eraser: "橡皮擦模式 - 点击或拖拽清除贡献",
 			reset: "清除所有自定义贡献数据",
 			generate: "创建与当前贡献图匹配的本地 Git 仓库",
+			export: "导出当前贡献数据到 JSON 文件",
+			import: "从 JSON 文件导入贡献数据",
 		},
 		messages: {
 			generateRepoMissing: "请先填写 GitHub 用户名和邮箱，然后再生成仓库。",
 			noContributions: "没有可生成的贡献，请先添加贡献。",
 			generateRepoError: "生成仓库失败：{{message}}",
+			exportSuccess: "贡献数据已导出到 {{filePath}}",
+			exportError: "导出贡献数据失败：{{message}}",
+			importSuccess: "贡献数据已成功导入",
+			importError: "导入贡献数据失败：{{message}}",
 		},
 		calendar: {
 			totalContributions: "{{year}} 年共 {{count}} 次贡献",

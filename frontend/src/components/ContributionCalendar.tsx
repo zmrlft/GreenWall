@@ -2,7 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import styles from "./ContributionCalendar.module.scss";
 import { CalendarControls } from "./CalendarControls";
-import { GenerateRepo } from "../../wailsjs/go/main/App";
+import { GenerateRepo, ExportContributions, ImportContributions } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
 import { useTranslations } from "../i18n";
 import { WindowIsMaximised, WindowIsFullscreen } from "../../wailsjs/runtime/runtime";
@@ -305,7 +305,48 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		} finally {
 			setIsGeneratingRepo(false);
 		}
-	}, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year]);
+	}, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year, t]);
+
+	const handleExportContributions = React.useCallback(async () => {
+		const contributionsToExport = filteredContributions
+			.map((c) => {
+				const override = userContributions.get(c.date);
+				const finalCount = override !== undefined ? override : c.count;
+				return {
+					date: c.date,
+					count: finalCount,
+				};
+			})
+			.filter((entry) => entry.count > 0);
+
+		try {
+			const payload = main.ExportContributionsRequest.createFrom({
+				contributions: contributionsToExport,
+			});
+			const result = await ExportContributions(payload);
+			window.alert(t('messages.exportSuccess', { filePath: result.filePath }));
+		} catch (error) {
+			console.error('Failed to export contributions', error);
+			const message = error instanceof Error ? error.message : String(error);
+			window.alert(t('messages.exportError', { message }));
+		}
+	}, [filteredContributions, userContributions, t]);
+
+	const handleImportContributions = React.useCallback(async () => {
+		try {
+			const result = await ImportContributions();
+			const importedMap = new Map<string, number>();
+			result.contributions.forEach(c => {
+				importedMap.set(c.date, c.count);
+			});
+			setUserContributions(importedMap);
+			window.alert(t('messages.importSuccess'));
+		} catch (error) {
+			console.error('Failed to import contributions', error);
+			const message = error instanceof Error ? error.message : String(error);
+			window.alert(t('messages.importError', { message }));
+		}
+	}, [t]);
 
 	if (!filteredContributions || filteredContributions.length === 0) return null;
 
@@ -322,11 +363,11 @@ function ContributionCalendar({ contributions: originalContributions, className,
 	let latestMonth = -1;
 
 	// 处理格子点击或绘制
-	const handleTileAction = (dateStr: string) => {
+	const handleTileAction = (dateStr: string, mode: DrawMode) => {
 		if (isFutureDate(dateStr)) {
 			return;
 		}
-		if (drawMode === 'pen') {
+		if (mode === 'pen') {
 			setUserContributions(prev => {
 				// 当前展示值：优先用户覆写，否则原始值
 				const effective = (prev.get(dateStr) ?? originalCountMap.get(dateStr) ?? 0);
@@ -345,7 +386,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				newMap.set(dateStr, nextCount);
 				return newMap;
 			});
-		} else if (drawMode === 'eraser') {
+		} else if (mode === 'eraser') {
 			setUserContributions(prev => {
 				const newMap = new Map(prev);
 				newMap.delete(dateStr);
@@ -354,22 +395,22 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		}
 	};
 
-	const handleTileClick = (dateStr: string) => {
-		// 只有在没有拖拽的情况下才执行点击动作
-		if (!hasDragged) {
-			handleTileAction(dateStr);
-		}
-	};
-
 	// 鼠标事件处理
-	const handleMouseDown = (dateStr: string) => {
+	const handleMouseDown = (dateStr: string, event: React.MouseEvent) => {
 		if (isFutureDate(dateStr)) {
 			return;
 		}
+		// 阻止默认右键菜单
+		if (event.button === 2) {
+			event.preventDefault();
+			setDrawMode(prevMode => (prevMode === 'pen' ? 'eraser' : 'pen'));
+			return;
+		}
+
 		setIsDrawing(true);
 		setLastHoveredDate(dateStr);
 		setHasDragged(false);
-		handleTileAction(dateStr);
+		handleTileAction(dateStr, drawMode);
 	};
 
 	const handleMouseEnter = (dateStr: string) => {
@@ -379,7 +420,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		if (isDrawing && dateStr !== lastHoveredDate) {
 			setLastHoveredDate(dateStr);
 			setHasDragged(true);
-			handleTileAction(dateStr);
+			handleTileAction(dateStr, drawMode);
 		}
 	};
 
@@ -441,10 +482,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 				data-level={displayLevel}
 				data-future={future ? "true" : undefined}
 				title={getTooltip(displayOneDay, date)}
-				// onClick={() => handleTileClick(c.date)}
-				onMouseDown={() => handleMouseDown(c.date)}
+				onMouseDown={(e) => handleMouseDown(c.date, e)}
 				onMouseEnter={() => handleMouseEnter(c.date)}
 				onMouseUp={handleMouseUp}
+				onContextMenu={(e) => e.preventDefault()} // 阻止默认右键菜单
 				style={{
 					cursor: future ? 'not-allowed' : (drawMode === 'pen' ? 'crosshair' : 'grab'),
 					// userSelect: 'none'
@@ -545,6 +586,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onRepoNameChange={setRepoName}
 					onGenerateRepo={handleGenerateRepo}
 					isGeneratingRepo={isGeneratingRepo}
+					onExportContributions={handleExportContributions}
+					onImportContributions={handleImportContributions}
 				/>
 			</div>
 		</div>
