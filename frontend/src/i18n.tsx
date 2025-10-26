@@ -63,6 +63,24 @@ type TranslationDict = {
 		checkAgain: string;
 		version: string;
 	};
+	gitPathSettings: {
+		title: string;
+		description: string;
+		label: string;
+		placeholder: string;
+		setPath: string;
+		setting: string;
+		reset: string;
+		resetSuccess: string;
+		setSuccess: string;
+		setError: string;
+		resetError: string;
+		pathNotFound: string;
+		noteTitle: string;
+		noteEmpty: string;
+		noteCustom: string;
+		noteManualCheck: string;
+	};
 	calendar: {
 		totalContributions: string;
 		tooltipNone: string;
@@ -146,6 +164,24 @@ const translations: Record<Language, TranslationDict> = {
 			checkAgain: "Check Again",
 			version: "Git Version: {{version}}",
 		},
+		gitPathSettings: {
+			title: "Git Path Settings",
+			description: "If Git is installed but not added to system PATH, enter the full path to the Git executable.",
+			label: "Git Executable Path",
+			placeholder: "e.g.: C:\\Program Files\\Git\\bin\\git.exe",
+			setPath: "Set Path",
+			setting: "Setting...",
+			reset: "Reset to Default",
+			resetSuccess: "Reset to default successfully",
+			setSuccess: "Git path set successfully",
+			setError: "Failed to set path: {{message}}",
+			resetError: "Failed to reset: {{message}}",
+			pathNotFound: "Specified path does not exist",
+			noteTitle: "Note:",
+			noteEmpty: "Leave empty or click 'Reset to Default' to use the git command from system PATH",
+			noteCustom: "Enter full path (e.g., C:\\Program Files\\Git\\bin\\git.exe) to use that git executable",
+			noteManualCheck: "You need to manually check Git status after setting",
+		},
 		calendar: {
 			totalContributions: "{{count}} contributions in {{year}}",
 			tooltipNone: "No contributions on {{date}} - Click to add!",
@@ -225,6 +261,24 @@ const translations: Record<Language, TranslationDict> = {
 			},
 			checkAgain: "再次检测",
 			version: "Git 版本：{{version}}",
+		},
+		gitPathSettings: {
+			title: "Git 路径设置",
+			description: "如果 Git 已安装但未添加到系统 PATH，请输入 Git 可执行文件的完整路径。",
+			label: "Git 可执行文件路径",
+			placeholder: "例如: C:\\Program Files\\Git\\bin\\git.exe",
+			setPath: "设置路径",
+			setting: "设置中...",
+			reset: "重置为默认",
+			resetSuccess: "已重置为默认路径",
+			setSuccess: "Git 路径设置成功",
+			setError: "设置失败：{{message}}",
+			resetError: "重置失败：{{message}}",
+			pathNotFound: "指定的路径不存在",
+			noteTitle: "说明：",
+			noteEmpty: "留空或点击'重置为默认'将使用系统 PATH 中的 git 命令",
+			noteCustom: "输入完整路径（如 C:\\Program Files\\Git\\bin\\git.exe）将使用该路径的 git 可执行文件",
+			noteManualCheck: "设置后需要手动检查 Git 状态",
 		},
 		calendar: {
 			totalContributions: "{{year}} 年共 {{count}} 次贡献",

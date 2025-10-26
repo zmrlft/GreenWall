@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslations } from "../i18n";
 
 interface GitPathSettingsProps {
 	isOpen: boolean;
@@ -7,6 +8,7 @@ interface GitPathSettingsProps {
 }
 
 const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCheckAgain }) => {
+	const { t } = useTranslations();
 	const [customGitPath, setCustomGitPath] = useState("");
 	const [isSettingPath, setIsSettingPath] = useState(false);
 	const [setPathResult, setSetPathResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -25,7 +27,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 			
 			setSetPathResult({
 				success: result.success,
-				message: result.message,
+				message: result.success ? t("gitPathSettings.setSuccess") : t("gitPathSettings.setError", { message: result.message }),
 			});
 
 			if (result.success) {
@@ -40,7 +42,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 			console.error("Failed to set git path:", error);
 			setSetPathResult({
 				success: false,
-				message: "设置失败: " + (error as Error).message,
+				message: t("gitPathSettings.setError", { message: (error as Error).message }),
 			});
 		} finally {
 			setIsSettingPath(false);
@@ -54,7 +56,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 			
 			setSetPathResult({
 				success: result.success,
-				message: result.message,
+				message: result.success ? t("gitPathSettings.resetSuccess") : t("gitPathSettings.resetError", { message: result.message }),
 			});
 
 			if (result.success) {
@@ -67,7 +69,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 			console.error("Failed to reset git path:", error);
 			setSetPathResult({
 				success: false,
-				message: "重置失败: " + (error as Error).message,
+				message: t("gitPathSettings.resetError", { message: (error as Error).message }),
 			});
 		}
 	};
@@ -78,11 +80,11 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
 			<div className="mx-4 w-full max-w-lg border border-black bg-white p-8">
 				<div className="mb-6 flex items-center justify-between">
-					<h2 className="text-2xl font-bold">Git 路径设置</h2>
+					<h2 className="text-2xl font-bold">{t("gitPathSettings.title")}</h2>
 					<button
 						onClick={onClose}
 						className="text-black hover:text-gray-600"
-						aria-label="关闭"
+						aria-label={t("gitInstall.close")}
 					>
 						<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -92,12 +94,12 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 
 				<div className="space-y-6">
 					<p className="text-sm text-black">
-						如果 Git 已安装但未添加到系统 PATH，请输入 Git 可执行文件的完整路径。
+						{t("gitPathSettings.description")}
 					</p>
 
 					<div className="space-y-2">
 						<label className="block text-sm font-medium text-black">
-							Git 可执行文件路径
+							{t("gitPathSettings.label")}
 						</label>
 						<input
 							type="text"
@@ -106,7 +108,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 								setCustomGitPath(e.target.value);
 								setSetPathResult(null);
 							}}
-							placeholder="例如: C:\\Program Files\\Git\\bin\\git.exe"
+							placeholder={t("gitPathSettings.placeholder")}
 							className="w-full border border-black px-3 py-2 text-sm text-black focus:outline-none focus:ring-1 focus:ring-black"
 						/>
 					</div>
@@ -125,24 +127,24 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 							disabled={!customGitPath.trim() || isSettingPath}
 							className="border border-black bg-black px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:border-gray-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
 						>
-							{isSettingPath ? "设置中..." : "设置路径"}
+							{isSettingPath ? t("gitPathSettings.setting") : t("gitPathSettings.setPath")}
 						</button>
 						<button
 							onClick={handleResetGitPath}
 							className="border border-black bg-white px-6 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-100"
 						>
-							重置为默认
+							{t("gitPathSettings.reset")}
 						</button>
 					</div>
 
 					<div className="border-t border-black pt-6">
 						<p className="mb-3 text-sm text-black">
-							<b>说明：</b>
+							<b>{t("gitPathSettings.noteTitle")}</b>
 						</p>
 						<ul className="list-inside list-disc space-y-1 text-xs text-black">
-							<li>留空或点击"重置为默认"将使用系统 PATH 中的 git 命令</li>
-							<li>输入完整路径（如 C:\\Program Files\\Git\\bin\\git.exe）将使用该路径的 git 可执行文件</li>
-							<li>设置后需要手动检查 Git 状态</li>
+							<li>{t("gitPathSettings.noteEmpty")}</li>
+							<li>{t("gitPathSettings.noteCustom")}</li>
+							<li>{t("gitPathSettings.noteManualCheck")}</li>
 						</ul>
 					</div>
 				</div>
