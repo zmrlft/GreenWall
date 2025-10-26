@@ -73,19 +73,11 @@ jobs:
         run: |
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
       - name: Generate Bindings
         if: matrix.os != 'windows-latest'
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          wails generate module || true
+          wails generate module
 
       - name: Generate Bindings (Windows)
         if: matrix.os == 'windows-latest'
@@ -93,6 +85,14 @@ jobs:
         run: |
           $env:PATH += ";$env:GOPATH\bin"
           wails generate module
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
 
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-latest'

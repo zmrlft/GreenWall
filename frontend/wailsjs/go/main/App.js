@@ -21,3 +21,8 @@ export function Greet(arg1) {
 export function ImportContributions() {
   return window['go']['main']['App']['ImportContributions']();
 }
+
+// TODO: 以下声明将在CI生成绑定后自动替换
+export function SetGitPath(arg1) {
+  return window['go']['main']['App']['SetGitPath'](arg1);
+}
