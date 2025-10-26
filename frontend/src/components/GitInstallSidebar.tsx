@@ -8,9 +8,6 @@ interface GitInstallSidebarProps {
 const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) => {
 	const { t } = useTranslations();
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [customGitPath, setCustomGitPath] = useState("");
-	const [isSettingPath, setIsSettingPath] = useState(false);
-	const [setPathResult, setSetPathResult] = useState<{ success: boolean; message: string } | null>(null);
 
 	const isWindows = navigator.platform.toLowerCase().includes("win");
 	const isMac = navigator.platform.toLowerCase().includes("mac");
@@ -31,65 +28,6 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 		if (platform === "windows") return "https://git-scm.com/download/win";
 		if (platform === "mac") return "https://git-scm.com/download/mac";
 		return "https://git-scm.com/download/linux";
-	};
-
-	const handleSetGitPath = async () => {
-		if (!customGitPath.trim()) {
-			return;
-		}
-
-		setIsSettingPath(true);
-		setSetPathResult(null);
-
-		try {
-			const { SetGitPath } = await import("../../wailsjs/go/main/App");
-			const result = await SetGitPath({ gitPath: customGitPath });
-			
-			setSetPathResult({
-				success: result.success,
-				message: result.message,
-			});
-
-			if (result.success) {
-				// 成功设置后，重新检查git状态
-				setTimeout(() => {
-					onCheckAgain();
-				}, 500);
-			}
-		} catch (error) {
-			console.error("Failed to set git path:", error);
-			setSetPathResult({
-				success: false,
-				message: "设置失败: " + (error as Error).message,
-			});
-		} finally {
-			setIsSettingPath(false);
-		}
-	};
-
-	const handleResetGitPath = async () => {
-		try {
-			const { SetGitPath } = await import("../../wailsjs/go/main/App");
-			const result = await SetGitPath({ gitPath: "" });
-			
-			setSetPathResult({
-				success: result.success,
-				message: result.message,
-			});
-
-			if (result.success) {
-				setCustomGitPath("");
-				setTimeout(() => {
-					onCheckAgain();
-				}, 500);
-			}
-		} catch (error) {
-			console.error("Failed to reset git path:", error);
-			setSetPathResult({
-				success: false,
-				message: "重置失败: " + (error as Error).message,
-			});
-		}
 	};
 
 	return (
@@ -114,46 +52,6 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 
 					<div className="space-y-4">
 						<p className="text-sm text-gray-700">{t("gitInstall.notInstalled")}</p>
-						
-						{/* 自定义Git路径输入 */}
-						<div className="space-y-2">
-							<label className="block text-sm font-medium text-gray-700">
-								自定义Git路径（留空使用系统默认）：
-							</label>
-							<input
-								type="text"
-								value={customGitPath}
-								onChange={(e) => {
-									setCustomGitPath(e.target.value);
-									setSetPathResult(null);
-								}}
-								placeholder="例如: C:\\Program Files\\Git\\bin\\git.exe"
-								className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-							/>
-							<div className="flex gap-2">
-								<button
-									onClick={handleSetGitPath}
-									disabled={!customGitPath.trim() || isSettingPath}
-									className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-								>
-									{isSettingPath ? "设置中..." : "设置路径"}
-								</button>
-								<button
-									onClick={handleResetGitPath}
-									className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-								>
-									重置
-								</button>
-							</div>
-							{setPathResult && (
-								<p className={`text-xs ${
-									setPathResult.success ? "text-green-600" : "text-red-600"
-								}`}>
-									{setPathResult.message}
-								</p>
-							)}
-						</div>
-
 						<div className="rounded-lg bg-blue-50 p-4 text-sm text-gray-800">
 							{getInstructions()}
 						</div>
