@@ -24,6 +24,7 @@ type TranslationDict = {
 		eraser: string;
 	};
 	buttons: {
+		allGreen: string;
 		reset: string;
 		generateRepo: string;
 		generating: string;
@@ -33,6 +34,7 @@ type TranslationDict = {
 	titles: {
 		pen: string;
 		eraser: string;
+		allGreen: string;
 		reset: string;
 		generate: string;
 		export: string;
@@ -90,6 +92,7 @@ const translations: Record<Language, TranslationDict> = {
 			eraser: "Eraser",
 		},
 		buttons: {
+			allGreen: "All Green",
 			reset: "Reset",
 			generateRepo: "Generate Repo",
 			generating: "Generating...",
@@ -99,6 +102,7 @@ const translations: Record<Language, TranslationDict> = {
 		titles: {
 			pen: "Pen mode - click or drag to add contributions",
 			eraser: "Eraser mode - click or drag to clear contributions",
+			allGreen: "Set all contributions to green",
 			reset: "Clear all customised contribution data",
 			generate: "Create a local git repository matching this contribution calendar",
 			export: "Export current contributions to a JSON file",
@@ -155,6 +159,7 @@ const translations: Record<Language, TranslationDict> = {
 			eraser: "橡皮擦",
 		},
 		buttons: {
+			allGreen: "全绿",
 			reset: "重置",
 			generateRepo: "生成仓库",
 			generating: "生成中...",
@@ -164,6 +169,7 @@ const translations: Record<Language, TranslationDict> = {
 		titles: {
 			pen: "画笔模式 - 点击或拖拽添加贡献",
 			eraser: "橡皮擦模式 - 点击或拖拽清除贡献",
+			allGreen: "将所有贡献设置为绿色",
 			reset: "清除所有自定义贡献数据",
 			generate: "创建与当前贡献图匹配的本地 Git 仓库",
 			export: "导出当前贡献数据到 JSON 文件",
