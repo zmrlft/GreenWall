@@ -12,13 +12,4 @@ export function Greet(arg1:string):Promise<string>;
 
 export function ImportContributions():Promise<main.ImportContributionsResponse>;
 
-// TODO: 以下声明将在CI生成绑定后自动替换
-export interface SetGitPathRequest {
-    gitPath: string;
-}
-export interface SetGitPathResponse {
-    success: boolean;
-    message: string;
-    version: string;
-}
-export function SetGitPath(arg1: SetGitPathRequest): Promise<SetGitPathResponse>;
+export function SetGitPath(arg1:main.SetGitPathRequest):Promise<main.SetGitPathResponse>;

@@ -153,6 +153,34 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class SetGitPathRequest {
+	    gitPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetGitPathRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.gitPath = source["gitPath"];
+	    }
+	}
+	export class SetGitPathResponse {
+	    success: boolean;
+	    message: string;
+	    version: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetGitPathResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.version = source["version"];
+	    }
+	}
 
 }
 
