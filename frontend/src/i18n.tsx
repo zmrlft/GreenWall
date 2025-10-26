@@ -50,7 +50,9 @@ type TranslationDict = {
 	gitInstall: {
 		title: string;
 		notInstalled: string;
+		notInstalledLabel: string;
 		downloadLink: string;
+		close: string;
 		instructions: {
 			windows: string;
 			mac: string;
@@ -129,7 +131,9 @@ const translations: Record<Language, TranslationDict> = {
 		gitInstall: {
 			title: "Git Installation Required",
 			notInstalled: "Git is not installed on your system. Please install Git to use this application.",
+			notInstalledLabel: "Git Not Installed",
 			downloadLink: "Download Git",
+			close: "Close",
 			instructions: {
 				windows: "For Windows: Download Git from the official website and run the installer.",
 				mac: "For macOS: Use Homebrew with 'brew install git' or download from the official website.",
@@ -205,7 +209,9 @@ const translations: Record<Language, TranslationDict> = {
 		gitInstall: {
 			title: "需要安装 Git",
 			notInstalled: "系统未安装 Git。请安装 Git 以使用此应用程序。",
+			notInstalledLabel: "Git 未安装",
 			downloadLink: "下载 Git",
+			close: "关闭",
 			instructions: {
 				windows: "Windows 系统：从官方网站下载 Git 并运行安装程序。",
 				mac: "macOS 系统：使用 Homebrew 运行 'brew install git' 或从官方网站下载。",
