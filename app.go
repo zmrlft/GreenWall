@@ -21,6 +21,7 @@ import (
 type App struct {
 	ctx          context.Context
 	repoBasePath string
+	gitPath      string // 自定义git路径，空则使用系统默认路径
 }
 
 // NewApp creates a new App application struct
@@ -66,9 +67,20 @@ type CheckGitInstalledResponse struct {
 	Version   string `json:"version"`
 }
 
+type SetGitPathRequest struct {
+	GitPath string `json:"gitPath"`
+}
+
+type SetGitPathResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Version string `json:"version"`
+}
+
 // CheckGitInstalled checks if Git is installed on the system
 func (a *App) CheckGitInstalled() (*CheckGitInstalledResponse, error) {
-	cmd := exec.Command("git", "--version")
+	gitCmd := a.getGitCommand()
+	cmd := exec.Command(gitCmd, "--version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &CheckGitInstalledResponse{
@@ -80,6 +92,61 @@ func (a *App) CheckGitInstalled() (*CheckGitInstalledResponse, error) {
 		Installed: true,
 		Version:   strings.TrimSpace(string(output)),
 	}, nil
+}
+
+// SetGitPath allows the user to set a custom git path
+func (a *App) SetGitPath(req SetGitPathRequest) (*SetGitPathResponse, error) {
+	gitPath := strings.TrimSpace(req.GitPath)
+	
+	// 如果留空，使用系统默认路径
+	if gitPath == "" {
+		a.gitPath = ""
+		return &SetGitPathResponse{
+			Success: true,
+			Message: "已重置为使用系统默认git路径",
+			Version: "",
+		}, nil
+	}
+
+	// 验证路径是否有效
+	gitPath = filepath.Clean(gitPath)
+	
+	// 检查文件是否存在
+	if _, err := os.Stat(gitPath); os.IsNotExist(err) {
+		return &SetGitPathResponse{
+			Success: false,
+			Message: "指定的路径不存在",
+			Version: "",
+		}, nil
+	}
+
+	// 临时设置git路径来测试
+	a.gitPath = gitPath
+	cmd := exec.Command(gitPath, "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		a.gitPath = "" // 恢复为空
+		return &SetGitPathResponse{
+			Success: false,
+			Message: "无法执行git命令: " + err.Error(),
+			Version: "",
+		}, nil
+	}
+
+	version := strings.TrimSpace(string(output))
+	return &SetGitPathResponse{
+		Success: true,
+		Message: "Git路径设置成功",
+		Version: version,
+	}, nil
+}
+
+// getGitCommand returns the git command to use
+func (a *App) getGitCommand() string {
+	if a.gitPath != "" {
+		return a.gitPath
+	}
+	return "git"
 }
 
 // GenerateRepo creates a git repository whose commit history mirrors the given contribution calendar.
@@ -135,22 +202,22 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		return nil, fmt.Errorf("write README: %w", err)
 	}
 
-	if err := runGitCommand(repoPath, "init"); err != nil {
+	if err := a.runGitCommand(repoPath, "init"); err != nil {
 		return nil, err
 	}
-	if err := runGitCommand(repoPath, "config", "user.name", username); err != nil {
+	if err := a.runGitCommand(repoPath, "config", "user.name", username); err != nil {
 		return nil, err
 	}
-	if err := runGitCommand(repoPath, "config", "user.email", email); err != nil {
+	if err := a.runGitCommand(repoPath, "config", "user.email", email); err != nil {
 		return nil, err
 	}
 
     // Optimize: use git fast-import to avoid spawning a process per commit.
     // Also disable slow features for this repo.
-    _ = runGitCommand(repoPath, "config", "commit.gpgsign", "false")
-    _ = runGitCommand(repoPath, "config", "gc.auto", "0")
-    _ = runGitCommand(repoPath, "config", "core.autocrlf", "false")
-    _ = runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
+    _ = a.runGitCommand(repoPath, "config", "commit.gpgsign", "false")
+    _ = a.runGitCommand(repoPath, "config", "gc.auto", "0")
+    _ = a.runGitCommand(repoPath, "config", "core.autocrlf", "false")
+    _ = a.runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
 
     // Sort contributions by date ascending to produce chronological history
     contribs := make([]ContributionDay, 0, len(req.Contributions))
@@ -210,11 +277,11 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 
     // Feed stream to fast-import
     if totalCommits > 0 {
-        if err := runGitFastImport(repoPath, &stream); err != nil {
+        if err := a.runGitFastImport(repoPath, &stream); err != nil {
             return nil, fmt.Errorf("fast-import failed: %w", err)
         }
         // Update working tree to the generated branch for user convenience
-        _ = runGitCommand(repoPath, "checkout", "-f", "main")
+        _ = a.runGitCommand(repoPath, "checkout", "-f", "main")
     }
 
 	if err := openDirectory(repoPath); err != nil {
@@ -326,8 +393,9 @@ func appendToFile(path, content string) error {
 	return nil
 }
 
-func runGitCommand(dir string, args ...string) error {
-	cmd := exec.Command("git", args...)
+func (a *App) runGitCommand(dir string, args ...string) error {
+	gitCmd := a.getGitCommand()
+	cmd := exec.Command(gitCmd, args...)
 	cmd.Dir = dir
 	configureCommand(cmd, true)
 
@@ -341,8 +409,9 @@ func runGitCommand(dir string, args ...string) error {
 	return nil
 }
 
-func runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string) error {
-	cmd := exec.Command("git", args...)
+func (a *App) runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string) error {
+	gitCmd := a.getGitCommand()
+	cmd := exec.Command(gitCmd, args...)
 	cmd.Dir = dir
 	configureCommand(cmd, true)
 
@@ -363,8 +432,9 @@ func runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string
 }
 
 // runGitFastImport runs `git fast-import` with the given stream as stdin.
-func runGitFastImport(dir string, r *bytes.Buffer) error {
-    cmd := exec.Command("git", "fast-import", "--quiet")
+func (a *App) runGitFastImport(dir string, r *bytes.Buffer) error {
+    gitCmd := a.getGitCommand()
+    cmd := exec.Command(gitCmd, "fast-import", "--quiet")
     cmd.Dir = dir
     configureCommand(cmd, true)
     cmd.Stdin = r
