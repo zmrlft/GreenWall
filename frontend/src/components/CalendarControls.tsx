@@ -212,9 +212,9 @@ export const CalendarControls: React.FC<Props> = ({
 							type="button"
 							onClick={onFillAllGreen}
 							className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
-							title="全绿"
+							title={t("titles.allGreen")}
 						>
-							全绿
+							{t("buttons.allGreen")}
 						</button>
 						<button
 							type="button"
