@@ -61,6 +61,27 @@ type GenerateRepoResponse struct {
 
 var repoNameSanitiser = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
 
+type CheckGitInstalledResponse struct {
+	Installed bool   `json:"installed"`
+	Version   string `json:"version"`
+}
+
+// CheckGitInstalled checks if Git is installed on the system
+func (a *App) CheckGitInstalled() (*CheckGitInstalledResponse, error) {
+	cmd := exec.Command("git", "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return &CheckGitInstalledResponse{
+			Installed: false,
+			Version:   "",
+		}, nil
+	}
+	return &CheckGitInstalledResponse{
+		Installed: true,
+		Version:   strings.TrimSpace(string(output)),
+	}, nil
+}
+
 // GenerateRepo creates a git repository whose commit history mirrors the given contribution calendar.
 func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, error) {
 	if len(req.Contributions) == 0 {

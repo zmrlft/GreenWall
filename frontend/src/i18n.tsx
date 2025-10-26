@@ -47,6 +47,18 @@ type TranslationDict = {
 		importSuccess: string;
 		importError: string;
 	};
+	gitInstall: {
+		title: string;
+		notInstalled: string;
+		downloadLink: string;
+		instructions: {
+			windows: string;
+			mac: string;
+			linux: string;
+		};
+		checkAgain: string;
+		version: string;
+	};
 	calendar: {
 		totalContributions: string;
 		tooltipNone: string;
@@ -114,6 +126,18 @@ const translations: Record<Language, TranslationDict> = {
 			importSuccess: "Contributions imported successfully",
 			importError: "Failed to import contributions: {{message}}",
 		},
+		gitInstall: {
+			title: "Git Installation Required",
+			notInstalled: "Git is not installed on your system. Please install Git to use this application.",
+			downloadLink: "Download Git",
+			instructions: {
+				windows: "For Windows: Download Git from the official website and run the installer.",
+				mac: "For macOS: Use Homebrew with 'brew install git' or download from the official website.",
+				linux: "For Linux: Use your package manager (e.g., 'sudo apt install git' for Ubuntu).",
+			},
+			checkAgain: "Check Again",
+			version: "Git Version: {{version}}",
+		},
 		calendar: {
 			totalContributions: "{{count}} contributions in {{year}}",
 			tooltipNone: "No contributions on {{date}} - Click to add!",
@@ -177,6 +201,18 @@ const translations: Record<Language, TranslationDict> = {
 			exportError: "导出贡献数据失败：{{message}}",
 			importSuccess: "贡献数据已成功导入",
 			importError: "导入贡献数据失败：{{message}}",
+		},
+		gitInstall: {
+			title: "需要安装 Git",
+			notInstalled: "系统未安装 Git。请安装 Git 以使用此应用程序。",
+			downloadLink: "下载 Git",
+			instructions: {
+				windows: "Windows 系统：从官方网站下载 Git 并运行安装程序。",
+				mac: "macOS 系统：使用 Homebrew 运行 'brew install git' 或从官方网站下载。",
+				linux: "Linux 系统：使用包管理器安装（如 Ubuntu 使用 'sudo apt install git'）。",
+			},
+			checkAgain: "再次检测",
+			version: "Git 版本：{{version}}",
 		},
 		calendar: {
 			totalContributions: "{{year}} 年共 {{count}} 次贡献",
