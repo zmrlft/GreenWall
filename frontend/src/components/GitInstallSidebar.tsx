@@ -42,7 +42,7 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 		setSetPathResult(null);
 
 		try {
-			const { SetGitPath } = await import("../wailsjs/go/main/App");
+			const { SetGitPath } = await import("../../wailsjs/go/main/App");
 			const result = await SetGitPath({ gitPath: customGitPath });
 			
 			setSetPathResult({
@@ -69,7 +69,7 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 
 	const handleResetGitPath = async () => {
 		try {
-			const { SetGitPath } = await import("../wailsjs/go/main/App");
+			const { SetGitPath } = await import("../../wailsjs/go/main/App");
 			const result = await SetGitPath({ gitPath: "" });
 			
 			setSetPathResult({
