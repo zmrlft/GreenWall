@@ -128,13 +128,13 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 									setSetPathResult(null);
 								}}
 								placeholder="例如: C:\\Program Files\\Git\\bin\\git.exe"
-								className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
+								className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
 							/>
 							<div className="flex gap-2">
 								<button
 									onClick={handleSetGitPath}
 									disabled={!customGitPath.trim() || isSettingPath}
-									className="flex-1 rounded-lg border border-black bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:border-gray-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
+									className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
 								>
 									{isSettingPath ? "设置中..." : "设置路径"}
 								</button>
@@ -147,14 +147,14 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 							</div>
 							{setPathResult && (
 								<p className={`text-xs ${
-									setPathResult.success ? "text-black" : "text-gray-700"
+									setPathResult.success ? "text-green-600" : "text-red-600"
 								}`}>
 									{setPathResult.message}
 								</p>
 							)}
 						</div>
 
-						<div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-800 border border-gray-200">
+						<div className="rounded-lg bg-blue-50 p-4 text-sm text-gray-800">
 							{getInstructions()}
 						</div>
 
