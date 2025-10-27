@@ -157,12 +157,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
 				<GitInstallSidebar onCheckAgain={handleCheckAgain} />
 			)}
 
-			{/* Git 路径设置弹窗 */}
-			<GitPathSettings
-				isOpen={isGitPathSettingsOpen}
-				onClose={() => setIsGitPathSettingsOpen(false)}
-				onCheckAgain={handleCheckAgain}
-			/>
+	{/* Git 路径设置弹窗 */}
+	{isGitPathSettingsOpen && (
+		<GitPathSettings
+			onClose={() => setIsGitPathSettingsOpen(false)}
+			onCheckAgain={handleCheckAgain}
+		/>
+	)}
 		</div>
 	);
 };

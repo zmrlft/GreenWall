@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { useTranslations } from "../i18n";
 
 interface GitPathSettingsProps {
-	isOpen: boolean;
 	onClose: () => void;
 	onCheckAgain: () => void;
 }
 
-const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCheckAgain }) => {
+const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain }) => {
 	const { t } = useTranslations();
 	const [customGitPath, setCustomGitPath] = useState("");
 	const [isSettingPath, setIsSettingPath] = useState(false);
@@ -73,8 +72,6 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ isOpen, onClose, onCh
 			});
 		}
 	};
-
-	if (!isOpen) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
