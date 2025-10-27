@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - main
-      - master
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
-      - master
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (existing tag name)'
+        required: true
 
 jobs:
   build:
@@ -32,11 +36,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -44,26 +53,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Get Go cache directory
-        id: gocache
-        shell: bash
-        run: echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-
-      - name: Get Go module cache
-        id: gomodcache
-        shell: bash
-        run: echo "dir=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.gomodcache.outputs.dir }}
-            ${{ steps.gocache.outputs.dir }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: Install Wails CLI
         run: |
@@ -236,16 +225,89 @@ jobs:
 
   release:
     needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+      RELEASE_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', github.event.inputs.tag) || github.ref }}
     
     steps:
+      - name: Checkout (for git history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_REF }}
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: green-wall-*
+
+      - name: Generate contributors list
+        id: contrib
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          CURRENT_TAG="$RELEASE_TAG"
+          PREV_TAG=""
+          RANGE_EXPR="$CURRENT_TAG"
+          SUMMARY_LABEL="Changes in this release"
+          if PREV_FOUND=$(git describe --abbrev=0 --tags "${CURRENT_TAG}^" 2>/dev/null); then
+            PREV_TAG=$PREV_FOUND
+            RANGE_EXPR="${PREV_TAG}..${CURRENT_TAG}"
+            SUMMARY_LABEL="Changes since $PREV_TAG"
+          fi
+          echo "Using range expression: $RANGE_EXPR"
+          CONTRIBUTORS=$(git log --format='%aN' $RANGE_EXPR | \
+            grep -viE '\\[bot\\]' | sort -fu | sed 's/^/- @/')
+          if [ -z "$CONTRIBUTORS" ]; then
+            CONTRIBUTORS="- (No user-contributed commits in this range)"
+          fi
+          echo "contributors<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTRIBUTORS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "range_expr=$RANGE_EXPR" >> $GITHUB_OUTPUT
+          echo "range_label=$SUMMARY_LABEL" >> $GITHUB_OUTPUT
+          echo "previous_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Summarize changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          RANGE_EXPR="${{ steps.contrib.outputs.range_expr }}"
+          CHANGES=$(git log --no-merges --pretty='- %s' $RANGE_EXPR)
+          if [ -z "$CHANGES" ]; then
+            CHANGES="- No code changes recorded in this range."
+          fi
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build release notes body
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="$RELEASE_TAG"
+          DATE=$(date -u +%Y-%m-%d)
+          {
+            echo "Release $TAG ($DATE)"
+            echo
+            echo "${{ steps.contrib.outputs.range_label }}:"
+            echo
+            printf '%s\n' "${{ steps.changes.outputs.summary }}"
+            echo
+            echo "## Thanks to our contributors:"
+            echo "## 特别感谢以下几位贡献者："
+            echo
+            printf '%s\n' "${{ steps.contrib.outputs.contributors }}"
+          } > RELEASE_BODY.md
+          echo "body_path=RELEASE_BODY.md" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -253,4 +315,6 @@ jobs:
           draft: true
           prerelease: false
           files: green-wall-*/*
+          body_path: ${{ steps.notes.outputs.body_path }}
+          tag_name: ${{ env.RELEASE_TAG }}
 
