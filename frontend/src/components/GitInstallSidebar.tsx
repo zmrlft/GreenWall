@@ -9,25 +9,20 @@ const GitInstallSidebar: React.FC<GitInstallSidebarProps> = ({ onCheckAgain }) =
 	const { t } = useTranslations();
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	const isWindows = navigator.platform.toLowerCase().includes("win");
 	const isMac = navigator.platform.toLowerCase().includes("mac");
 	const isLinux = navigator.platform.toLowerCase().includes("linux") || 
 		navigator.platform.toLowerCase().includes("x11");
 
-	let platform = "windows";
-	if (isMac) platform = "mac";
-	else if (isLinux) platform = "linux";
-
 	const getInstructions = () => {
-		if (platform === "windows") return t("gitInstall.instructions.windows");
-		if (platform === "mac") return t("gitInstall.instructions.mac");
-		return t("gitInstall.instructions.linux");
+		if (isMac) return t("gitInstall.instructions.mac");
+		if (isLinux) return t("gitInstall.instructions.linux");
+		return t("gitInstall.instructions.windows");
 	};
 
 	const getDownloadUrl = () => {
-		if (platform === "windows") return "https://git-scm.com/download/win";
-		if (platform === "mac") return "https://git-scm.com/download/mac";
-		return "https://git-scm.com/download/linux";
+		if (isMac) return "https://git-scm.com/download/mac";
+		if (isLinux) return "https://git-scm.com/download/linux";
+		return "https://git-scm.com/download/win";
 	};
 
 	return (
