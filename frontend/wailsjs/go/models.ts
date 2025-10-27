@@ -1,5 +1,20 @@
 export namespace main {
 	
+	export class CheckGitInstalledResponse {
+	    installed: boolean;
+	    version: string;
+
+	    static createFrom(source: any = {}) {
+	        return new CheckGitInstalledResponse(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.installed = source["installed"];
+	        this.version = source["version"];
+	    }
+	}
+	
 	export class ContributionDay {
 	    date: string;
 	    count: number;
@@ -137,6 +152,34 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class SetGitPathRequest {
+	    gitPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetGitPathRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.gitPath = source["gitPath"];
+	    }
+	}
+	export class SetGitPathResponse {
+	    success: boolean;
+	    message: string;
+	    version: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetGitPathResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.version = source["version"];
+	    }
 	}
 
 }

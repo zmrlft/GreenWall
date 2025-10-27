@@ -1,0 +1,256 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            bin-name: green-wall
+          - os: windows-latest
+            name: Windows
+            bin-name: green-wall.exe
+          - os: macos-latest
+            name: macOS
+            bin-name: green-wall
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Get Go cache directory
+        id: gocache
+        shell: bash
+        run: echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Get Go module cache
+        id: gomodcache
+        shell: bash
+        run: echo "dir=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.gomodcache.outputs.dir }}
+            ${{ steps.gocache.outputs.dir }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Setup Wails Path
+        run: |
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Generate Bindings
+        if: matrix.os != 'windows-latest'
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          wails generate module || true
+
+      - name: Generate Bindings (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $env:PATH += ";$env:GOPATH\bin"
+          wails generate module
+
+      - name: Install Linux build dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          
+          # Install all required dependencies including WebKit
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libgdk-pixbuf2.0-dev \
+            libglib2.0-dev \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libatk1.0-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxdamage-dev \
+            libxext-dev \
+            libxfixes-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libxshmfence-dev \
+            libxtst-dev \
+            pkg-config
+          
+          # Create symlink for webkit2gtk-4.0 to webkit2gtk-4.1 (for Wails compatibility)
+          if pkg-config --exists webkit2gtk-4.1; then
+            echo "WebKit 4.1 found, creating compatibility symlink for 4.0"
+            sudo mkdir -p /usr/lib/x86_64-linux-gnu/pkgconfig
+            
+            # Create a wrapper .pc file that redirects webkit2gtk-4.0 to webkit2gtk-4.1
+            echo "prefix=/usr" | sudo tee /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "exec_prefix=\${prefix}" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "libdir=\${exec_prefix}/lib/x86_64-linux-gnu" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "includedir=\${prefix}/include" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Name: webkit2gtk-4.0" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Description: WebKit2GTK+ (compatibility wrapper for 4.1)" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Version: 4.0" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Requires: webkit2gtk-4.1" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Libs: -L\${libdir}" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+            echo "Cflags: -I\${includedir}" | sudo tee -a /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+          fi
+          
+          # Verify installation
+          echo "=== Verifying packages ==="
+          pkg-config --modversion gtk+-3.0
+          pkg-config --modversion webkit2gtk-4.1 || echo "webkit2gtk-4.1 not found"
+          pkg-config --modversion webkit2gtk-4.0 || echo "webkit2gtk-4.0 not found (expected if using symlink)"
+          pkg-config --cflags webkit2gtk-4.0 || echo "webkit2gtk-4.0 cflags failed"
+
+      - name: Build application (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          wails build -clean -ldflags "-w -s"
+
+      - name: Build application (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $env:PATH += ";$env:GOPATH\bin"
+          wails build -clean -ldflags "-w -s"
+
+      - name: Build application (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          wails build -clean -ldflags "-w -s"
+
+      - name: List build output (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          echo "=== Build directory contents ==="
+          ls -la build/ || echo "build/ not found"
+          echo "=== Build bin directory contents ==="
+          ls -la build/bin/ || echo "build/bin/ not found"
+          echo "=== Current directory ==="
+          pwd
+          find . -name "green-wall*" -o -name "*.exe" -o -name "*.app" 2>/dev/null || echo "No build artifacts found"
+
+      - name: List build output (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          echo "=== Build directory contents ==="
+          Get-ChildItem -Path build -Recurse -ErrorAction SilentlyContinue
+          echo "=== Build bin directory contents ==="
+          Get-ChildItem -Path build/bin -ErrorAction SilentlyContinue
+          echo "=== Current directory ==="
+          Get-Location
+          echo "=== Searching for build artifacts ==="
+          Get-ChildItem -Recurse -Include green-wall*.exe -ErrorAction SilentlyContinue
+
+      - name: Create macOS archive
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd build/bin
+          zip -r ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.zip green-wall.app
+
+      - name: Create Linux archive
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd build/bin
+          tar -czf ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.tar.gz green-wall*
+
+      - name: Create Windows archive
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          cd build/bin
+          Compress-Archive -Path green-wall*.exe -DestinationPath ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.zip -Force
+
+      - name: Upload macOS artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-wall-${{ matrix.name }}-${{ runner.arch }}
+          path: green-wall-${{ matrix.name }}-${{ runner.arch }}.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Linux artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-wall-${{ matrix.name }}-${{ runner.arch }}
+          path: green-wall-${{ matrix.name }}-${{ runner.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-wall-${{ matrix.name }}-${{ runner.arch }}
+          path: green-wall-${{ matrix.name }}-${{ runner.arch }}.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: green-wall-*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          files: green-wall-*/*
+
