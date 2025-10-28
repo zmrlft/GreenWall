@@ -3,18 +3,17 @@ export namespace main {
 	export class CheckGitInstalledResponse {
 	    installed: boolean;
 	    version: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new CheckGitInstalledResponse(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.installed = source["installed"];
 	        this.version = source["version"];
 	    }
 	}
-	
 	export class ContributionDay {
 	    date: string;
 	    count: number;
