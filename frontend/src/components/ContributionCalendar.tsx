@@ -6,6 +6,7 @@ import { GenerateRepo, ExportContributions, ImportContributions } from "../../wa
 import { main } from "../../wailsjs/go/models";
 import { useTranslations } from "../i18n";
 import { WindowIsMaximised, WindowIsFullscreen } from "../../wailsjs/runtime/runtime";
+import { getPatternById, gridToBoolean } from "../data/characterPatterns";
 const STORAGE_KEYS = {
 	username: "github-contributor.username",
 	email: "github-contributor.email",
@@ -45,6 +46,17 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
     if (count >= 6 && count <= 8) return 3;
     if (count > 8) return 4;
     return 0;
+}
+
+// 将字符转换为像素图案 - 使用预定义的图案数据
+function characterToPattern(char: string): boolean[][] {
+    const pattern = getPatternById(char);
+    if (pattern) {
+        return gridToBoolean(pattern.grid);
+    }
+    
+    // 如果找不到预定义图案，返回空图案
+    return Array(7).fill(null).map(() => Array(5).fill(false));
 }
 
 export type OneDay = { level: number; count: number; date: string };
@@ -95,6 +107,12 @@ function ContributionCalendar({ contributions: originalContributions, className,
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const [containerVars, setContainerVars] = React.useState<React.CSSProperties>({});
 
+    // 字符预览状态
+    const [previewMode, setPreviewMode] = React.useState<boolean>(false);
+    const [previewCharacter, setPreviewCharacter] = React.useState<string>('');
+    const [previewDates, setPreviewDates] = React.useState<Set<string>>(new Set());
+    const [previewCenterDate, setPreviewCenterDate] = React.useState<string | null>(null);
+
 	// 允许选择年份，过滤贡献数据
 	const years = Array.from(new Set(originalContributions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
 	const filteredContributions = originalContributions.filter(c => new Date(c.date).getFullYear() === year);
@@ -125,6 +143,71 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		[isCurrentYear, tomorrowTime],
 	);
 
+	// 计算字符预览的日期列表 - 以指定日期为中心
+	const calculatePreviewDates = React.useCallback((char: string, centerDateStr: string | null) => {
+		if (!char || !centerDateStr || filteredContributions.length === 0) {
+			return new Set<string>();
+		}
+
+		const pattern = characterToPattern(char);
+		const previewDatesSet = new Set<string>();
+
+		// 找到中心日期在日历中的位置
+		const centerContribution = filteredContributions.find(c => c.date === centerDateStr);
+		if (!centerContribution) return new Set<string>();
+
+		const centerDate = new Date(centerDateStr);
+		const yearStart = new Date(year, 0, 1);
+		const daysSinceYearStart = Math.floor((centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+		
+		// 计算中心日期的行列位置
+		const firstDayOfWeek = yearStart.getDay(); // 0=周日, 1=周一, ...
+		const centerDayOfWeek = centerDate.getDay();
+		const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
+		const centerRow = centerDayOfWeek;
+
+		// 图案尺寸
+		const patternHeight = pattern.length;
+		const patternWidth = pattern[0]?.length || 0;
+
+		// 以图案中心为基准计算偏移
+		const patternCenterY = Math.floor(patternHeight / 2);
+		const patternCenterX = Math.floor(patternWidth / 2);
+
+		// 遍历图案的每个像素
+		for (let patternY = 0; patternY < patternHeight; patternY++) {
+			for (let patternX = 0; patternX < patternWidth; patternX++) {
+				if (pattern[patternY][patternX]) {
+					// 计算相对于中心的偏移
+					const offsetY = patternY - patternCenterY;
+					const offsetX = patternX - patternCenterX;
+
+					// 计算目标位置
+					const targetRow = centerRow + offsetY;
+					const targetCol = centerWeek + offsetX;
+
+					// 检查是否在日历范围内
+					if (targetRow >= 0 && targetRow < 7 && targetCol >= 0) {
+						// 计算目标日期
+						const daysOffset = (targetCol * 7 + targetRow) - (centerWeek * 7 + centerRow);
+						const targetDate = new Date(centerDate);
+						targetDate.setDate(targetDate.getDate() + daysOffset);
+						
+						const dateStr = targetDate.toISOString().slice(0, 10);
+
+						// 检查该日期是否存在于贡献数据中且不是未来日期
+						const contribution = filteredContributions.find(c => c.date === dateStr);
+						if (contribution && !isFutureDate(dateStr)) {
+							previewDatesSet.add(dateStr);
+						}
+					}
+				}
+			}
+		}
+
+		return previewDatesSet;
+	}, [filteredContributions, year, isFutureDate]);
+
 	const getTooltip = React.useCallback((oneDay: OneDay, date: Date) => {
 		const s = date.toISOString().split("T")[0];
 		if (isFutureDate(oneDay.date)) {
@@ -151,6 +234,39 @@ function ContributionCalendar({ contributions: originalContributions, className,
 			return newMap;
 		});
 	};
+
+	// 开始字符预览
+	const handleStartCharacterPreview = React.useCallback((char: string) => {
+		setPreviewCharacter(char);
+		setPreviewDates(new Set()); // 初始为空，等待鼠标悬停
+		setPreviewCenterDate(null);
+		setPreviewMode(true);
+	}, []);
+
+	// 取消字符预览
+	const handleCancelCharacterPreview = React.useCallback(() => {
+		setPreviewMode(false);
+		setPreviewCharacter('');
+		setPreviewDates(new Set());
+		setPreviewCenterDate(null);
+	}, []);
+
+	// 应用字符预览到贡献图
+	const handleApplyCharacterPreview = React.useCallback(() => {
+		if (!previewMode || previewDates.size === 0) return;
+
+		setUserContributions((prev) => {
+			const newMap = new Map(prev);
+			for (const dateStr of previewDates) {
+				// 设置为最大贡献值 9
+				newMap.set(dateStr, 9);
+			}
+			return newMap;
+		});
+
+		// 取消预览
+		handleCancelCharacterPreview();
+	}, [previewMode, previewDates, handleCancelCharacterPreview]);
 
 	React.useEffect(() => {
 		writeStoredValue(STORAGE_KEYS.username, githubUsername);
@@ -417,6 +533,16 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		if (isFutureDate(dateStr)) {
 			return;
 		}
+		
+		// 预览模式：实时更新预览位置
+		if (previewMode && previewCharacter) {
+			setPreviewCenterDate(dateStr);
+			const newPreviewDates = calculatePreviewDates(previewCharacter, dateStr);
+			setPreviewDates(newPreviewDates);
+			return;
+		}
+		
+		// 绘制模式
 		if (isDrawing && dateStr !== lastHoveredDate) {
 			setLastHoveredDate(dateStr);
 			setHasDragged(true);
@@ -470,24 +596,44 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		}
 
 		// 计算显示的level：用户设置的优先，否则用原始数据
-		const displayLevel = userContribution > 0 ? calculateLevel(userContribution) : c.level;
+		let displayLevel = userContribution > 0 ? calculateLevel(userContribution) : c.level;
+
+		// 如果在预览模式且该日期在预览列表中，显示预览样式
+		const isPreviewDate = previewMode && previewDates.has(c.date);
+		if (isPreviewDate) {
+			displayLevel = 4; // 预览时显示最深绿色
+		}
 
 		// 创建新的tip信息，反映用户设置的贡献次数
 		const displayOneDay = { level: displayLevel, count: displayCount, date: c.date };
 
 		return (
 			<i
-				className={styles.tile}
+				className={clsx(styles.tile, isPreviewDate && styles.preview)}
 				key={i}
 				data-level={displayLevel}
 				data-future={future ? "true" : undefined}
-				title={getTooltip(displayOneDay, date)}
-				onMouseDown={(e) => handleMouseDown(c.date, e)}
+				title={isPreviewDate ? t('characterSelector.previewTooltip', { char: previewCharacter }) : getTooltip(displayOneDay, date)}
+				onMouseDown={(e) => {
+					if (previewMode) {
+						// 预览模式下，左键应用，右键取消
+						if (e.button === 0) { // 左键
+							handleApplyCharacterPreview();
+						} else if (e.button === 2) { // 右键
+							e.preventDefault();
+							handleCancelCharacterPreview();
+						}
+					} else {
+						handleMouseDown(c.date, e);
+					}
+				}}
 				onMouseEnter={() => handleMouseEnter(c.date)}
 				onMouseUp={handleMouseUp}
-				onContextMenu={(e) => e.preventDefault()} // 阻止默认右键菜单
+				onContextMenu={(e) => {
+					e.preventDefault(); // 始终阻止默认右键菜单
+				}}
 				style={{
-					cursor: future ? 'not-allowed' : (drawMode === 'pen' ? 'crosshair' : 'grab'),
+					cursor: future ? 'not-allowed' : (previewMode ? 'pointer' : (drawMode === 'pen' ? 'crosshair' : 'grab')),
 					// userSelect: 'none'
 				}}
 			/>
@@ -588,6 +734,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					isGeneratingRepo={isGeneratingRepo}
 					onExportContributions={handleExportContributions}
 					onImportContributions={handleImportContributions}
+					// 字符预览相关
+					onStartCharacterPreview={handleStartCharacterPreview}
+					previewMode={previewMode}
+					onCancelCharacterPreview={handleCancelCharacterPreview}
 				/>
 			</div>
 		</div>

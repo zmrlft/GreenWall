@@ -1,6 +1,7 @@
 import React from "react";
 import clsx from "clsx";
 import { useTranslations } from "../i18n";
+import { CharacterSelector } from "./CharacterSelector";
 
 type Props = {
 	year?: number;
@@ -19,6 +20,10 @@ type Props = {
 	isGeneratingRepo?: boolean;
 	onExportContributions?: () => void;
 	onImportContributions?: () => void;
+	// 字符预览相关
+	onStartCharacterPreview?: (char: string) => void;
+	previewMode?: boolean;
+	onCancelCharacterPreview?: () => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -38,11 +43,18 @@ export const CalendarControls: React.FC<Props> = ({
 	isGeneratingRepo,
 	onExportContributions,
 	onImportContributions,
+	// 字符预览相关
+	onStartCharacterPreview,
+	previewMode,
+	onCancelCharacterPreview,
 }) => {
 	const { t } = useTranslations();
 	const [yearInput, setYearInput] = React.useState<string>(() =>
 		typeof year === "number" ? String(year) : "",
 	);
+
+	// 字符选择状态
+	const [showCharacterSelector, setShowCharacterSelector] = React.useState<boolean>(false);
 
 	React.useEffect(() => {
 		setYearInput(typeof year === "number" ? String(year) : "");
@@ -83,6 +95,20 @@ export const CalendarControls: React.FC<Props> = ({
 	const handleGenerateRepo = () => {
 		if (!onGenerateRepo) return;
 		onGenerateRepo();
+	};
+
+	const handleCharacterSelect = (char: string) => {
+		if (onStartCharacterPreview) {
+			onStartCharacterPreview(char);
+		}
+	};
+
+	const handleCharacterButtonClick = () => {
+		if (previewMode && onCancelCharacterPreview) {
+			onCancelCharacterPreview();
+		} else {
+			setShowCharacterSelector(true);
+		}
 	};
 
 	return (
@@ -183,6 +209,23 @@ export const CalendarControls: React.FC<Props> = ({
 					</div>
 				</div>
 
+				<div className="flex w-full flex-col space-y-2 sm:w-auto">
+					<span className="text-sm font-medium text-black">{t("characterSelector.characterTool")}</span>
+					<button
+						type="button"
+						onClick={handleCharacterButtonClick}
+						className={clsx(
+							"flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto",
+							previewMode
+								? "scale-105 transform bg-orange-600 text-white shadow-lg"
+								: "border border-black bg-white text-black hover:bg-gray-100",
+						)}
+						title={previewMode ? t("characterSelector.cancelPreview") : t("characterSelector.character")}
+					>
+						{previewMode ? t("characterSelector.cancelPreview") : t("characterSelector.character")}
+					</button>
+				</div>
+
 				<div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
 					<span className="text-sm font-medium text-black sm:invisible">{t("labels.dataActions")}</span>
 					<div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
@@ -241,6 +284,14 @@ export const CalendarControls: React.FC<Props> = ({
 					</div>
 				</div>
 			</div>
+
+			{/* 字符选择弹窗 */}
+			{showCharacterSelector && (
+				<CharacterSelector
+					onSelect={handleCharacterSelect}
+					onClose={() => setShowCharacterSelector(false)}
+				/>
+			)}
 		</div>
 	);
 };

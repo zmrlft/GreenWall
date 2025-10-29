@@ -89,6 +89,18 @@ type TranslationDict = {
 		legendLess: string;
 		legendMore: string;
 	};
+	characterSelector: {
+		title: string;
+		selectCharacter: string;
+		tabUppercase: string;
+		tabLowercase: string;
+		tabNumbers: string;
+		tabSymbols: string;
+		previewTooltip: string;
+		characterTool: string;
+		cancelPreview: string;
+		character: string;
+	};
 	months: string[];
 	weekdays: {
 		mon: string;
@@ -190,6 +202,18 @@ const translations: Record<Language, TranslationDict> = {
 			legendLess: "Less",
 			legendMore: "More",
 		},
+		characterSelector: {
+			title: "Select Pattern",
+			selectCharacter: "Select Character (A-Z, a-z, 0-9)",
+			tabUppercase: "A-Z",
+			tabLowercase: "a-z",
+			tabNumbers: "0-9",
+			tabSymbols: "🎨 Symbols",
+			previewTooltip: "Preview character: {{char}}",
+			characterTool: "Character Tool",
+			cancelPreview: "Cancel Preview",
+			character: "Character",
+		},
 		months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 		weekdays: {
 			mon: "Mon",
@@ -287,6 +311,18 @@ const translations: Record<Language, TranslationDict> = {
 			tooltipFuture: "{{date}} 为未来日期，禁止编辑",
 			legendLess: "较少",
 			legendMore: "更多",
+		},
+		characterSelector: {
+			title: "选择图案",
+			selectCharacter: "选择字符 (A-Z, a-z, 0-9)",
+			tabUppercase: "A-Z",
+			tabLowercase: "a-z",
+			tabNumbers: "0-9",
+			tabSymbols: "🎨 符号",
+			previewTooltip: "预览字符: {{char}}",
+			characterTool: "字符工具",
+			cancelPreview: "取消预览",
+			character: "字符",
 		},
 		months: [
 			"1",
