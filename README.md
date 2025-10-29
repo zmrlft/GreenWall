@@ -25,6 +25,11 @@ Note: After pushing, GitHub may take anywhere from 5 minutes to two days to show
 
 ![private setting screenshot](docs/images/privatesetting.png)
 
+## Documentation
+
+- 📚 [Project Structure](docs/PROJECT_STRUCTURE.md) - Project organization and architecture
+- 🔧 [GitHub Actions Setup](docs/GITHUB_ACTIONS_SETUP.md) - CI/CD configuration guide
+
 ## Future features
 
 We may add support for creating repositories in custom languages. For example, if you want a Java repository, the tool would generate one and it would be reflected in your GitHub language statistics.

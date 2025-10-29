@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import { useTranslations } from "../i18n";
 import { CharacterSelector } from "./CharacterSelector";
+import { LoginButton } from "./LoginButton";
 
 type Props = {
 	year?: number;
@@ -10,12 +11,6 @@ type Props = {
 	onDrawModeChange: (mode: "pen" | "eraser") => void;
 	onReset?: () => void;
 	onFillAllGreen?: () => void;
-	githubUsername: string;
-	githubEmail: string;
-	repoName: string;
-	onGithubUsernameChange: (username: string) => void;
-	onGithubEmailChange: (email: string) => void;
-	onRepoNameChange: (name: string) => void;
 	onGenerateRepo?: () => void;
 	isGeneratingRepo?: boolean;
 	onExportContributions?: () => void;
@@ -24,6 +19,11 @@ type Props = {
 	onStartCharacterPreview?: (char: string) => void;
 	previewMode?: boolean;
 	onCancelCharacterPreview?: () => void;
+	// 登录相关
+	userInfo: { username: string; email: string } | null;
+	onLogin: () => void;
+	onLogout: () => void;
+	isLoggingIn?: boolean;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -33,12 +33,6 @@ export const CalendarControls: React.FC<Props> = ({
 	onDrawModeChange,
 	onReset,
 	onFillAllGreen,
-	githubUsername,
-	githubEmail,
-	repoName,
-	onGithubUsernameChange,
-	onGithubEmailChange,
-	onRepoNameChange,
 	onGenerateRepo,
 	isGeneratingRepo,
 	onExportContributions,
@@ -47,6 +41,11 @@ export const CalendarControls: React.FC<Props> = ({
 	onStartCharacterPreview,
 	previewMode,
 	onCancelCharacterPreview,
+	// 登录相关
+	userInfo,
+	onLogin,
+	onLogout,
+	isLoggingIn,
 }) => {
 	const { t } = useTranslations();
 	const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -89,8 +88,7 @@ export const CalendarControls: React.FC<Props> = ({
 	const disableGenerateRepo =
 		!onGenerateRepo ||
 		isGeneratingRepo ||
-		githubUsername.trim() === "" ||
-		githubEmail.trim() === "";
+		!userInfo;
 
 	const handleGenerateRepo = () => {
 		if (!onGenerateRepo) return;
@@ -113,51 +111,14 @@ export const CalendarControls: React.FC<Props> = ({
 
 	return (
 		<div className="flex w-full flex-col gap-4">
-			<div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-nowrap sm:gap-4">
-				<div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-					<label htmlFor="github-username-input" className="text-sm font-medium text-black">
-						{t("labels.githubUsername")}
-					</label>
-					<input
-						id="github-username-input"
-						type="text"
-						value={githubUsername}
-						onChange={(event) => onGithubUsernameChange(event.target.value)}
-						placeholder={t("placeholders.githubUsername")}
-						autoComplete="username"
-						className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-					/>
-				</div>
-
-				<div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-					<label htmlFor="github-email-input" className="text-sm font-medium text-black">
-						{t("labels.githubEmail")}
-					</label>
-					<input
-						id="github-email-input"
-						type="email"
-						value={githubEmail}
-						onChange={(event) => onGithubEmailChange(event.target.value)}
-						placeholder={t("placeholders.githubEmail")}
-						autoComplete="email"
-						className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-					/>
-				</div>
-
-				<div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-					<label htmlFor="repo-name-input" className="text-sm font-medium text-black">
-						{t("labels.repoName")}
-					</label>
-					<input
-						id="repo-name-input"
-						type="text"
-						value={repoName}
-						onChange={(event) => onRepoNameChange(event.target.value)}
-						placeholder={t("placeholders.repoName")}
-						autoComplete="off"
-						className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-					/>
-				</div>
+			{/* 登录按钮区域 */}
+			<div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<LoginButton
+					userInfo={userInfo}
+					onLogin={onLogin}
+					onLogout={onLogout}
+					isLoggingIn={isLoggingIn}
+				/>
 			</div>
 
 			<div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">

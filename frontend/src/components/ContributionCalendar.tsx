@@ -2,42 +2,12 @@ import React from "react";
 import clsx from "clsx";
 import styles from "./ContributionCalendar.module.scss";
 import { CalendarControls } from "./CalendarControls";
-import { GenerateRepo, ExportContributions, ImportContributions } from "../../wailsjs/go/main/App";
+import { PushRepoDialog } from "./PushRepoDialog";
+import { GenerateRepo, ExportContributions, ImportContributions, LoadUserInfo, StartOAuthLogin, Logout, GetUserRepos, PushToGitHub } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
 import { useTranslations } from "../i18n";
 import { WindowIsMaximised, WindowIsFullscreen } from "../../wailsjs/runtime/runtime";
 import { getPatternById, gridToBoolean } from "../data/characterPatterns";
-const STORAGE_KEYS = {
-	username: "github-contributor.username",
-	email: "github-contributor.email",
-	repoName: "github-contributor.repoName",
-};
-
-function readStoredValue(key: string): string {
-	if (typeof window === "undefined") {
-		return "";
-	}
-	try {
-		return window.localStorage.getItem(key) ?? "";
-	} catch {
-		return "";
-	}
-}
-
-function writeStoredValue(key: string, value: string) {
-	if (typeof window === "undefined") {
-		return;
-	}
-	try {
-		if (value === "") {
-			window.localStorage.removeItem(key);
-		} else {
-			window.localStorage.setItem(key, value);
-		}
-	} catch {
-		// Ignore storage errors and keep runtime behaviour unaffected.
-	}
-}
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -93,9 +63,47 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
 	const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
 	const [year, setYear] = React.useState<number>(new Date().getFullYear());
-	const [githubUsername, setGithubUsername] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.username));
-	const [githubEmail, setGithubEmail] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.email));
-	const [repoName, setRepoName] = React.useState<string>(() => readStoredValue(STORAGE_KEYS.repoName));
+	// 登录相关状态
+	const [userInfo, setUserInfo] = React.useState<{ username: string; email: string; avatarUrl?: string } | null>(null);
+	const [isLoggingIn, setIsLoggingIn] = React.useState<boolean>(false);
+	const loginTimeoutRef = React.useRef<number | null>(null);
+	
+	// 推送仓库相关状态
+	const [showPushDialog, setShowPushDialog] = React.useState<boolean>(false);
+	const [userRepos, setUserRepos] = React.useState<any[]>([]);
+	const [isPushing, setIsPushing] = React.useState<boolean>(false);
+	// 保存待生成的贡献数据
+	const [pendingContributions, setPendingContributions] = React.useState<any[]>([]);
+
+	// 加载用户信息
+	React.useEffect(() => {
+		const loadUser = async () => {
+			try {
+				const info = await LoadUserInfo();
+				if (info) {
+					setUserInfo({ 
+						username: info.username, 
+						email: info.email,
+						avatarUrl: info.avatarUrl 
+					});
+				}
+			} catch (error) {
+				console.error("加载用户信息失败:", error);
+			}
+		};
+		loadUser();
+	}, []);
+	
+	// 加载用户仓库列表
+	const loadUserRepos = React.useCallback(async () => {
+		if (!userInfo) return;
+		try {
+			const repos = await GetUserRepos();
+			setUserRepos(repos || []);
+		} catch (error) {
+			console.error("加载仓库列表失败:", error);
+		}
+	}, [userInfo]);
 
 	// 绘画模式状态
 	const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -219,6 +227,91 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		return t("calendar.tooltipSome", { count: oneDay.count, date: s });
 	}, [isFutureDate, t]);
 
+	// 取消登录
+	const handleCancelLogin = React.useCallback(() => {
+		if (loginTimeoutRef.current) {
+			clearTimeout(loginTimeoutRef.current);
+			loginTimeoutRef.current = null;
+		}
+		setIsLoggingIn(false);
+		console.log("用户取消登录");
+	}, []);
+
+	// 处理登录
+	const handleLogin = async () => {
+		if (isLoggingIn) {
+			// 如果正在登录，则取消
+			handleCancelLogin();
+			return;
+		}
+
+		setIsLoggingIn(true);
+		
+		// 设置客户端超时（2分钟）
+		loginTimeoutRef.current = setTimeout(() => {
+			if (isLoggingIn) {
+				setIsLoggingIn(false);
+				alert("登录超时，请重试。");
+			}
+		}, 120000); // 2分钟超时
+
+		try {
+			const response = await StartOAuthLogin();
+			
+			// 清除超时
+			if (loginTimeoutRef.current) {
+				clearTimeout(loginTimeoutRef.current);
+				loginTimeoutRef.current = null;
+			}
+
+			if (response.success && response.userInfo) {
+				setUserInfo({
+					username: response.userInfo.username,
+					email: response.userInfo.email,
+					avatarUrl: response.userInfo.avatarUrl,
+				});
+				alert("登录成功！");
+			} else {
+				// 显示详细错误信息
+				const errorMsg = response.message || "登录失败";
+				alert(errorMsg);
+			}
+		} catch (error) {
+			// 清除超时
+			if (loginTimeoutRef.current) {
+				clearTimeout(loginTimeoutRef.current);
+				loginTimeoutRef.current = null;
+			}
+			
+			console.error("登录失败:", error);
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			alert("登录失败: " + errorMsg);
+		} finally {
+			setIsLoggingIn(false);
+		}
+	};
+
+	// 组件卸载时清除超时
+	React.useEffect(() => {
+		return () => {
+			if (loginTimeoutRef.current) {
+				clearTimeout(loginTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	// 处理退出登录
+	const handleLogout = async () => {
+		try {
+			await Logout();
+			setUserInfo(null);
+			alert(t("loginButton.logoutSuccess"));
+		} catch (error) {
+			console.error("退出登录失败:", error);
+			alert(t("loginButton.logoutFailed", { message: String(error) }));
+		}
+	};
+
 	// 清除所有选中
 	const handleReset = () => setUserContributions(new Map());
 
@@ -268,17 +361,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
 		handleCancelCharacterPreview();
 	}, [previewMode, previewDates, handleCancelCharacterPreview]);
 
-	React.useEffect(() => {
-		writeStoredValue(STORAGE_KEYS.username, githubUsername);
-	}, [githubUsername]);
-
-	React.useEffect(() => {
-		writeStoredValue(STORAGE_KEYS.email, githubEmail);
-	}, [githubEmail]);
-
-	React.useEffect(() => {
-		writeStoredValue(STORAGE_KEYS.repoName, repoName);
-	}, [repoName]);
 
     // 检测窗口是否最大化/全屏，用于切换布局与放大样式
     React.useEffect(() => {
@@ -377,11 +459,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
     }, [isMaximized]);
 
 	const handleGenerateRepo = React.useCallback(async () => {
-		const trimmedUsername = githubUsername.trim();
-		const trimmedEmail = githubEmail.trim();
-		const trimmedRepoName = repoName.trim();
-
-		if (trimmedUsername === '' || trimmedEmail === '') {
+		if (!userInfo) {
 			window.alert(t('messages.generateRepoMissing'));
 			return;
 		}
@@ -403,25 +481,99 @@ function ContributionCalendar({ contributions: originalContributions, className,
 			return;
 		}
 
-		setIsGeneratingRepo(true);
-		try {
-			const payload = main.GenerateRepoRequest.createFrom({
-				year,
-				githubUsername: trimmedUsername,
-				githubEmail: trimmedEmail,
-				repoName: trimmedRepoName,
-				contributions: contributionsForBackend,
-			});
-			const result = await GenerateRepo(payload);
-			window.alert(`Repository created at ${result.repoPath} with ${result.commitCount} commits.`);
-		} catch (error) {
-			console.error('Failed to generate repository', error);
-			const message = error instanceof Error ? error.message : String(error);
-			window.alert(t('messages.generateRepoError', { message }));
-		} finally {
-			setIsGeneratingRepo(false);
+		// 保存贡献数据
+		setPendingContributions(contributionsForBackend);
+		
+		// 加载用户仓库列表
+		await loadUserRepos();
+		
+		// 直接显示弹窗，让用户配置
+		setShowPushDialog(true);
+	}, [filteredContributions, userContributions, loadUserRepos, t, userInfo]);
+
+	// 处理推送到GitHub（先生成仓库，再推送）
+	const handlePush = async (params: {
+		repoPath: string;
+		repoName: string;
+		isNewRepo: boolean;
+		isPrivate: boolean;
+		forcePush: boolean;
+		commitCount: number;
+	}) => {
+		if (!userInfo) {
+			console.error('[Push] 用户未登录');
+			return;
 		}
-	}, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year, t]);
+		
+		console.log('[Push] 开始推送流程');
+		console.log('[Push] 参数:', {
+			repoName: params.repoName,
+			isNewRepo: params.isNewRepo,
+			isPrivate: params.isPrivate,
+			forcePush: params.forcePush,
+			contributionsCount: pendingContributions.length,
+		});
+		
+		setIsPushing(true);
+		try {
+			// 第一步：生成本地仓库
+			console.log('[Push] 步骤1: 生成本地仓库');
+			const generatePayload = main.GenerateRepoRequest.createFrom({
+				year,
+				githubUsername: userInfo.username.trim(),
+				githubEmail: userInfo.email.trim(),
+				repoName: params.repoName,
+				contributions: pendingContributions,
+			});
+			
+			console.log('[Push] 生成仓库请求:', {
+				year,
+				username: userInfo.username,
+				email: userInfo.email,
+				repoName: params.repoName,
+				contributionsCount: pendingContributions.length,
+			});
+			
+			const generateResult = await GenerateRepo(generatePayload);
+			console.log('[Push] 仓库生成成功:', {
+				repoPath: generateResult.repoPath,
+				commitCount: generateResult.commitCount,
+			});
+			
+			// 第二步：推送到GitHub
+			console.log('[Push] 步骤2: 推送到GitHub');
+			const pushPayload = main.PushRepoRequest.createFrom({
+				repoPath: generateResult.repoPath,
+				repoName: params.repoName,
+				isNewRepo: params.isNewRepo,
+				isPrivate: params.isPrivate,
+				forcePush: params.forcePush,
+				commitCount: generateResult.commitCount,
+			});
+			
+			console.log('[Push] 推送请求:', pushPayload);
+			
+			const pushResult = await PushToGitHub(pushPayload);
+			console.log('[Push] 推送结果:', pushResult);
+			
+			if (pushResult.success) {
+				console.log('[Push] ✓ 推送成功');
+				alert(`推送成功！\n\n${pushResult.message}\n\n仓库地址：${pushResult.repoUrl}`);
+				setShowPushDialog(false);
+				setPendingContributions([]);
+			} else {
+				console.error('[Push] ✗ 推送失败:', pushResult.message);
+				alert(`推送失败：\n\n${pushResult.message}`);
+			}
+		} catch (error) {
+			console.error('[Push] ✗ 异常:', error);
+			const message = error instanceof Error ? error.message : String(error);
+			alert(`操作失败: ${message}`);
+		} finally {
+			setIsPushing(false);
+			console.log('[Push] 推送流程结束');
+		}
+	};
 
 	const handleExportContributions = React.useCallback(async () => {
 		const contributionsToExport = filteredContributions
@@ -724,12 +876,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onDrawModeChange={setDrawMode}
 					onReset={handleReset}
 					onFillAllGreen={handleFillAllGreen}
-					githubUsername={githubUsername}
-					githubEmail={githubEmail}
-					repoName={repoName}
-					onGithubUsernameChange={setGithubUsername}
-					onGithubEmailChange={setGithubEmail}
-					onRepoNameChange={setRepoName}
 					onGenerateRepo={handleGenerateRepo}
 					isGeneratingRepo={isGeneratingRepo}
 					onExportContributions={handleExportContributions}
@@ -738,8 +884,25 @@ function ContributionCalendar({ contributions: originalContributions, className,
 					onStartCharacterPreview={handleStartCharacterPreview}
 					previewMode={previewMode}
 					onCancelCharacterPreview={handleCancelCharacterPreview}
+					// 登录相关
+					userInfo={userInfo}
+					onLogin={handleLogin}
+					onLogout={handleLogout}
+					isLoggingIn={isLoggingIn}
 				/>
 			</div>
+
+			{/* 推送仓库弹窗 */}
+			{showPushDialog && (
+				<PushRepoDialog
+					onClose={() => setShowPushDialog(false)}
+					onPush={handlePush}
+					repoPath=""
+					commitCount={pendingContributions.length}
+					userRepos={userRepos}
+					isLoading={isPushing}
+				/>
+			)}
 		</div>
 	);
 }

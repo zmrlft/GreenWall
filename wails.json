@@ -9,5 +9,20 @@
   "author": {
     "name": "zmrlft",
     "email": "2643895326@qq.com"
-  }
+  },
+  "info": {
+    "companyName": "zmrlft",
+    "productName": "GreenWall",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2025 zmrlft",
+    "comments": "GitHub Contribution Calendar Generator"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "wailsjsdir": "./frontend",
+  "assetdir": "./frontend/dist",
+  "reloaddirs": "frontend/src",
+  "build:dir": "build",
+  "debounceMS": 100,
+  "devServer": "http://localhost:34115"
 }

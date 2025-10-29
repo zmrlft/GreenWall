@@ -62,6 +62,25 @@ jobs:
         run: |
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
+      - name: Create OAuth config from secrets
+        shell: bash
+        run: |
+          # 如果GitHub Secrets中配置了OAuth信息，创建配置文件
+          if [ -n "${{ secrets.OAUTH_CLIENT_ID }}" ]; then
+            echo "Creating oauth_config.json from secrets..."
+            cat > oauth_config.json << EOF
+          {
+            "client_id": "${{ secrets.OAUTH_CLIENT_ID }}",
+            "client_secret": "${{ secrets.OAUTH_CLIENT_SECRET }}",
+            "redirect_uri": "http://localhost:8888/callback",
+            "scopes": "user:email repo"
+          }
+          EOF
+            echo "✓ OAuth config created"
+          else
+            echo "⚠ No OAuth secrets found, will use embedded example config"
+          fi
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci

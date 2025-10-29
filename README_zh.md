@@ -25,6 +25,11 @@ git push -u origin main
 
 ![private setting screenshot](docs/images/privatesetting.png)
 
+## 文档
+
+- [项目结构](docs/PROJECT_STRUCTURE.md) - 项目组织和架构说明
+- [GitHub Actions 配置](docs/GITHUB_ACTIONS_SETUP.md) - CI/CD 配置指南
+
 ## 未来的功能
 
 我们可能会增加创建自定义语言仓库的功能，例如生成一个 Java 仓库并在你的主页语言占比中统计它。

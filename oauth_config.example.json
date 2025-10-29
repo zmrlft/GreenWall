@@ -1,0 +1,6 @@
+{
+  "client_id": "your_github_oauth_client_id_here",
+  "client_secret": "your_github_oauth_client_secret_here",
+  "redirect_uri": "http://localhost:8888/callback",
+  "scopes": "user:email repo"
+}

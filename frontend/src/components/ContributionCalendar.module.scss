@@ -1,4 +1,5 @@
-	@import "../css/mixins.scss";
+@use "../css/mixins.scss" as mixins;
+
 .container {
 	--cell: 10px;
 	--gap: 3px;
@@ -49,7 +50,7 @@
 	font-size: 16px;
 }
 
-	@include mobile-layout {
+	@include mixins.mobile-layout {
 		display: none; /* 太长手机显示不下 */
 	}
 }

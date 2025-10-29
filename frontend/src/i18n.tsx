@@ -80,6 +80,12 @@ type TranslationDict = {
 		noteEmpty: string;
 		noteCustom: string;
 		noteManualCheck: string;
+		detectedOS: string;
+		currentPath: string;
+		currentPathDefault: string;
+		newPath: string;
+		clearInput: string;
+		loading: string;
 	};
 	calendar: {
 		totalContributions: string;
@@ -100,6 +106,38 @@ type TranslationDict = {
 		characterTool: string;
 		cancelPreview: string;
 		character: string;
+	};
+	pushDialog: {
+		title: string;
+		newRepo: string;
+		existingRepo: string;
+		repoName: string;
+		repoNamePlaceholder: string;
+		selectRepo: string;
+		selectRepoPlaceholder: string;
+		privateRepo: string;
+		forcePush: string;
+		forcePushWarning: string;
+		commitCount: string;
+		cancel: string;
+		push: string;
+		pushing: string;
+		nameRules: string;
+		nameWarningChinese: string;
+		nameWarningInvalid: string;
+		emptyNameError: string;
+		invalidNameError: string;
+	};
+	loginButton: {
+		logout: string;
+		logoutTitle: string;
+		loginWithGitHub: string;
+		loggingIn: string;
+		cancelLoginTitle: string;
+		loginTitle: string;
+		loginHint: string;
+		logoutSuccess: string;
+		logoutFailed: string;
 	};
 	months: string[];
 	weekdays: {
@@ -193,6 +231,12 @@ const translations: Record<Language, TranslationDict> = {
 			noteEmpty: "Leave empty or click 'Reset to Default' to use the git command from system PATH",
 			noteCustom: "Enter full path (e.g., C:\\Program Files\\Git\\bin\\git.exe) to use that git executable",
 			noteManualCheck: "You need to manually check Git status after setting",
+			detectedOS: "Detected system:",
+			currentPath: "Current Git Path",
+			currentPathDefault: "Use system default path (git)",
+			newPath: "Set New Git Path",
+			clearInput: "Clear input",
+			loading: "Loading...",
 		},
 		calendar: {
 			totalContributions: "{{count}} contributions in {{year}}",
@@ -213,6 +257,38 @@ const translations: Record<Language, TranslationDict> = {
 			characterTool: "Character Tool",
 			cancelPreview: "Cancel Preview",
 			character: "Character",
+		},
+		pushDialog: {
+			title: "Push to GitHub",
+			newRepo: "New Repository",
+			existingRepo: "Existing Repository",
+			repoName: "Repository Name",
+			repoNamePlaceholder: "my-contributions",
+			selectRepo: "Select Repository",
+			selectRepoPlaceholder: "-- Select a repository --",
+			privateRepo: "Make repository private",
+			forcePush: "Force push (overwrite remote history)",
+			forcePushWarning: "⚠️ Warning: Force push will overwrite the remote repository's commit history!",
+			commitCount: "Will push: {{count}} commits",
+			cancel: "Cancel",
+			push: "Start Push",
+			pushing: "Pushing...",
+			nameRules: "Only letters, numbers, hyphens(-), underscores(_), and dots(.) are allowed",
+			nameWarningChinese: "Contains Chinese or special characters, will be converted to: {{name}}",
+			nameWarningInvalid: "Contains invalid characters, will be converted to: {{name}}",
+			emptyNameError: "Please enter or select a repository name",
+			invalidNameError: "Invalid repository name. Please use letters, numbers, hyphens, underscores, or dots",
+		},
+		loginButton: {
+			logout: "Logout",
+			logoutTitle: "Logout",
+			loginWithGitHub: "GitHub Quick Login",
+			loggingIn: "Logging in... (Click to cancel)",
+			cancelLoginTitle: "Click to cancel login",
+			loginTitle: "Login with GitHub account",
+			loginHint: "Please complete authorization in browser, or click button to cancel",
+			logoutSuccess: "Logged out successfully",
+			logoutFailed: "Logout failed: {{message}}",
 		},
 		months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 		weekdays: {
@@ -303,6 +379,12 @@ const translations: Record<Language, TranslationDict> = {
 			noteEmpty: "留空或点击'重置为默认'将使用系统 PATH 中的 git 命令",
 			noteCustom: "输入完整路径（如 C:\\Program Files\\Git\\bin\\git.exe）将使用该路径的 git 可执行文件",
 			noteManualCheck: "设置后需要手动检查 Git 状态",
+			detectedOS: "检测到系统:",
+			currentPath: "当前Git路径",
+			currentPathDefault: "使用系统默认路径 (git)",
+			newPath: "设置新的Git路径",
+			clearInput: "清空输入",
+			loading: "加载中...",
 		},
 		calendar: {
 			totalContributions: "{{year}} 年共 {{count}} 次贡献",
@@ -323,6 +405,38 @@ const translations: Record<Language, TranslationDict> = {
 			characterTool: "字符工具",
 			cancelPreview: "取消预览",
 			character: "字符",
+		},
+		pushDialog: {
+			title: "推送到 GitHub",
+			newRepo: "新建仓库",
+			existingRepo: "选择现有仓库",
+			repoName: "仓库名称",
+			repoNamePlaceholder: "my-contributions",
+			selectRepo: "选择仓库",
+			selectRepoPlaceholder: "-- 选择一个仓库 --",
+			privateRepo: "设为私有仓库",
+			forcePush: "强制推送（覆盖远程历史）",
+			forcePushWarning: "⚠️ 警告：强制推送会覆盖远程仓库的提交历史！",
+			commitCount: "将要推送：{{count}} 个提交",
+			cancel: "取消",
+			push: "开始推送",
+			pushing: "推送中...",
+			nameRules: "只能包含字母、数字、连字符(-)、下划线(_)、点(.)",
+			nameWarningChinese: "包含中文或特殊字符，将自动转换为: {{name}}",
+			nameWarningInvalid: "包含不允许的字符，将自动转换为: {{name}}",
+			emptyNameError: "请输入或选择仓库名称",
+			invalidNameError: "仓库名无效，请使用字母、数字、连字符、下划线或点",
+		},
+		loginButton: {
+			logout: "退出",
+			logoutTitle: "退出登录",
+			loginWithGitHub: "GitHub 快捷登录",
+			loggingIn: "登录中... (点击取消)",
+			cancelLoginTitle: "点击取消登录",
+			loginTitle: "使用GitHub账号快捷登录",
+			loginHint: "请在浏览器中完成授权，或点击按钮取消",
+			logoutSuccess: "已退出登录",
+			logoutFailed: "退出登录失败: {{message}}",
 		},
 		months: [
 			"1",

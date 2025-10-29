@@ -59,6 +59,8 @@ export namespace main {
 		}
 	}
 	export class ExportContributionsResponse {
+	    success: boolean;
+	    message: string;
 	    filePath: string;
 	
 	    static createFrom(source: any = {}) {
@@ -67,6 +69,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
 	        this.filePath = source["filePath"];
 	    }
 	}
@@ -122,6 +126,26 @@ export namespace main {
 	        this.commitCount = source["commitCount"];
 	    }
 	}
+	export class GitHubRepo {
+	    name: string;
+	    full_name: string;
+	    private: boolean;
+	    html_url: string;
+	    default_branch: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GitHubRepo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.full_name = source["full_name"];
+	        this.private = source["private"];
+	        this.html_url = source["html_url"];
+	        this.default_branch = source["default_branch"];
+	    }
+	}
 	export class ImportContributionsResponse {
 	    contributions: ContributionDay[];
 	
@@ -151,6 +175,96 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class UserInfo {
+	    username: string;
+	    email: string;
+	    token: string;
+	    avatarUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UserInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.username = source["username"];
+	        this.email = source["email"];
+	        this.token = source["token"];
+	        this.avatarUrl = source["avatarUrl"];
+	    }
+	}
+	export class LoginResponse {
+	    success: boolean;
+	    message: string;
+	    userInfo?: UserInfo;
+	
+	    static createFrom(source: any = {}) {
+	        return new LoginResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.userInfo = this.convertValues(source["userInfo"], UserInfo);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PushRepoRequest {
+	    repoPath: string;
+	    repoName: string;
+	    isNewRepo: boolean;
+	    isPrivate: boolean;
+	    forcePush: boolean;
+	    commitCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PushRepoRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.repoPath = source["repoPath"];
+	        this.repoName = source["repoName"];
+	        this.isNewRepo = source["isNewRepo"];
+	        this.isPrivate = source["isPrivate"];
+	        this.forcePush = source["forcePush"];
+	        this.commitCount = source["commitCount"];
+	    }
+	}
+	export class PushRepoResponse {
+	    success: boolean;
+	    message: string;
+	    repoUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PushRepoResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.repoUrl = source["repoUrl"];
+	    }
 	}
 	export class SetGitPathRequest {
 	    gitPath: string;
