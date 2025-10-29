@@ -6,9 +6,10 @@
 
 请确保你的电脑已经安装了 git。
 
-![app screenshot](/docs/images/app.png)
+![app screenshot](/docs/images/appnew.png)
 
 下载软件，打开，发挥你的艺术才能！生成仓库需要等待一会，生成后复制仓库目录进入仓库文件夹。
+- 绘画过程中右键可以切换画笔和橡皮擦
 
 ## 下一步操作
 

@@ -6,9 +6,10 @@
 
 Make sure git is installed on your computer.
 
-![app screenshot](/docs/images/app.png)
+![app screenshot](/docs/images/appnew_en.png)
 
 Download the application, open it, and let your creativity flow! Generating a repository may take a while. After generation, copy the repository folder and enter it to continue.
+- Right-clicking during the painting process can switch between the brush and the eraser.
 
 ## Next steps
 
