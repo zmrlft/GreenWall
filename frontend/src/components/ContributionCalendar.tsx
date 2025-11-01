@@ -49,6 +49,12 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   return 0;
 }
 
+// 解析 YYYY-MM-DD 格式的字符串为UTC Date对象
+function parseUTCDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 // 将字符转换为像素图案 - 使用预定义的图案数据
 function characterToPattern(char: string): boolean[][] {
   const pattern = getPatternById(char);
@@ -135,15 +141,15 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   // 允许选择年份，过滤贡献数据
   const filteredContributions = originalContributions.filter(
-    (c) => new Date(c.date).getFullYear() === year
+    (c) => parseUTCDate(c.date).getUTCFullYear() === year
   );
 
   // 计算当前日期与明天零点，用于判断未来日期
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const todayStart = new Date(currentYear, now.getMonth(), now.getDate());
+  const currentYear = now.getUTCFullYear();
+  const todayStart = new Date(Date.UTC(currentYear, now.getUTCMonth(), now.getUTCDate()));
   const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
   const tomorrowTime = tomorrowStart.getTime();
   const isCurrentYear = year === currentYear;
 
@@ -152,9 +158,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
       if (!isCurrentYear) {
         return false;
       }
-      const parsed = new Date(dateStr);
-      const localDate = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-      return localDate.getTime() >= tomorrowTime;
+      const parsed = parseUTCDate(dateStr);
+      return parsed.getTime() >= tomorrowTime;
     },
     [isCurrentYear, tomorrowTime]
   );
@@ -173,15 +178,15 @@ function ContributionCalendar({ contributions: originalContributions, className,
       const centerContribution = filteredContributions.find((c) => c.date === centerDateStr);
       if (!centerContribution) return new Set<string>();
 
-      const centerDate = new Date(centerDateStr);
-      const yearStart = new Date(year, 0, 1);
+      const centerDate = parseUTCDate(centerDateStr);
+      const yearStart = new Date(Date.UTC(year, 0, 1));
       const daysSinceYearStart = Math.floor(
         (centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
       );
 
       // 计算中心日期的行列位置
-      const firstDayOfWeek = yearStart.getDay(); // 0=周日, 1=周一, ...
-      const centerDayOfWeek = centerDate.getDay();
+      const firstDayOfWeek = yearStart.getUTCDay(); // 0=周日, 1=周一, ...
+      const centerDayOfWeek = centerDate.getUTCDay();
       const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
       const centerRow = centerDayOfWeek;
 
@@ -210,9 +215,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
               // 计算目标日期
               const daysOffset = targetCol * 7 + targetRow - (centerWeek * 7 + centerRow);
               const targetDate = new Date(centerDate);
-              targetDate.setDate(targetDate.getDate() + daysOffset);
+              targetDate.setUTCDate(targetDate.getUTCDate() + daysOffset);
 
-              const dateStr = targetDate.toISOString().slice(0, 10);
+              // 构建UTC日期字符串
+              const dateStr = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, '0')}-${String(targetDate.getUTCDate()).padStart(2, '0')}`;
 
               // 检查该日期是否存在于贡献数据中且不是未来日期
               const contribution = filteredContributions.find((c) => c.date === dateStr);
@@ -231,7 +237,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   const getTooltip = React.useCallback(
     (oneDay: OneDay, date: Date) => {
-      const s = date.toISOString().split('T')[0];
+      // 构建UTC日期字符串用于显示
+      const s = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
       if (isFutureDate(oneDay.date)) {
         return t('calendar.tooltipFuture', { date: s });
       }
@@ -521,8 +528,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   const hasContributions = filteredContributions.length > 0;
   const firstContribution = hasContributions ? filteredContributions[0] : undefined;
-  const firstDate = firstContribution ? new Date(firstContribution.date) : new Date(year, 0, 1);
-  const startRow = firstDate.getDay();
+  const firstDate = firstContribution ? parseUTCDate(firstContribution.date) : new Date(Date.UTC(year, 0, 1));
+  const startRow = firstDate.getUTCDay();
   const months: (React.ReactElement | undefined)[] = [];
   let latestMonth = -1;
 
@@ -601,8 +608,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
   }, []);
 
   const tiles = filteredContributions.map((c, i) => {
-    const date = new Date(c.date);
-    const month = date.getMonth();
+    const date = parseUTCDate(c.date);
+    const month = date.getUTCMonth();
     const future = isFutureDate(c.date);
 
     // 计算实际显示的贡献次数（用户设置的优先）
@@ -610,13 +617,13 @@ function ContributionCalendar({ contributions: originalContributions, className,
     const displayCount = userContribution > 0 ? userContribution : c.count;
 
     // 在星期天的月份出现变化的列上面显示月份。
-    if (date.getDay() === 0 && month !== latestMonth) {
+    if (date.getUTCDay() === 0 && month !== latestMonth) {
       // 计算月份对应的列，从 1 开始、左上角格子留空所以 +2
       const gridColumn = 2 + Math.floor((i + startRow) / 7);
       latestMonth = month;
       months.push(
         <span className={styles.month} key={i} style={{ gridColumn }}>
-          {monthNames[date.getMonth()]}
+          {monthNames[month]}
         </span>
       );
     }
@@ -688,7 +695,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   // Safely adjust months. Use optional chaining and avoid mutating props directly.
   if (months.length > 0) {
     const first = months[0];
-    if (first && monthNames[firstDate.getMonth()] === (first.props && first.props.children)) {
+    if (first && monthNames[firstDate.getUTCMonth()] === (first.props && first.props.children)) {
       // create a new element with adjusted style instead of mutating props
       months[0] = React.cloneElement(first, {
         style: { ...(first.props.style || {}), gridColumn: 2 },

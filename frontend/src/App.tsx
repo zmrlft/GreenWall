@@ -8,15 +8,19 @@ import { TranslationProvider, useTranslations, Language } from './i18n';
 function App() {
   const generateEmptyYearData = (year: number): OneDay[] => {
     const data: OneDay[] = [];
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      data.push({
-        date: d.toISOString().slice(0, 10),
-        count: 0,
-        level: 0,
-      });
+    
+    for (let month = 0; month < 12; month++) {
+      // 获取该月的天数
+      const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        // 使用UTC日期
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        data.push({
+          date: dateStr,
+          count: 0,
+          level: 0,
+        });
+      }
     }
     return data;
   };
