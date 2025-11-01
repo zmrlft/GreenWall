@@ -28,6 +28,9 @@ type Props = {
   onStartCharacterPreview?: (char: string) => void;
   previewMode?: boolean;
   onCancelCharacterPreview?: () => void;
+  // 画笔模式
+  penMode?: 'manual' | 'auto';
+  onPenModeChange?: (mode: 'manual' | 'auto') => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -53,6 +56,9 @@ export const CalendarControls: React.FC<Props> = ({
   onStartCharacterPreview,
   previewMode,
   onCancelCharacterPreview,
+  // 画笔模式
+  penMode = 'manual',
+  onPenModeChange,
 }) => {
   const { t } = useTranslations();
   const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -187,62 +193,106 @@ export const CalendarControls: React.FC<Props> = ({
 
         <div className="relative flex w-full flex-col space-y-2 sm:w-auto">
           <span className="text-sm font-medium text-black">{t('labels.drawMode')}</span>
-          <div className="grid gap-2 sm:flex sm:flex-nowrap sm:gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onDrawModeChange('pen');
-                if (drawMode !== 'pen') {
-                  setShowPenIntensityPicker(true);
-                } else {
-                  setShowPenIntensityPicker(!showPenIntensityPicker);
-                }
-              }}
-              className={clsx(
-                'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
-                drawMode === 'pen'
-                  ? 'scale-105 transform bg-black text-white shadow-lg'
-                  : 'border border-black bg-white text-black hover:bg-gray-100'
-              )}
-              title={t('titles.pen')}
-            >
-              {t('drawModes.pen')}
-              {drawMode === 'pen' && onPenIntensityChange && (
-                <div
-                  className="ml-2 h-4 w-4 rounded-sm border-2 border-white shadow-sm"
-                  style={{
-                    backgroundColor:
-                      penIntensity === 1
-                        ? '#9be9a8'
-                        : penIntensity === 3
-                          ? '#40c463'
-                          : penIntensity === 6
-                            ? '#30a14e'
-                            : '#216e39',
-                  }}
-                />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onDrawModeChange('eraser');
-                setShowPenIntensityPicker(false);
-              }}
-              className={clsx(
-                'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
-                drawMode === 'eraser'
-                  ? 'scale-105 transform bg-black text-white shadow-lg'
-                  : 'border border-black bg-white text-black hover:bg-gray-100'
-              )}
-              title={t('titles.eraser')}
-            >
-              {t('drawModes.eraser')}
-            </button>
+          {/* Draw Mode 按钮组 */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-2">
+            {/* Pen 和 Eraser 按钮 */}
+            <div className="grid gap-2 sm:flex sm:flex-nowrap sm:gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onDrawModeChange('pen');
+                  if (drawMode !== 'pen') {
+                    setShowPenIntensityPicker(true);
+                  } else {
+                    setShowPenIntensityPicker(!showPenIntensityPicker);
+                  }
+                }}
+                className={clsx(
+                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+                  drawMode === 'pen'
+                    ? 'scale-105 transform bg-black text-white shadow-lg'
+                    : 'border border-black bg-white text-black hover:bg-gray-100'
+                )}
+                title={t('titles.pen')}
+              >
+                {t('drawModes.pen')}
+                {drawMode === 'pen' && onPenIntensityChange && penMode === 'manual' && (
+                  <div
+                    className="ml-2 h-4 w-4 rounded-sm border-2 border-white shadow-sm"
+                    style={{
+                      backgroundColor:
+                        penIntensity === 1
+                          ? '#9be9a8'
+                          : penIntensity === 3
+                            ? '#40c463'
+                            : penIntensity === 6
+                              ? '#30a14e'
+                              : '#216e39',
+                    }}
+                  />
+                )}
+                {drawMode === 'pen' && penMode === 'auto' && (
+                  <div className="ml-2 text-xs font-bold">
+                    [AUTO]
+                  </div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDrawModeChange('eraser');
+                  setShowPenIntensityPicker(false);
+                }}
+                className={clsx(
+                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+                  drawMode === 'eraser'
+                    ? 'scale-105 transform bg-black text-white shadow-lg'
+                    : 'border border-black bg-white text-black hover:bg-gray-100'
+                )}
+                title={t('titles.eraser')}
+              >
+                {t('drawModes.eraser')}
+              </button>
+            </div>
+
+            {/* Manual/Auto 模式切换 - 通过竖直分隔符分组 */}
+            {drawMode === 'pen' && (
+              <>
+                <div className="hidden h-8 border-l border-gray-300 sm:block" />
+                <div className="flex gap-2 sm:gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onPenModeChange?.('manual')}
+                    className={clsx(
+                      'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
+                      penMode === 'manual'
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                    )}
+                    title={t('titles.penManualMode')}
+                  >
+                    {t('penModes.manual')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onPenModeChange?.('auto')}
+                    className={clsx(
+                      'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
+                      penMode === 'auto'
+                        ? 'bg-green-600 text-white'
+                        : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                    )}
+                    title={t('titles.penAutoMode')}
+                  >
+                    {t('penModes.auto')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* 悬浮的画笔强度滑动条 - 点击画笔按钮后显示 */}
-          {drawMode === 'pen' && showPenIntensityPicker && onPenIntensityChange && (
+          {/* 悬浮的画笔强度滑动条 - 仅在 manual 模式下显示 */}
+          {drawMode === 'pen' && penMode === 'manual' && showPenIntensityPicker && onPenIntensityChange && (
             <>
               {/* 遮罩层 */}
               <div
