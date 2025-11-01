@@ -67,9 +67,9 @@ export type OneDay = { level: number; count: number; date: string };
  * 仿 GitHub 的贡献图，支持交互式点击和拖拽绘制贡献次数。
  *
  * 功能说明：
- * - 画笔模式：点击或拖拽绘制格子，贡献只会逐步加深：0 -> 1 -> 3 -> 6 -> 9；达到最深绿色（9）后不再变化。
- * - 橡皮擦模式：点击或拖擦清除格子贡献（清零仅通过橡皮擦）。
- * - 数字越大，绿色越深，最多4级
+ * - 画笔模式：点击画笔按钮显示悬浮滑动条，选择画笔强度（1、3、6、9），点击或拖拽绘制格子
+ * - 橡皮擦模式：点击或拖拽清除格子贡献
+ * - 画笔强度对应不同的绿色深度：1（浅绿）、3（中绿）、6（深绿）、9（最深绿）
  * - 可以输入不同年份查看（2008年-当前年份）
  * - 清除按钮会重置所有用户设置
  * - 支持鼠标左键长按拖拽连续绘制
@@ -86,6 +86,9 @@ type Props = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 type DrawMode = 'pen' | 'eraser';
+
+// 画笔强度类型：对应不同的贡献次数
+type PenIntensity = 1 | 3 | 6 | 9;
 
 type ContainerVars = React.CSSProperties & {
   '--cell'?: string;
@@ -112,6 +115,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
+  const [penIntensity, setPenIntensity] = React.useState<PenIntensity>(1); // 画笔强度，默认为1
   const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
@@ -128,11 +132,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const filteredContributions = originalContributions.filter(
     (c) => new Date(c.date).getFullYear() === year
   );
-
-  // 映射当年原始数据，便于在画笔模式下参考基础贡献数
-  const originalCountMap = React.useMemo(() => {
-    return new Map(filteredContributions.map((c) => [c.date, c.count] as const));
-  }, [filteredContributions]);
 
   // 计算当前日期与明天零点，用于判断未来日期
   const now = new Date();
@@ -510,21 +509,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
     }
     if (mode === 'pen') {
       setUserContributions((prev) => {
-        // 当前展示值：优先用户覆写，否则原始值
-        const effective = prev.get(dateStr) ?? originalCountMap.get(dateStr) ?? 0;
-        // 已是最深绿色（>=9）则不再变化
-        if (effective >= 9) return prev;
-
-        // 步进仅基于用户当前覆写（若没有则从0开始）
-        const current = prev.get(dateStr) ?? 0;
-        let nextCount = 0;
-        if (current < 1) nextCount = 1;
-        else if (current < 3) nextCount = 3;
-        else if (current < 6) nextCount = 6;
-        else nextCount = 9;
-
+        // 直接设置为选定的画笔强度值
         const newMap = new Map(prev);
-        newMap.set(dateStr, nextCount);
+        newMap.set(dateStr, penIntensity);
         return newMap;
       });
     } else if (mode === 'eraser') {
@@ -767,8 +754,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
         <CalendarControls
           year={year}
           drawMode={drawMode}
+          penIntensity={penIntensity}
           onYearChange={setYear}
           onDrawModeChange={setDrawMode}
+          onPenIntensityChange={setPenIntensity}
           onReset={handleReset}
           onFillAllGreen={handleFillAllGreen}
           githubUsername={githubUsername}
