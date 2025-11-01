@@ -185,10 +185,13 @@ function ContributionCalendar({ contributions: originalContributions, className,
       );
 
       // 计算中心日期的行列位置
-      const firstDayOfWeek = yearStart.getUTCDay(); // 0=周日, 1=周一, ...
+      // 注意：现在 startRow 是相对于 Monday 的偏移(0=Mon, 1=Tue, ..., 6=Sun)
+      const yearFirstDayOfWeek = yearStart.getUTCDay();
+      const yearStartRow = yearFirstDayOfWeek === 0 ? 6 : yearFirstDayOfWeek - 1;
       const centerDayOfWeek = centerDate.getUTCDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const centerRow = centerDayOfWeek;
+      const centerDayRow = centerDayOfWeek === 0 ? 6 : centerDayOfWeek - 1; // 相对于Monday的偏移
+      const centerWeek = Math.floor((daysSinceYearStart + yearStartRow) / 7);
+      const centerRow = centerDayRow;
 
       // 图案尺寸
       const patternHeight = pattern.length;
@@ -624,8 +627,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
     const userContribution = userContributions.get(c.date) || 0;
     const displayCount = userContribution > 0 ? userContribution : c.count;
 
-    // 在星期天的月份出现变化的列上面显示月份。
-    if (date.getUTCDay() === 0 && month !== latestMonth) {
+    // 在周一的月份出现变化的列上面显示月份（GitHub的日历从Monday开始）
+    // getUTCDay()=1 是 Monday
+    if (date.getUTCDay() === 1 && month !== latestMonth) {
       // 计算月份对应的列，从 1 开始、左上角格子留空所以 +2
       const gridColumn = 2 + Math.floor((i + startRow) / 7);
       latestMonth = month;
@@ -693,20 +697,20 @@ function ContributionCalendar({ contributions: originalContributions, className,
     );
   });
 
-  // 第一格不一定是周日，此时前面会有空白，需要设置下起始行。
+  // 第一格不一定是周一，此时前面会有空白，需要设置下起始行。
   if (tiles.length > 0) {
     tiles[0] = React.cloneElement(tiles[0], {
       style: { gridRow: startRow + 1 },
     });
   }
-  // 如果第一格不是周日，则首月可能跑到第二列，需要再检查下。
+  // 如果第一格不是周一，则首月可能跑到第二列，需要再检查下。
   // Safely adjust months. Use optional chaining and avoid mutating props directly.
   if (months.length > 0) {
     const first = months[0];
     if (first && monthNames[firstDate.getUTCMonth()] === (first.props && first.props.children)) {
       // create a new element with adjusted style instead of mutating props
       months[0] = React.cloneElement(first, {
-        style: { ...(first.props.style || {}), gridColumn: 2 },
+        style: { ...( first.props.style || {}), gridColumn: 2 },
       });
     }
   }
