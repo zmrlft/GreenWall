@@ -380,46 +380,11 @@ func sanitiseRepoName(input string) string {
 	return input
 }
 
-func appendToFile(path, content string) error {
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString(content); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (a *App) runGitCommand(dir string, args ...string) error {
 	gitCmd := a.getGitCommand()
 	cmd := exec.Command(gitCmd, args...)
 	cmd.Dir = dir
 	configureCommand(cmd, true)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git %s: %w (%s)", strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
-	}
-
-	return nil
-}
-
-func (a *App) runGitCommandWithEnv(dir string, extraEnv map[string]string, args ...string) error {
-	gitCmd := a.getGitCommand()
-	cmd := exec.Command(gitCmd, args...)
-	cmd.Dir = dir
-	configureCommand(cmd, true)
-
-	env := os.Environ()
-	for key, value := range extraEnv {
-		env = append(env, fmt.Sprintf("%s=%s", key, value))
-	}
-	cmd.Env = env
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

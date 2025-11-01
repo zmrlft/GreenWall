@@ -10,6 +10,7 @@ type TranslationDict = {
     repoName: string;
     year: string;
     drawMode: string;
+    penIntensity: string;
     actions: string;
     language: string;
     dataActions: string;
@@ -34,6 +35,7 @@ type TranslationDict = {
   titles: {
     pen: string;
     eraser: string;
+    penIntensity: string;
     allGreen: string;
     reset: string;
     generate: string;
@@ -122,6 +124,7 @@ const translations: Record<Language, TranslationDict> = {
       repoName: 'Repository Name',
       year: 'Year',
       drawMode: 'Draw Mode',
+      penIntensity: 'Pen Intensity',
       actions: 'Actions',
       language: 'Language',
       dataActions: 'Data Actions',
@@ -146,6 +149,7 @@ const translations: Record<Language, TranslationDict> = {
     titles: {
       pen: 'Pen mode - click or drag to add contributions',
       eraser: 'Eraser mode - click or drag to clear contributions',
+      penIntensity: 'Set pen intensity to {{intensity}} contributions',
       allGreen: 'Set all contributions to green',
       reset: 'Clear all customised contribution data',
       generate: 'Create a local git repository matching this contribution calendar',
@@ -236,6 +240,7 @@ const translations: Record<Language, TranslationDict> = {
       repoName: '仓库名称',
       year: '年份',
       drawMode: '绘制模式',
+      penIntensity: '画笔强度',
       actions: '操作',
       language: '语言',
       dataActions: '数据操作',
@@ -260,6 +265,7 @@ const translations: Record<Language, TranslationDict> = {
     titles: {
       pen: '画笔模式 - 点击或拖拽添加贡献',
       eraser: '橡皮擦模式 - 点击或拖拽清除贡献',
+      penIntensity: '设置画笔强度为 {{intensity}} 次贡献',
       allGreen: '将所有贡献设置为绿色',
       reset: '清除所有自定义贡献数据',
       generate: '创建与当前贡献图匹配的本地 Git 仓库',

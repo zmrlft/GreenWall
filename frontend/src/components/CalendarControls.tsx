@@ -3,11 +3,15 @@ import clsx from 'clsx';
 import { useTranslations } from '../i18n';
 import { CharacterSelector } from './CharacterSelector';
 
+type PenIntensity = 1 | 3 | 6 | 9;
+
 type Props = {
   year?: number;
   onYearChange: (year: number) => void;
   drawMode?: 'pen' | 'eraser';
+  penIntensity?: PenIntensity;
   onDrawModeChange: (mode: 'pen' | 'eraser') => void;
+  onPenIntensityChange?: (intensity: PenIntensity) => void;
   onReset?: () => void;
   onFillAllGreen?: () => void;
   githubUsername: string;
@@ -30,7 +34,9 @@ export const CalendarControls: React.FC<Props> = ({
   year,
   onYearChange,
   drawMode,
+  penIntensity = 1,
   onDrawModeChange,
+  onPenIntensityChange,
   onReset,
   onFillAllGreen,
   githubUsername,
@@ -55,6 +61,8 @@ export const CalendarControls: React.FC<Props> = ({
 
   // 字符选择状态
   const [showCharacterSelector, setShowCharacterSelector] = React.useState<boolean>(false);
+  // 画笔强度选择器显示状态
+  const [showPenIntensityPicker, setShowPenIntensityPicker] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     setYearInput(typeof year === 'number' ? String(year) : '');
@@ -177,12 +185,19 @@ export const CalendarControls: React.FC<Props> = ({
           />
         </div>
 
-        <div className="flex w-full flex-col space-y-2 sm:w-auto">
+        <div className="relative flex w-full flex-col space-y-2 sm:w-auto">
           <span className="text-sm font-medium text-black">{t('labels.drawMode')}</span>
           <div className="grid gap-2 sm:flex sm:flex-nowrap sm:gap-2">
             <button
               type="button"
-              onClick={() => onDrawModeChange('pen')}
+              onClick={() => {
+                onDrawModeChange('pen');
+                if (drawMode !== 'pen') {
+                  setShowPenIntensityPicker(true);
+                } else {
+                  setShowPenIntensityPicker(!showPenIntensityPicker);
+                }
+              }}
               className={clsx(
                 'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
                 drawMode === 'pen'
@@ -192,10 +207,28 @@ export const CalendarControls: React.FC<Props> = ({
               title={t('titles.pen')}
             >
               {t('drawModes.pen')}
+              {drawMode === 'pen' && onPenIntensityChange && (
+                <div
+                  className="ml-2 h-4 w-4 rounded-sm border-2 border-white shadow-sm"
+                  style={{
+                    backgroundColor:
+                      penIntensity === 1
+                        ? '#9be9a8'
+                        : penIntensity === 3
+                          ? '#40c463'
+                          : penIntensity === 6
+                            ? '#30a14e'
+                            : '#216e39',
+                  }}
+                />
+              )}
             </button>
             <button
               type="button"
-              onClick={() => onDrawModeChange('eraser')}
+              onClick={() => {
+                onDrawModeChange('eraser');
+                setShowPenIntensityPicker(false);
+              }}
               className={clsx(
                 'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
                 drawMode === 'eraser'
@@ -207,6 +240,50 @@ export const CalendarControls: React.FC<Props> = ({
               {t('drawModes.eraser')}
             </button>
           </div>
+
+          {/* 悬浮的画笔强度滑动条 - 点击画笔按钮后显示 */}
+          {drawMode === 'pen' && showPenIntensityPicker && onPenIntensityChange && (
+            <>
+              {/* 遮罩层 */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowPenIntensityPicker(false)}
+              />
+              {/* 悬浮滑动条面板 */}
+              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-none border border-black bg-white p-4 shadow-xl">
+                <div className="space-y-3">
+                  <span className="text-sm font-medium text-black">{t('labels.penIntensity')}</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="9"
+                    step="1"
+                    value={penIntensity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      let mappedValue: PenIntensity;
+                      if (value <= 2) mappedValue = 1;
+                      else if (value <= 4) mappedValue = 3;
+                      else if (value <= 7) mappedValue = 6;
+                      else mappedValue = 9;
+                      onPenIntensityChange(mappedValue);
+                    }}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #ebedf0 0%, #9be9a8 25%, #40c463 50%, #30a14e 75%, #216e39 100%)`,
+                    }}
+                    title={t('titles.penIntensity', { intensity: penIntensity })}
+                  />
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>1</span>
+                    <span>3</span>
+                    <span>6</span>
+                    <span>9</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex w-full flex-col space-y-2 sm:w-auto">
