@@ -412,11 +412,14 @@ function ContributionCalendar({ contributions: originalContributions, className,
       if (path) {
         setSelectedRepositoryPath(path);
         writeStoredValue(STORAGE_KEYS.repositoryPath, path);
+        return path;
       }
+      return null;
     } catch (error) {
       console.error('Failed to select repository path:', error);
       const message = error instanceof Error ? error.message : String(error);
       window.alert(t('messages.selectPathError', { message }));
+      return null;
     }
   }, [t]);
 

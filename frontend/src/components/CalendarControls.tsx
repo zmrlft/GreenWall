@@ -330,10 +330,10 @@ export const CalendarControls: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleSelectRepositoryPath}
-            disabled={isSelectingPath}
+            disabled={showRepositoryPathPicker}
             className={clsx(
               'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
-              isSelectingPath
+              showRepositoryPathPicker
                 ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
                 : selectedRepositoryPath
                   ? 'scale-105 transform border border-blue-500 bg-blue-50 text-blue-700 shadow-lg hover:bg-blue-100'
@@ -341,7 +341,7 @@ export const CalendarControls: React.FC<Props> = ({
             )}
             title={selectedRepositoryPath ? selectedRepositoryPath : t('titles.selectRepositoryPath')}
           >
-            {isSelectingPath
+            {showRepositoryPathPicker
               ? t('buttons.selecting')
               : selectedRepositoryPath
                 ? '✓ ' + t('buttons.pathSelected')
