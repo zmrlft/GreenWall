@@ -529,7 +529,15 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const hasContributions = filteredContributions.length > 0;
   const firstContribution = hasContributions ? filteredContributions[0] : undefined;
   const firstDate = firstContribution ? parseUTCDate(firstContribution.date) : new Date(Date.UTC(year, 0, 1));
-  const startRow = firstDate.getUTCDay();
+  
+  // GitHub 的日历总是从周一(1)开始显示
+  // getUTCDay() 返回: 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
+  // 我们需要计算相对于周一的偏移
+  const dayOfWeek = firstDate.getUTCDay();
+  // 转换为相对于Monday的偏移: 0=Mon, 1=Tue, ..., 6=Sun
+  // 如果Sunday(0)，偏移应该是6；如果Monday(1)，偏移应该是0
+  const startRow = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  
   const months: (React.ReactElement | undefined)[] = [];
   let latestMonth = -1;
 
