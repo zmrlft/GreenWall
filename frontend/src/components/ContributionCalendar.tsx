@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   username: 'github-contributor.username',
   email: 'github-contributor.email',
   repoName: 'github-contributor.repoName',
+  repositoryPath: 'github-contributor.repositoryPath',
 };
 
 function readStoredValue(key: string): string {
@@ -46,6 +47,12 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   if (count >= 6 && count <= 8) return 3;
   if (count > 8) return 4;
   return 0;
+}
+
+// 解析 YYYY-MM-DD 格式的字符串为UTC Date对象
+function parseUTCDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 // 将字符转换为像素图案 - 使用预定义的图案数据
@@ -113,6 +120,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
     readStoredValue(STORAGE_KEYS.repoName)
   );
 
+  const [selectedRepositoryPath, setSelectedRepositoryPath] = React.useState<string | null>(() =>
+    readStoredValue(STORAGE_KEYS.repositoryPath) || null
+  );
+
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
   const [penIntensity, setPenIntensity] = React.useState<PenIntensity>(1); // 画笔强度，默认为1
@@ -130,15 +141,15 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   // 允许选择年份，过滤贡献数据
   const filteredContributions = originalContributions.filter(
-    (c) => new Date(c.date).getFullYear() === year
+    (c) => parseUTCDate(c.date).getUTCFullYear() === year
   );
 
   // 计算当前日期与明天零点，用于判断未来日期
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const todayStart = new Date(currentYear, now.getMonth(), now.getDate());
+  const currentYear = now.getUTCFullYear();
+  const todayStart = new Date(Date.UTC(currentYear, now.getUTCMonth(), now.getUTCDate()));
   const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
   const tomorrowTime = tomorrowStart.getTime();
   const isCurrentYear = year === currentYear;
 
@@ -147,9 +158,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
       if (!isCurrentYear) {
         return false;
       }
-      const parsed = new Date(dateStr);
-      const localDate = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-      return localDate.getTime() >= tomorrowTime;
+      const parsed = parseUTCDate(dateStr);
+      return parsed.getTime() >= tomorrowTime;
     },
     [isCurrentYear, tomorrowTime]
   );
@@ -168,17 +178,20 @@ function ContributionCalendar({ contributions: originalContributions, className,
       const centerContribution = filteredContributions.find((c) => c.date === centerDateStr);
       if (!centerContribution) return new Set<string>();
 
-      const centerDate = new Date(centerDateStr);
-      const yearStart = new Date(year, 0, 1);
+      const centerDate = parseUTCDate(centerDateStr);
+      const yearStart = new Date(Date.UTC(year, 0, 1));
       const daysSinceYearStart = Math.floor(
         (centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
       );
 
       // 计算中心日期的行列位置
-      const firstDayOfWeek = yearStart.getDay(); // 0=周日, 1=周一, ...
-      const centerDayOfWeek = centerDate.getDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const centerRow = centerDayOfWeek;
+      // 注意：现在 startRow 是相对于 Monday 的偏移(0=Mon, 1=Tue, ..., 6=Sun)
+      const yearFirstDayOfWeek = yearStart.getUTCDay();
+      const yearStartRow = yearFirstDayOfWeek === 0 ? 6 : yearFirstDayOfWeek - 1;
+      const centerDayOfWeek = centerDate.getUTCDay();
+      const centerDayRow = centerDayOfWeek === 0 ? 6 : centerDayOfWeek - 1; // 相对于Monday的偏移
+      const centerWeek = Math.floor((daysSinceYearStart + yearStartRow) / 7);
+      const centerRow = centerDayRow;
 
       // 图案尺寸
       const patternHeight = pattern.length;
@@ -205,9 +218,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
               // 计算目标日期
               const daysOffset = targetCol * 7 + targetRow - (centerWeek * 7 + centerRow);
               const targetDate = new Date(centerDate);
-              targetDate.setDate(targetDate.getDate() + daysOffset);
+              targetDate.setUTCDate(targetDate.getUTCDate() + daysOffset);
 
-              const dateStr = targetDate.toISOString().slice(0, 10);
+              // 构建UTC日期字符串
+              const dateStr = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, '0')}-${String(targetDate.getUTCDate()).padStart(2, '0')}`;
 
               // 检查该日期是否存在于贡献数据中且不是未来日期
               const contribution = filteredContributions.find((c) => c.date === dateStr);
@@ -226,7 +240,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   const getTooltip = React.useCallback(
     (oneDay: OneDay, date: Date) => {
-      const s = date.toISOString().split('T')[0];
+      // 构建UTC日期字符串用于显示
+      const s = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
       if (isFutureDate(oneDay.date)) {
         return t('calendar.tooltipFuture', { date: s });
       }
@@ -400,6 +415,24 @@ function ContributionCalendar({ contributions: originalContributions, className,
     return () => window.removeEventListener('resize', onResize);
   }, [isMaximized]);
 
+  const handleSelectRepositoryPath = React.useCallback(async () => {
+    try {
+      const { SelectRepositoryPath } = await import('../../wailsjs/go/main/App');
+      const path = await SelectRepositoryPath();
+      if (path) {
+        setSelectedRepositoryPath(path);
+        writeStoredValue(STORAGE_KEYS.repositoryPath, path);
+        return path;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to select repository path:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      window.alert(t('messages.selectPathError', { message }));
+      return null;
+    }
+  }, [t]);
+
   const handleGenerateRepo = React.useCallback(async () => {
     const trimmedUsername = githubUsername.trim();
     const trimmedEmail = githubEmail.trim();
@@ -435,6 +468,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
         githubEmail: trimmedEmail,
         repoName: trimmedRepoName,
         contributions: contributionsForBackend,
+        targetPath: selectedRepositoryPath || '',
       });
       const result = await GenerateRepo(payload);
       window.alert(`Repository created at ${result.repoPath} with ${result.commitCount} commits.`);
@@ -445,7 +479,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
     } finally {
       setIsGeneratingRepo(false);
     }
-  }, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year, t]);
+  }, [filteredContributions, githubEmail, githubUsername, repoName, selectedRepositoryPath, userContributions, year, t]);
 
   const handleExportContributions = React.useCallback(async () => {
     const contributionsToExport = filteredContributions
@@ -497,8 +531,16 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   const hasContributions = filteredContributions.length > 0;
   const firstContribution = hasContributions ? filteredContributions[0] : undefined;
-  const firstDate = firstContribution ? new Date(firstContribution.date) : new Date(year, 0, 1);
-  const startRow = firstDate.getDay();
+  const firstDate = firstContribution ? parseUTCDate(firstContribution.date) : new Date(Date.UTC(year, 0, 1));
+  
+  // GitHub 的日历总是从周一(1)开始显示
+  // getUTCDay() 返回: 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
+  // 我们需要计算相对于周一的偏移
+  const dayOfWeek = firstDate.getUTCDay();
+  // 转换为相对于Monday的偏移: 0=Mon, 1=Tue, ..., 6=Sun
+  // 如果Sunday(0)，偏移应该是6；如果Monday(1)，偏移应该是0
+  const startRow = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  
   const months: (React.ReactElement | undefined)[] = [];
   let latestMonth = -1;
 
@@ -577,22 +619,23 @@ function ContributionCalendar({ contributions: originalContributions, className,
   }, []);
 
   const tiles = filteredContributions.map((c, i) => {
-    const date = new Date(c.date);
-    const month = date.getMonth();
+    const date = parseUTCDate(c.date);
+    const month = date.getUTCMonth();
     const future = isFutureDate(c.date);
 
     // 计算实际显示的贡献次数（用户设置的优先）
     const userContribution = userContributions.get(c.date) || 0;
     const displayCount = userContribution > 0 ? userContribution : c.count;
 
-    // 在星期天的月份出现变化的列上面显示月份。
-    if (date.getDay() === 0 && month !== latestMonth) {
+    // 在周一的月份出现变化的列上面显示月份（GitHub的日历从Monday开始）
+    // getUTCDay()=1 是 Monday
+    if (date.getUTCDay() === 1 && month !== latestMonth) {
       // 计算月份对应的列，从 1 开始、左上角格子留空所以 +2
       const gridColumn = 2 + Math.floor((i + startRow) / 7);
       latestMonth = month;
       months.push(
         <span className={styles.month} key={i} style={{ gridColumn }}>
-          {monthNames[date.getMonth()]}
+          {monthNames[month]}
         </span>
       );
     }
@@ -654,20 +697,20 @@ function ContributionCalendar({ contributions: originalContributions, className,
     );
   });
 
-  // 第一格不一定是周日，此时前面会有空白，需要设置下起始行。
+  // 第一格不一定是周一，此时前面会有空白，需要设置下起始行。
   if (tiles.length > 0) {
     tiles[0] = React.cloneElement(tiles[0], {
       style: { gridRow: startRow + 1 },
     });
   }
-  // 如果第一格不是周日，则首月可能跑到第二列，需要再检查下。
+  // 如果第一格不是周一，则首月可能跑到第二列，需要再检查下。
   // Safely adjust months. Use optional chaining and avoid mutating props directly.
   if (months.length > 0) {
     const first = months[0];
-    if (first && monthNames[firstDate.getMonth()] === (first.props && first.props.children)) {
+    if (first && monthNames[firstDate.getUTCMonth()] === (first.props && first.props.children)) {
       // create a new element with adjusted style instead of mutating props
       months[0] = React.cloneElement(first, {
-        style: { ...(first.props.style || {}), gridColumn: 2 },
+        style: { ...( first.props.style || {}), gridColumn: 2 },
       });
     }
   }
@@ -768,6 +811,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onRepoNameChange={setRepoName}
           onGenerateRepo={handleGenerateRepo}
           isGeneratingRepo={isGeneratingRepo}
+          onSelectRepositoryPath={handleSelectRepositoryPath}
+          selectedRepositoryPath={selectedRepositoryPath}
           onExportContributions={handleExportContributions}
           onImportContributions={handleImportContributions}
           // 字符预览相关
