@@ -262,9 +262,22 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		repoName = "contributions"
 	}
 
-	repoPath, err := os.MkdirTemp(repoBasePath, repoName+"-")
-	if err != nil {
-		return nil, fmt.Errorf("create repo directory: %w", err)
+	// 确定最终的仓库路径
+	var repoPath string
+	var err error
+	
+	// 如果用户指定了自定义路径，直接在该路径下创建仓库目录
+	if req.TargetPath != "" {
+		repoPath = filepath.Join(repoBasePath, repoName)
+		if err := os.MkdirAll(repoPath, 0o755); err != nil {
+			return nil, fmt.Errorf("create repo directory: %w", err)
+		}
+	} else {
+		// 否则使用临时目录模式（在系统临时目录下自动生成随机目录名）
+		repoPath, err = os.MkdirTemp(repoBasePath, repoName+"-")
+		if err != nil {
+			return nil, fmt.Errorf("create repo directory: %w", err)
+		}
 	}
 
 	readmePath := filepath.Join(repoPath, "README.md")
