@@ -116,7 +116,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
   const [penIntensity, setPenIntensity] = React.useState<PenIntensity>(1); // 画笔强度，默认为1
-  const [penMode, setPenMode] = React.useState<'manual' | 'auto'>('manual'); // 画笔模式：manual 手动强度，auto 自动逐步递进
+  const [penMode, setPenMode] = React.useState<'manual' | 'auto'>('auto'); // 画笔模式：manual 手动强度，auto 自动逐步递进
   const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
