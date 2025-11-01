@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+cd "$(dirname "$0")/../frontend"
+npx --no-install lint-staged

@@ -1,19 +1,19 @@
 @mixin mobile-layout {
-	@media screen and (max-width: 768px) {
-		@content;
-	}
+  @media screen and (max-width: 768px) {
+    @content;
+  }
 }
 
 @mixin pc-layout {
-	@media screen and (min-width: 768px) {
-		@content;
-	}
+  @media screen and (min-width: 768px) {
+    @content;
+  }
 }
 
 @mixin tablet-layout {
-	@media screen and (max-width: 1200px) {
-		@content;
-	}
+  @media screen and (max-width: 1200px) {
+    @content;
+  }
 }
 
 /* 手机屏下的文字区域左右边距 */
