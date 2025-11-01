@@ -116,6 +116,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
   const [penIntensity, setPenIntensity] = React.useState<PenIntensity>(1); // 画笔强度，默认为1
+  const [penMode, setPenMode] = React.useState<'manual' | 'auto'>('manual'); // 画笔模式：manual 手动强度，auto 自动逐步递进
   const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
@@ -509,9 +510,25 @@ function ContributionCalendar({ contributions: originalContributions, className,
     }
     if (mode === 'pen') {
       setUserContributions((prev) => {
-        // 直接设置为选定的画笔强度值
         const newMap = new Map(prev);
-        newMap.set(dateStr, penIntensity);
+        
+        if (penMode === 'auto') {
+          // auto 模式：逐步递进 0 → 1 → 3 → 6 → 9
+          const current = prev.get(dateStr) ?? 0;
+          let nextCount = 0;
+          if (current < 1) nextCount = 1;
+          else if (current < 3) nextCount = 3;
+          else if (current < 6) nextCount = 6;
+          else if (current < 9) nextCount = 9;
+          // 已是最深绿色（9）则不再变化
+          else nextCount = current;
+          
+          newMap.set(dateStr, nextCount);
+        } else {
+          // manual 模式：直接设置为选定的画笔强度值
+          newMap.set(dateStr, penIntensity);
+        }
+        
         return newMap;
       });
     } else if (mode === 'eraser') {
@@ -774,6 +791,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onStartCharacterPreview={handleStartCharacterPreview}
           previewMode={previewMode}
           onCancelCharacterPreview={handleCancelCharacterPreview}
+          penMode={penMode}
+          onPenModeChange={setPenMode}
         />
       </div>
     </div>

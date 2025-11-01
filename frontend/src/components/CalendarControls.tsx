@@ -28,6 +28,9 @@ type Props = {
   onStartCharacterPreview?: (char: string) => void;
   previewMode?: boolean;
   onCancelCharacterPreview?: () => void;
+  // 画笔模式
+  penMode?: 'manual' | 'auto';
+  onPenModeChange?: (mode: 'manual' | 'auto') => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -53,6 +56,9 @@ export const CalendarControls: React.FC<Props> = ({
   onStartCharacterPreview,
   previewMode,
   onCancelCharacterPreview,
+  // 画笔模式
+  penMode = 'manual',
+  onPenModeChange,
 }) => {
   const { t } = useTranslations();
   const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -207,7 +213,7 @@ export const CalendarControls: React.FC<Props> = ({
               title={t('titles.pen')}
             >
               {t('drawModes.pen')}
-              {drawMode === 'pen' && onPenIntensityChange && (
+              {drawMode === 'pen' && onPenIntensityChange && penMode === 'manual' && (
                 <div
                   className="ml-2 h-4 w-4 rounded-sm border-2 border-white shadow-sm"
                   style={{
@@ -221,6 +227,11 @@ export const CalendarControls: React.FC<Props> = ({
                             : '#216e39',
                   }}
                 />
+              )}
+              {drawMode === 'pen' && penMode === 'auto' && (
+                <div className="ml-2 text-xs font-bold">
+                  [AUTO]
+                </div>
               )}
             </button>
             <button
@@ -241,8 +252,40 @@ export const CalendarControls: React.FC<Props> = ({
             </button>
           </div>
 
-          {/* 悬浮的画笔强度滑动条 - 点击画笔按钮后显示 */}
-          {drawMode === 'pen' && showPenIntensityPicker && onPenIntensityChange && (
+          {/* 画笔模式切换 - manual/auto */}
+          {drawMode === 'pen' && (
+            <div className="flex gap-2 sm:gap-1">
+              <button
+                type="button"
+                onClick={() => onPenModeChange?.('manual')}
+                className={clsx(
+                  'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
+                  penMode === 'manual'
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                )}
+                title={t('titles.penManualMode')}
+              >
+                {t('penModes.manual')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onPenModeChange?.('auto')}
+                className={clsx(
+                  'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
+                  penMode === 'auto'
+                    ? 'bg-green-600 text-white'
+                    : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                )}
+                title={t('titles.penAutoMode')}
+              >
+                {t('penModes.auto')}
+              </button>
+            </div>
+          )}
+
+          {/* 悬浮的画笔强度滑动条 - 仅在 manual 模式下显示 */}
+          {drawMode === 'pen' && penMode === 'manual' && showPenIntensityPicker && onPenIntensityChange && (
             <>
               {/* 遮罩层 */}
               <div
