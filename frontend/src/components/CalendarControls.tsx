@@ -84,7 +84,7 @@ export const CalendarControls: React.FC<Props> = ({
 
     const parsed = Number(value);
     const currentYear = new Date().getFullYear();
-    if (!Number.isNaN(parsed) && parsed >= 2008 && parsed <= currentYear) {
+    if (!Number.isNaN(parsed) && parsed >= 1980 && parsed <= currentYear) {
       onYearChange(parsed);
     }
   };
@@ -93,7 +93,7 @@ export const CalendarControls: React.FC<Props> = ({
     const parsed = Number(yearInput);
     const currentYear = new Date().getFullYear();
     const isValid =
-      yearInput !== '' && !Number.isNaN(parsed) && parsed >= 2008 && parsed <= currentYear;
+      yearInput !== '' && !Number.isNaN(parsed) && parsed >= 1980 && parsed <= currentYear;
 
     if (!isValid) {
       setYearInput(typeof year === 'number' ? String(year) : '');
@@ -192,7 +192,7 @@ export const CalendarControls: React.FC<Props> = ({
           <input
             id="year-input"
             type="number"
-            min="2008"
+            min="1980"
             max={new Date().getFullYear()}
             value={yearInput}
             onChange={handleYearChange}

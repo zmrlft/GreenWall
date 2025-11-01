@@ -25,7 +25,7 @@ function App() {
     const data: OneDay[] = [];
     const currentYear = new Date().getFullYear();
 
-    for (let year = 2008; year <= currentYear; year++) {
+    for (let year = 1980; year <= currentYear; year++) {
       data.push(...generateEmptyYearData(year));
     }
     return data;
