@@ -87,7 +87,13 @@ type Props = {
 
 type DrawMode = 'pen' | 'eraser';
 
+type ContainerVars = React.CSSProperties & {
+  '--cell'?: string;
+  '--gap'?: string;
+};
+
 function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
+  const { style: externalStyle, ...divProps } = rest;
   // 选中日期状态 - 改为存储每个日期的贡献次数
   const { t, dictionary } = useTranslations();
   const monthNames = dictionary.months;
@@ -108,22 +114,17 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
   const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
-  const [hasDragged, setHasDragged] = React.useState<boolean>(false);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
   const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [containerVars, setContainerVars] = React.useState<React.CSSProperties>({});
+  const [containerVars, setContainerVars] = React.useState<ContainerVars>({});
 
   // 字符预览状态
   const [previewMode, setPreviewMode] = React.useState<boolean>(false);
   const [previewCharacter, setPreviewCharacter] = React.useState<string>('');
   const [previewDates, setPreviewDates] = React.useState<Set<string>>(new Set());
-  const [previewCenterDate, setPreviewCenterDate] = React.useState<string | null>(null);
 
   // 允许选择年份，过滤贡献数据
-  const years = Array.from(
-    new Set(originalContributions.map((c) => new Date(c.date).getFullYear()))
-  ).sort((a, b) => b - a);
   const filteredContributions = originalContributions.filter(
     (c) => new Date(c.date).getFullYear() === year
   );
@@ -258,7 +259,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const handleStartCharacterPreview = React.useCallback((char: string) => {
     setPreviewCharacter(char);
     setPreviewDates(new Set()); // 初始为空，等待鼠标悬停
-    setPreviewCenterDate(null);
     setPreviewMode(true);
   }, []);
 
@@ -267,7 +267,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
     setPreviewMode(false);
     setPreviewCharacter('');
     setPreviewDates(new Set());
-    setPreviewCenterDate(null);
   }, []);
 
   // 应用字符预览到贡献图
@@ -307,7 +306,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
         const m = await WindowIsMaximised();
         const f = await WindowIsFullscreen();
         if (!disposed) setIsMaximized(m || f);
-      } catch {}
+      } catch (error) {
+        console.warn('Failed to determine window state', error);
+      }
     };
     check();
     const onResize = () => {
@@ -357,7 +358,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
             if (track > labelW) labelW = track;
           });
         }
-      } catch {}
+      } catch (error) {
+        console.warn('Failed to measure calendar layout', error);
+      }
 
       // 预留少量余量，避免四舍五入导致轻微溢出
       const safety = 6;
@@ -384,11 +387,12 @@ function ContributionCalendar({ contributions: originalContributions, className,
         }
       }
 
-      setContainerVars({
-        ['--cell' as any]: `${finalCell}px`,
-        ['--gap' as any]: `${finalGap}px`,
+      const nextVars: ContainerVars = {
+        '--cell': `${finalCell}px`,
+        '--gap': `${finalGap}px`,
         maxWidth: '100%',
-      } as React.CSSProperties);
+      };
+      setContainerVars(nextVars);
     };
 
     recalc();
@@ -485,8 +489,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
     }
   }, [t]);
 
-  if (!filteredContributions || filteredContributions.length === 0) return null;
-
   // 计算总贡献次数（考虑用户设置的数据）
   const total = filteredContributions.reduce((sum, c) => {
     const userContribution = userContributions.get(c.date) || 0;
@@ -494,7 +496,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
     return sum + displayCount;
   }, 0);
 
-  const firstDate = new Date(filteredContributions[0].date);
+  const hasContributions = filteredContributions.length > 0;
+  const firstContribution = hasContributions ? filteredContributions[0] : undefined;
+  const firstDate = firstContribution ? new Date(firstContribution.date) : new Date(year, 0, 1);
   const startRow = firstDate.getDay();
   const months: (React.ReactElement | undefined)[] = [];
   let latestMonth = -1;
@@ -546,7 +550,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
     setIsDrawing(true);
     setLastHoveredDate(dateStr);
-    setHasDragged(false);
     handleTileAction(dateStr, drawMode);
   };
 
@@ -557,7 +560,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
     // 预览模式：实时更新预览位置
     if (previewMode && previewCharacter) {
-      setPreviewCenterDate(dateStr);
       const newPreviewDates = calculatePreviewDates(previewCharacter, dateStr);
       setPreviewDates(newPreviewDates);
       return;
@@ -566,7 +568,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
     // 绘制模式
     if (isDrawing && dateStr !== lastHoveredDate) {
       setLastHoveredDate(dateStr);
-      setHasDragged(true);
       handleTileAction(dateStr, drawMode);
     }
   };
@@ -574,15 +575,12 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const handleMouseUp = () => {
     setIsDrawing(false);
     setLastHoveredDate(null);
-    // 延迟重置hasDragged，确保onClick事件能够正确检测
-    setTimeout(() => setHasDragged(false), 10);
   };
 
   React.useEffect(() => {
     const handleGlobalMouseUp = () => {
       setIsDrawing(false);
       setLastHoveredDate(null);
-      setTimeout(() => setHasDragged(false), 10);
     };
 
     window.addEventListener('mouseup', handleGlobalMouseUp);
@@ -706,6 +704,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
 
   const renderedMonths = months.filter(Boolean) as React.ReactElement[];
 
+  if (!hasContributions) {
+    return null;
+  }
+
   return (
     <div
       className={clsx(
@@ -720,7 +722,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
         className={clsx('w-full lg:flex-1', isMaximized ? 'overflow-x-hidden' : 'overflow-x-auto')}
       >
         <div
-          {...rest}
+          {...divProps}
           ref={containerRef}
           className={clsx(
             styles.container,
@@ -729,7 +731,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
             className
           )}
           style={{
-            ...(((rest as any) && (rest as any).style) || {}),
+            ...(externalStyle ?? {}),
             ...(isMaximized ? containerVars : {}),
           }}
           onMouseUp={handleMouseUp}

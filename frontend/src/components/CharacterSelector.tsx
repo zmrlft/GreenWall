@@ -1,10 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import {
-  characterPatterns,
-  getPatternsByCategory,
-  type CharacterPattern,
-} from '../data/characterPatterns';
+import { getPatternsByCategory, type CharacterPattern } from '../data/characterPatterns';
 import { useTranslations } from '../i18n';
 
 type CharacterTab = CharacterPattern['category'];

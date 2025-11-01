@@ -47,7 +47,6 @@ type AppLayoutProps = {
 const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const { language, setLanguage, t } = useTranslations();
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
-  const [gitVersion, setGitVersion] = React.useState<string>('');
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
 
   const checkGit = React.useCallback(async () => {
@@ -55,7 +54,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
       const { CheckGitInstalled } = await import('../wailsjs/go/main/App');
       const response = await CheckGitInstalled();
       setIsGitInstalled(response.installed);
-      setGitVersion(response.version);
     } catch (error) {
       console.error('Failed to check Git installation:', error);
       setIsGitInstalled(false);
