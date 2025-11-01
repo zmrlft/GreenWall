@@ -53,6 +53,7 @@ type GenerateRepoRequest struct {
 	GithubEmail    string            `json:"githubEmail"`
 	RepoName       string            `json:"repoName"`
 	Contributions  []ContributionDay `json:"contributions"`
+	TargetPath     string            `json:"targetPath"`
 }
 
 type GenerateRepoResponse struct {
@@ -149,6 +150,65 @@ func (a *App) getGitCommand() string {
 	return "git"
 }
 
+// ValidatePath validates if a given path is accessible and writable
+func (a *App) ValidatePath(path string) (bool, string) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return false, "路径不能为空"
+	}
+
+	// 获取绝对路径
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return false, fmt.Sprintf("无法解析路径: %v", err)
+	}
+
+	// 检查目录是否存在
+	fileInfo, err := os.Stat(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, "目录不存在"
+		}
+		return false, fmt.Sprintf("无法访问目录: %v", err)
+	}
+
+	// 检查是否为目录
+	if !fileInfo.IsDir() {
+		return false, "路径不是一个目录"
+	}
+
+	// 检查写权限 - 尝试创建一个临时文件
+	testFile := filepath.Join(absPath, ".green-wall-write-test")
+	err = os.WriteFile(testFile, []byte("test"), 0o644)
+	if err != nil {
+		return false, fmt.Sprintf("目录没有写权限: %v", err)
+	}
+	_ = os.Remove(testFile) // 清理测试文件
+
+	return true, ""
+}
+
+// SelectRepositoryPath opens a folder picker dialog for selecting repository destination
+func (a *App) SelectRepositoryPath() (string, error) {
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "选择仓库生成目录",
+	})
+	if err != nil {
+		return "", fmt.Errorf("打开文件夹选择对话框失败: %w", err)
+	}
+	if path == "" {
+		return "", fmt.Errorf("用户取消了选择")
+	}
+
+	// 验证选择的路径
+	isValid, msg := a.ValidatePath(path)
+	if !isValid {
+		return "", fmt.Errorf("选择的路径无效: %s", msg)
+	}
+
+	return path, nil
+}
+
 // GenerateRepo creates a git repository whose commit history mirrors the given contribution calendar.
 func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, error) {
 	if len(req.Contributions) == 0 {
@@ -175,7 +235,18 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		email = "2643895326@qq.com"
 	}
 
-	if err := os.MkdirAll(a.repoBasePath, 0o755); err != nil {
+	// 确定仓库基路径 - 优先使用 TargetPath，否则使用默认临时目录
+	repoBasePath := a.repoBasePath
+	if req.TargetPath != "" {
+		targetPath := strings.TrimSpace(req.TargetPath)
+		isValid, msg := a.ValidatePath(targetPath)
+		if !isValid {
+			return nil, fmt.Errorf("选择的路径无效: %s", msg)
+		}
+		repoBasePath = targetPath
+	}
+
+	if err := os.MkdirAll(repoBasePath, 0o755); err != nil {
 		return nil, fmt.Errorf("create repo base directory: %w", err)
 	}
 
@@ -191,7 +262,7 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		repoName = "contributions"
 	}
 
-	repoPath, err := os.MkdirTemp(a.repoBasePath, repoName+"-")
+	repoPath, err := os.MkdirTemp(repoBasePath, repoName+"-")
 	if err != nil {
 		return nil, fmt.Errorf("create repo directory: %w", err)
 	}
