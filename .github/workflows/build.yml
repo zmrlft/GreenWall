@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - main
+      - '**'
     tags:
       - 'v*'
   pull_request:
@@ -54,14 +54,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Wails CLI
-        run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-      - name: Setup Wails Path
-        run: |
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
@@ -73,15 +65,13 @@ jobs:
       - name: Generate Bindings
         if: matrix.os != 'windows-latest'
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          wails generate module || true
+          go run github.com/wailsapp/wails/v2/cmd/wails@latest generate module || true
 
       - name: Generate Bindings (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          $env:PATH += ";$env:GOPATH\bin"
-          wails generate module
+          go run github.com/wailsapp/wails/v2/cmd/wails@latest generate module
 
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -138,19 +128,18 @@ jobs:
       - name: Build application (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          wails build -clean -ldflags "-w -s"
+          go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
       - name: Build application (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          $env:PATH += ";$env:GOPATH\bin"
-          wails build -clean -ldflags "-w -s"
+          go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
       - name: Build application (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          wails build -clean -ldflags "-w -s"
+          go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
       - name: List build output (Linux/macOS)
         if: matrix.os != 'windows-latest'
