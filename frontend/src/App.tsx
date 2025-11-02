@@ -27,7 +27,7 @@ function App() {
 
   const generateMultiYearData = (): OneDay[] => {
     const data: OneDay[] = [];
-    const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getUTCFullYear();
 
     for (let year = 1980; year <= currentYear; year++) {
       data.push(...generateEmptyYearData(year));

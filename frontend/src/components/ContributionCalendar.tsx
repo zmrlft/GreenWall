@@ -109,7 +109,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const monthNames = dictionary.months;
 
   const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
-  const [year, setYear] = React.useState<number>(new Date().getFullYear());
+  const [year, setYear] = React.useState<number>(new Date().getUTCFullYear());
   const [githubUsername, setGithubUsername] = React.useState<string>(() =>
     readStoredValue(STORAGE_KEYS.username)
   );
