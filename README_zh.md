@@ -26,6 +26,14 @@ git push -u origin main
 
 ![private setting screenshot](docs/images/privatesetting.png)
 
+## 效果图
+
+![text](docs/images/cailg.png)
+![catfish](docs/images/cat.png)
+![lovecat](docs/images/darkcat.jpg)
+![helloWorld](docs/images/darkhw.png)
+![androidlife](docs/images/darkandroid.png)
+
 ## 未来的功能
 
 我们可能会增加创建自定义语言仓库的功能，例如生成一个 Java 仓库并在你的主页语言占比中统计它。

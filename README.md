@@ -26,6 +26,14 @@ Note: After pushing, GitHub may take anywhere from 5 minutes to two days to show
 
 ![private setting screenshot](docs/images/privatesetting.png)
 
+## Rendering
+
+![text](docs/images/cailg.png)
+![catfish](docs/images/cat.png)
+![lovecat](docs/images/darkcat.jpg)
+![helloWorld](docs/images/darkhw.png)
+![androidlife](docs/images/darkandroid.png)
+
 ## Future features
 
 We may add support for creating repositories in custom languages. For example, if you want a Java repository, the tool would generate one and it would be reflected in your GitHub language statistics.
