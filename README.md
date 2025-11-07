@@ -9,6 +9,7 @@ Make sure git is installed on your computer.
 ![app screenshot](/docs/images/appnew_en.png)
 
 Download the application, open it, and let your creativity flow! Generating a repository may take a while. After generation, copy the repository folder and enter it to continue.
+
 - Right-clicking during the painting process can switch between the brush and the eraser.
 
 ## Next steps
@@ -33,6 +34,51 @@ Note: After pushing, GitHub may take anywhere from 5 minutes to two days to show
 ![lovecat](docs/images/darkcat.jpg)
 ![helloWorld](docs/images/darkhw.png)
 ![androidlife](docs/images/darkandroid.png)
+
+## Development Guide
+
+- Environmental Preparation
+
+  Install Go 1.23+
+
+  Install Node.js (v22+)
+
+  Install Git
+
+- Install dependent tools
+
+  ```
+  go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+  ```
+
+- Project operation
+
+  Clone the repository and enter the directory:
+
+  ```
+  git clone https://github.com/zmrlft/GreenWall.git
+  cd GreenWall
+  ```
+
+  Install front-end dependencies:
+
+  ```
+  cd frontend && npm install
+  ```
+
+  Start the development environment
+
+  ```
+  wails dev
+  ```
+
+  Construction
+
+  ```
+  wails build
+  ```
+
+  Output path: build/bin/
 
 ## Future features
 

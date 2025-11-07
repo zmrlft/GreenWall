@@ -9,6 +9,7 @@
 ![app screenshot](/docs/images/appnew.png)
 
 下载软件，打开，发挥你的艺术才能！生成仓库需要等待一会，生成后复制仓库目录进入仓库文件夹。
+
 - 绘画过程中右键可以切换画笔和橡皮擦
 
 ## 下一步操作
@@ -33,6 +34,51 @@ git push -u origin main
 ![lovecat](docs/images/darkcat.jpg)
 ![helloWorld](docs/images/darkhw.png)
 ![androidlife](docs/images/darkandroid.png)
+
+## 开发指南
+
+- 环境准备
+
+  安装 Go 1.23+
+
+  安装 Node.js (v22+)
+
+  安装 git
+
+- 安装依赖工具
+
+  ```
+  go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+  ```
+
+- 项目操作
+
+  克隆仓库并进入目录：
+
+  ```
+  git clone https://github.com/zmrlft/GreenWall.git
+  cd GreenWall
+  ```
+
+  安装前端依赖：
+
+  ```
+  cd frontend && npm install
+  ```
+
+  启动开发环境
+
+  ```
+  wails dev
+  ```
+
+  构建
+
+  ```
+  wails build
+  ```
+
+  输出路径：build/bin/
 
 ## 未来的功能
 
