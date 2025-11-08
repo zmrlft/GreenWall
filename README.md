@@ -10,6 +10,27 @@ Make sure git is installed on your computer.
 
 Download the application, open it, and let your creativity flow! Generating a repository may take a while. After generation, copy the repository folder and enter it to continue.
 
+### Windows/Linux
+
+Download and run the application directly.
+
+### macOS
+
+Since this application is not yet signed, you may encounter security restrictions on first launch. Follow these steps to resolve:
+
+```bash
+cd the-directory-where-green-wall.app-is-located
+sudo xattr -cr ./green-wall.app
+sudo spctl --master-disable
+sudo xattr -r -d com.apple.quarantine ./green-wall.app
+```
+
+**Tip:** You don't need to execute all of these commands. Try them in order from top to bottom, and stop once one resolves the issue.
+
+**Warning:** The commands will not automatically launch the application. You need to manually double-click the app to start it (the commands only modify file attributes).
+
+### Quick Tips
+
 - Right-clicking during the painting process can switch between the brush and the eraser.
 
 ## Next steps
