@@ -127,17 +127,32 @@ jobs:
 
       - name: Build application (Linux)
         if: matrix.os == 'ubuntu-latest'
+        env:
+          # GitHub OAuth secrets (optional, for embedded OAuth support)
+          # Configure these in repository Settings -> Secrets and variables -> Actions
+          GREENWALL_GITHUB_CLIENT_ID: ${{ secrets.GREENWALL_GITHUB_CLIENT_ID }}
+          GREENWALL_GITHUB_CLIENT_SECRET: ${{ secrets.GREENWALL_GITHUB_CLIENT_SECRET }}
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
       - name: Build application (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
+        env:
+          # GitHub OAuth secrets (optional, for embedded OAuth support)
+          # Configure these in repository Settings -> Secrets and variables -> Actions
+          GREENWALL_GITHUB_CLIENT_ID: ${{ secrets.GREENWALL_GITHUB_CLIENT_ID }}
+          GREENWALL_GITHUB_CLIENT_SECRET: ${{ secrets.GREENWALL_GITHUB_CLIENT_SECRET }}
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
       - name: Build application (macOS)
         if: matrix.os == 'macos-latest'
+        env:
+          # GitHub OAuth secrets (optional, for embedded OAuth support)
+          # Configure these in repository Settings -> Secrets and variables -> Actions
+          GREENWALL_GITHUB_CLIENT_ID: ${{ secrets.GREENWALL_GITHUB_CLIENT_ID }}
+          GREENWALL_GITHUB_CLIENT_SECRET: ${{ secrets.GREENWALL_GITHUB_CLIENT_SECRET }}
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 

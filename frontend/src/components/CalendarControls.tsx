@@ -17,8 +17,6 @@ type Props = {
   githubUsername: string;
   githubEmail: string;
   repoName: string;
-  onGithubUsernameChange: (username: string) => void;
-  onGithubEmailChange: (email: string) => void;
   onRepoNameChange: (name: string) => void;
   onGenerateRepo?: () => void;
   isGeneratingRepo?: boolean;
@@ -31,6 +29,8 @@ type Props = {
   // 画笔模式
   penMode?: 'manual' | 'auto';
   onPenModeChange?: (mode: 'manual' | 'auto') => void;
+  // 登录按钮
+  loginButton?: React.ReactNode;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -45,8 +45,6 @@ export const CalendarControls: React.FC<Props> = ({
   githubUsername,
   githubEmail,
   repoName,
-  onGithubUsernameChange,
-  onGithubEmailChange,
   onRepoNameChange,
   onGenerateRepo,
   isGeneratingRepo,
@@ -59,6 +57,8 @@ export const CalendarControls: React.FC<Props> = ({
   // 画笔模式
   penMode = 'manual',
   onPenModeChange,
+  // 登录按钮
+  loginButton,
 }) => {
   const { t } = useTranslations();
   const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -104,7 +104,8 @@ export const CalendarControls: React.FC<Props> = ({
     !onGenerateRepo ||
     isGeneratingRepo ||
     githubUsername.trim() === '' ||
-    githubEmail.trim() === '';
+    githubEmail.trim() === '' ||
+    repoName.trim() === '';
 
   const handleGenerateRepo = () => {
     if (!onGenerateRepo) return;
@@ -127,38 +128,15 @@ export const CalendarControls: React.FC<Props> = ({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-nowrap sm:gap-4">
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-          <label htmlFor="github-username-input" className="text-sm font-medium text-black">
-            {t('labels.githubUsername')}
-          </label>
-          <input
-            id="github-username-input"
-            type="text"
-            value={githubUsername}
-            onChange={(event) => onGithubUsernameChange(event.target.value)}
-            placeholder={t('placeholders.githubUsername')}
-            autoComplete="username"
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-          <label htmlFor="github-email-input" className="text-sm font-medium text-black">
-            {t('labels.githubEmail')}
-          </label>
-          <input
-            id="github-email-input"
-            type="email"
-            value={githubEmail}
-            onChange={(event) => onGithubEmailChange(event.target.value)}
-            placeholder={t('placeholders.githubEmail')}
-            autoComplete="email"
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
+      {/* 登录按钮和仓库名称输入框 */}
+      <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
+        {loginButton && (
+          <div className="flex-shrink-0">
+            {loginButton}
+          </div>
+        )}
+        
+        <div className="flex w-full flex-col space-y-2 sm:flex-1">
           <label htmlFor="repo-name-input" className="text-sm font-medium text-black">
             {t('labels.repoName')}
           </label>

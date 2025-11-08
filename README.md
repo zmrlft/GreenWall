@@ -6,6 +6,10 @@
 
 Make sure git is installed on your computer.
 
+### GitHub OAuth Login (Optional)
+
+You can use GitHub OAuth to automatically fill in your username and email. See [OAuth Configuration Guide](docs/OAUTH_USAGE.en.md) for setup instructions.
+
 ![app screenshot](/docs/images/appnew_en.png)
 
 Download the application, open it, and let your creativity flow! Generating a repository may take a while. After generation, copy the repository folder and enter it to continue.
