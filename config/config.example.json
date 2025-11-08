@@ -1,0 +1,11 @@
+{
+  "github": {
+    "clientId": "your_github_client_id_here",
+    "clientSecret": "your_github_client_secret_here",
+    "redirectUrl": "http://localhost:34115/oauth/callback",
+    "scopes": [
+      "user:email",
+      "read:user"
+    ]
+  }
+}

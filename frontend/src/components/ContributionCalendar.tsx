@@ -7,6 +7,7 @@ import { main } from '../../wailsjs/go/models';
 import { useTranslations } from '../i18n';
 import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
 import { getPatternById, gridToBoolean } from '../data/characterPatterns';
+import { GitHubUser } from '../utils/auth';
 const STORAGE_KEYS = {
   username: 'github-contributor.username',
   email: 'github-contributor.email',
@@ -83,6 +84,8 @@ export type OneDay = { level: number; count: number; date: string };
 type Props = {
   contributions: OneDay[];
   className?: string;
+  githubUser?: GitHubUser | null;
+  loginButton?: React.ReactNode;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 type DrawMode = 'pen' | 'eraser';
@@ -95,7 +98,7 @@ type ContainerVars = React.CSSProperties & {
   '--gap'?: string;
 };
 
-function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
+function ContributionCalendar({ contributions: originalContributions, className, githubUser, loginButton, ...rest }: Props) {
   const { style: externalStyle, ...divProps } = rest;
   // 选中日期状态 - 改为存储每个日期的贡献次数
   const { t, dictionary } = useTranslations();
@@ -112,6 +115,21 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const [repoName, setRepoName] = React.useState<string>(() =>
     readStoredValue(STORAGE_KEYS.repoName)
   );
+
+  // 当 githubUser 变化时,自动填充用户名和邮箱
+  React.useEffect(() => {
+    if (githubUser) {
+      setGithubUsername(githubUser.login);
+      if (githubUser.email) {
+        setGithubEmail(githubUser.email);
+      }
+      // 保存到 localStorage
+      writeStoredValue(STORAGE_KEYS.username, githubUser.login);
+      if (githubUser.email) {
+        writeStoredValue(STORAGE_KEYS.email, githubUser.email);
+      }
+    }
+  }, [githubUser]);
 
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -780,8 +798,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
           githubUsername={githubUsername}
           githubEmail={githubEmail}
           repoName={repoName}
-          onGithubUsernameChange={setGithubUsername}
-          onGithubEmailChange={setGithubEmail}
           onRepoNameChange={setRepoName}
           onGenerateRepo={handleGenerateRepo}
           isGeneratingRepo={isGeneratingRepo}
@@ -793,6 +809,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onCancelCharacterPreview={handleCancelCharacterPreview}
           penMode={penMode}
           onPenModeChange={setPenMode}
+          loginButton={loginButton}
         />
       </div>
     </div>
