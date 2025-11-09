@@ -332,7 +332,7 @@ export const CalendarControls: React.FC<Props> = ({
             onClick={handleSelectRepositoryPath}
             disabled={showRepositoryPathPicker}
             className={clsx(
-              'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+              'group relative flex w-full flex-col items-center justify-center gap-1 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
               showRepositoryPathPicker
                 ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
                 : selectedRepositoryPath
@@ -341,17 +341,21 @@ export const CalendarControls: React.FC<Props> = ({
             )}
             title={selectedRepositoryPath ? selectedRepositoryPath : t('titles.selectRepositoryPath')}
           >
-            {showRepositoryPathPicker
-              ? t('buttons.selecting')
-              : selectedRepositoryPath
-                ? '✓ ' + t('buttons.pathSelected')
-                : t('buttons.selectPath')}
+            <span>
+              {showRepositoryPathPicker
+                ? t('buttons.selecting')
+                : selectedRepositoryPath
+                  ? '✓ ' + selectedRepositoryPath.substring(0, 3) + '...'
+                  : t('buttons.selectPath')}
+            </span>
+            {selectedRepositoryPath && selectedRepositoryPath.length > 20 && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none group-hover:animate-scroll">
+                <span className="whitespace-nowrap text-sm font-medium text-blue-700 group-hover:animate-marquee">
+                  ✓ {selectedRepositoryPath}
+                </span>
+              </div>
+            )}
           </button>
-          {selectedRepositoryPath && (
-            <div className="truncate text-xs text-gray-600">
-              {selectedRepositoryPath}
-            </div>
-          )}
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
