@@ -8,15 +8,15 @@ import { TranslationProvider, useTranslations, Language } from './i18n';
 function App() {
   const generateEmptyYearData = (year: number): OneDay[] => {
     const data: OneDay[] = [];
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
+    const d = new Date(Date.UTC(year, 0, 1));
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    while (d.getUTCFullYear() === year) {
       data.push({
         date: d.toISOString().slice(0, 10),
         count: 0,
         level: 0,
       });
+      d.setUTCDate(d.getUTCDate() + 1);
     }
     return data;
   };

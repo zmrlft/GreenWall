@@ -25,6 +25,10 @@ type TranslationDict = {
     pen: string;
     eraser: string;
   };
+  penModes: {
+    manual: string;
+    auto: string;
+  };
   buttons: {
     allGreen: string;
     reset: string;
@@ -40,6 +44,8 @@ type TranslationDict = {
     pen: string;
     eraser: string;
     penIntensity: string;
+    penManualMode: string;
+    penAutoMode: string;
     allGreen: string;
     reset: string;
     generate: string;
@@ -145,6 +151,10 @@ const translations: Record<Language, TranslationDict> = {
       pen: 'Pen',
       eraser: 'Eraser',
     },
+    penModes: {
+      manual: 'Manual',
+      auto: 'Auto',
+    },
     buttons: {
       allGreen: 'All Green',
       reset: 'Reset',
@@ -160,6 +170,8 @@ const translations: Record<Language, TranslationDict> = {
       pen: 'Pen mode - click or drag to add contributions',
       eraser: 'Eraser mode - click or drag to clear contributions',
       penIntensity: 'Set pen intensity to {{intensity}} contributions',
+      penManualMode: 'Manual Mode',
+      penAutoMode: 'Auto Mode',
       allGreen: 'Set all contributions to green',
       reset: 'Clear all customised contribution data',
       generate: 'Create a local git repository matching this contribution calendar',
@@ -267,6 +279,10 @@ const translations: Record<Language, TranslationDict> = {
       pen: '画笔',
       eraser: '橡皮擦',
     },
+    penModes: {
+      manual: '手动',
+      auto: '自动',
+    },
     buttons: {
       allGreen: '全绿',
       reset: '重置',
@@ -282,6 +298,8 @@ const translations: Record<Language, TranslationDict> = {
       pen: '画笔模式 - 点击或拖拽添加贡献',
       eraser: '橡皮擦模式 - 点击或拖拽清除贡献',
       penIntensity: '设置画笔强度为 {{intensity}} 次贡献',
+      penManualMode: '手动模式',
+      penAutoMode: '自动模式',
       allGreen: '将所有贡献设置为绿色',
       reset: '清除所有自定义贡献数据',
       generate: '创建与当前贡献图匹配的本地 Git 仓库',
