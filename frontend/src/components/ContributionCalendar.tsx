@@ -809,8 +809,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onRepoNameChange={setRepoName}
           onGenerateRepo={handleGenerateRepo}
           isGeneratingRepo={isGeneratingRepo}
-          onSelectRepositoryPath={handleSelectRepositoryPath}
-          selectedRepositoryPath={selectedRepositoryPath}
           onExportContributions={handleExportContributions}
           onImportContributions={handleImportContributions}
           // 字符预览相关
