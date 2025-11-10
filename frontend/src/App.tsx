@@ -49,7 +49,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
   const [selectedRepositoryPath, setSelectedRepositoryPath] = React.useState<string | null>(null);
-  const calendarRef = React.useRef<any>(null);
 
   const checkGit = React.useCallback(async () => {
     try {
