@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   username: 'github-contributor.username',
   email: 'github-contributor.email',
   repoName: 'github-contributor.repoName',
+  repositoryPath: 'github-contributor.repositoryPath',
 };
 
 function readStoredValue(key: string): string {
@@ -111,6 +112,10 @@ function ContributionCalendar({ contributions: originalContributions, className,
   );
   const [repoName, setRepoName] = React.useState<string>(() =>
     readStoredValue(STORAGE_KEYS.repoName)
+  );
+
+  const [selectedRepositoryPath, setSelectedRepositoryPath] = React.useState<string | null>(() =>
+    readStoredValue(STORAGE_KEYS.repositoryPath) || null
   );
 
   // 绘画模式状态
@@ -401,6 +406,24 @@ function ContributionCalendar({ contributions: originalContributions, className,
     return () => window.removeEventListener('resize', onResize);
   }, [isMaximized]);
 
+  const handleSelectRepositoryPath = React.useCallback(async () => {
+    try {
+      const { SelectRepositoryPath } = await import('../../wailsjs/go/main/App');
+      const path = await SelectRepositoryPath();
+      if (path) {
+        setSelectedRepositoryPath(path);
+        writeStoredValue(STORAGE_KEYS.repositoryPath, path);
+        return path;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to select repository path:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      window.alert(t('messages.selectPathError', { message }));
+      return null;
+    }
+  }, [t]);
+
   const handleGenerateRepo = React.useCallback(async () => {
     const trimmedUsername = githubUsername.trim();
     const trimmedEmail = githubEmail.trim();
@@ -436,6 +459,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
         githubEmail: trimmedEmail,
         repoName: trimmedRepoName,
         contributions: contributionsForBackend,
+        targetPath: selectedRepositoryPath || '',
       });
       const result = await GenerateRepo(payload);
       window.alert(`Repository created at ${result.repoPath} with ${result.commitCount} commits.`);
@@ -446,7 +470,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
     } finally {
       setIsGeneratingRepo(false);
     }
-  }, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year, t]);
+  }, [filteredContributions, githubEmail, githubUsername, repoName, selectedRepositoryPath, userContributions, year, t]);
 
   const handleExportContributions = React.useCallback(async () => {
     const contributionsToExport = filteredContributions
@@ -785,6 +809,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onRepoNameChange={setRepoName}
           onGenerateRepo={handleGenerateRepo}
           isGeneratingRepo={isGeneratingRepo}
+          onSelectRepositoryPath={handleSelectRepositoryPath}
+          selectedRepositoryPath={selectedRepositoryPath}
           onExportContributions={handleExportContributions}
           onImportContributions={handleImportContributions}
           // 字符预览相关

@@ -14,6 +14,7 @@ type TranslationDict = {
     actions: string;
     language: string;
     dataActions: string;
+    repositoryPath: string;
   };
   placeholders: {
     githubUsername: string;
@@ -35,6 +36,9 @@ type TranslationDict = {
     generating: string;
     export: string;
     import: string;
+    selectPath: string;
+    selecting: string;
+    pathSelected: string;
   };
   titles: {
     pen: string;
@@ -47,6 +51,7 @@ type TranslationDict = {
     generate: string;
     export: string;
     import: string;
+    selectRepositoryPath: string;
   };
   messages: {
     generateRepoMissing: string;
@@ -56,6 +61,7 @@ type TranslationDict = {
     exportError: string;
     importSuccess: string;
     importError: string;
+    selectPathError: (ctx: { message: string }) => string;
   };
   gitInstall: {
     title: string;
@@ -134,6 +140,7 @@ const translations: Record<Language, TranslationDict> = {
       actions: 'Actions',
       language: 'Language',
       dataActions: 'Data Actions',
+      repositoryPath: 'Repository Path',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -155,6 +162,9 @@ const translations: Record<Language, TranslationDict> = {
       generating: 'Generating...',
       export: 'Export',
       import: 'Import',
+      selectPath: 'Select Path',
+      selecting: 'Selecting...',
+      pathSelected: 'Path Selected',
     },
     titles: {
       pen: 'Pen mode - click or drag to add contributions',
@@ -167,6 +177,7 @@ const translations: Record<Language, TranslationDict> = {
       generate: 'Create a local git repository matching this contribution calendar',
       export: 'Export current contributions to a JSON file',
       import: 'Import contributions from a JSON file',
+      selectRepositoryPath: 'Select Repository Path',
     },
     messages: {
       generateRepoMissing:
@@ -177,6 +188,7 @@ const translations: Record<Language, TranslationDict> = {
       exportError: 'Failed to export contributions: {{message}}',
       importSuccess: 'Contributions imported successfully',
       importError: 'Failed to import contributions: {{message}}',
+      selectPathError: (ctx) => `Failed to select path: ${ctx.message}`,
     },
     gitInstall: {
       title: 'Git Installation Required',
@@ -256,6 +268,7 @@ const translations: Record<Language, TranslationDict> = {
       actions: '操作',
       language: '语言',
       dataActions: '数据操作',
+      repositoryPath: '仓库路径',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -277,6 +290,9 @@ const translations: Record<Language, TranslationDict> = {
       generating: '生成中...',
       export: '导出',
       import: '导入',
+      selectPath: '选择路径',
+      selecting: '选择中...',
+      pathSelected: '路径已选择',
     },
     titles: {
       pen: '画笔模式 - 点击或拖拽添加贡献',
@@ -289,6 +305,7 @@ const translations: Record<Language, TranslationDict> = {
       generate: '创建与当前贡献图匹配的本地 Git 仓库',
       export: '导出当前贡献数据到 JSON 文件',
       import: '从 JSON 文件导入贡献数据',
+      selectRepositoryPath: '选择仓库路径',
     },
     messages: {
       generateRepoMissing: '请先填写 GitHub 用户名和邮箱，然后再生成仓库。',
@@ -298,6 +315,7 @@ const translations: Record<Language, TranslationDict> = {
       exportError: '导出贡献数据失败：{{message}}',
       importSuccess: '贡献数据已成功导入',
       importError: '导入贡献数据失败：{{message}}',
+      selectPathError: (ctx) => `选择路径失败: ${ctx.message}`,
     },
     gitInstall: {
       title: '需要安装 Git',

@@ -13,3 +13,7 @@ export function Greet(arg1:string):Promise<string>;
 export function ImportContributions():Promise<main.ImportContributionsResponse>;
 
 export function SetGitPath(arg1:main.SetGitPathRequest):Promise<main.SetGitPathResponse>;
+
+export function SelectRepositoryPath():Promise<string>;
+
+export function ValidatePath(arg1:string):Promise<boolean>;
