@@ -24,8 +24,6 @@ type Props = {
   isGeneratingRepo?: boolean;
   onExportContributions?: () => void;
   onImportContributions?: () => void;
-  onSelectRepositoryPath?: () => Promise<string | null>;
-  selectedRepositoryPath?: string | null;
   // 字符预览相关
   onStartCharacterPreview?: (char: string) => void;
   previewMode?: boolean;
@@ -54,8 +52,6 @@ export const CalendarControls: React.FC<Props> = ({
   isGeneratingRepo,
   onExportContributions,
   onImportContributions,
-  onSelectRepositoryPath,
-  selectedRepositoryPath,
   // 字符预览相关
   onStartCharacterPreview,
   previewMode,
@@ -73,8 +69,6 @@ export const CalendarControls: React.FC<Props> = ({
   const [showCharacterSelector, setShowCharacterSelector] = React.useState<boolean>(false);
   // 画笔强度选择器显示状态
   const [showPenIntensityPicker, setShowPenIntensityPicker] = React.useState<boolean>(false);
-  // 仓库路径选择状态
-  const [showRepositoryPathPicker, setShowRepositoryPathPicker] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     setYearInput(typeof year === 'number' ? String(year) : '');
@@ -122,16 +116,6 @@ export const CalendarControls: React.FC<Props> = ({
       onStartCharacterPreview(char);
     }
   };
-
-  const handleSelectRepositoryPath = React.useCallback(async () => {
-    if (!onSelectRepositoryPath) return;
-    setShowRepositoryPathPicker(true);
-    try {
-      await onSelectRepositoryPath();
-    } finally {
-      setShowRepositoryPathPicker(false);
-    }
-  }, [onSelectRepositoryPath]);
 
   const handleCharacterButtonClick = () => {
     if (previewMode && onCancelCharacterPreview) {
