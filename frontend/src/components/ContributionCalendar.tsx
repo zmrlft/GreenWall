@@ -114,9 +114,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
     readStoredValue(STORAGE_KEYS.repoName)
   );
 
-  const [selectedRepositoryPath, setSelectedRepositoryPath] = React.useState<string | null>(() =>
-    readStoredValue(STORAGE_KEYS.repositoryPath) || null
-  );
+  const selectedRepositoryPath = readStoredValue(STORAGE_KEYS.repositoryPath) || null;
 
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -406,23 +404,6 @@ function ContributionCalendar({ contributions: originalContributions, className,
     return () => window.removeEventListener('resize', onResize);
   }, [isMaximized]);
 
-  const handleSelectRepositoryPath = React.useCallback(async () => {
-    try {
-      const { SelectRepositoryPath } = await import('../../wailsjs/go/main/App');
-      const path = await SelectRepositoryPath();
-      if (path) {
-        setSelectedRepositoryPath(path);
-        writeStoredValue(STORAGE_KEYS.repositoryPath, path);
-        return path;
-      }
-      return null;
-    } catch (error) {
-      console.error('Failed to select repository path:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      window.alert(t('messages.selectPathError', { message }));
-      return null;
-    }
-  }, [t]);
 
   const handleGenerateRepo = React.useCallback(async () => {
     const trimmedUsername = githubUsername.trim();
