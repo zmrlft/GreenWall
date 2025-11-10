@@ -76,35 +76,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
     [t]
   );
 
-  const brandTagline = language === 'zh' ? 'GitHub 贡献工作台' : 'GitHub Contribution Studio';
-  const gitStatusLabel = React.useMemo(() => {
-    if (isGitInstalled === null) {
-      return language === 'zh' ? '检测中…' : 'Checking…';
-    }
-    return isGitInstalled
-      ? language === 'zh'
-        ? '已安装'
-        : 'Installed'
-      : language === 'zh'
-        ? '未检测到'
-        : 'Not Found';
-  }, [isGitInstalled, language]);
-
-  const currentYear = new Date().getFullYear();
+  const loginLabel = language === 'zh' ? '登录' : 'Log in';
 
   return (
     <div className="app-shell">
       <div className="app-shell__surface">
         <header className="app-shell__topbar">
-          <div className="app-shell__brand">
-            <span className="app-shell__logo" aria-hidden="true">
-              G
-            </span>
-            <div>
-              <p className="app-shell__title">green-wall</p>
-              <p className="app-shell__subtitle">{brandTagline}</p>
-            </div>
-          </div>
+          <button type="button" className="app-shell__login">
+            {loginLabel}
+          </button>
           <div className="app-shell__actions">
             <button
               type="button"
@@ -146,26 +126,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
           </div>
         </header>
 
-        <section className="app-shell__meta" aria-live="polite">
-          <div className="meta-card">
-            <span className="meta-card__label">{t('labels.year')}</span>
-            <strong className="meta-card__value">{currentYear}</strong>
-          </div>
-          <div className="meta-card">
-            <span className="meta-card__label">{t('gitInstall.title')}</span>
-            <strong className="meta-card__value">{gitStatusLabel}</strong>
-          </div>
-          <div className="meta-card">
-            <span className="meta-card__label">{t('labels.language')}</span>
-            <strong className="meta-card__value">
-              {language === 'zh' ? t('languageSwitcher.chinese') : t('languageSwitcher.english')}
-            </strong>
-          </div>
-        </section>
-
-        <main className="app-shell__main">
-          <ContributionCalendar contributions={contributions} />
-        </main>
+        <ContributionCalendar contributions={contributions} />
       </div>
 
       {isGitInstalled === false && <GitInstallSidebar onCheckAgain={handleCheckAgain} />}

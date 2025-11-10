@@ -713,7 +713,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   }
 
   return (
-    <div className={clsx('workbench', isMaximized && 'workbench--expanded')}>
+    <div className="workbench">
       <div className="workbench__canvas">
         <div
           {...divProps}
