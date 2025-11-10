@@ -511,7 +511,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
     if (mode === 'pen') {
       setUserContributions((prev) => {
         const newMap = new Map(prev);
-        
+
         if (penMode === 'auto') {
           // auto 模式：逐步递进 0 → 1 → 3 → 6 → 9
           const current = prev.get(dateStr) ?? 0;
@@ -522,13 +522,13 @@ function ContributionCalendar({ contributions: originalContributions, className,
           else if (current < 9) nextCount = 9;
           // 已是最深绿色（9）则不再变化
           else nextCount = current;
-          
+
           newMap.set(dateStr, nextCount);
         } else {
           // manual 模式：直接设置为选定的画笔强度值
           newMap.set(dateStr, penIntensity);
         }
-        
+
         return newMap;
       });
     } else if (mode === 'eraser') {
@@ -713,27 +713,12 @@ function ContributionCalendar({ contributions: originalContributions, className,
   }
 
   return (
-    <div
-      className={clsx(
-        'flex w-full px-4 py-3',
-        // 最大化：上下布局，并稍微加大间距
-        isMaximized
-          ? 'flex-col gap-6 overflow-x-hidden'
-          : 'flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-10'
-      )}
-    >
-      <div
-        className={clsx('w-full lg:flex-1', isMaximized ? 'overflow-x-hidden' : 'overflow-x-auto')}
-      >
+    <div className={clsx('workbench', isMaximized && 'workbench--expanded')}>
+      <div className="workbench__canvas">
         <div
           {...divProps}
           ref={containerRef}
-          className={clsx(
-            styles.container,
-            isMaximized && styles.maximized,
-            'mx-auto lg:mx-0',
-            className
-          )}
+          className={clsx(styles.container, isMaximized && styles.maximized, className)}
           style={{
             ...(externalStyle ?? {}),
             ...(isMaximized ? containerVars : {}),
@@ -761,13 +746,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
         </div>
       </div>
 
-      <div
-        className={clsx(
-          'w-full',
-          // 最大化：放在下方并居中适度加宽；非最大化：右侧窄栏
-          isMaximized ? 'max-w-3xl mx-auto' : 'lg:max-w-sm'
-        )}
-      >
+      <aside className="workbench__panel">
         <CalendarControls
           year={year}
           drawMode={drawMode}
@@ -794,7 +773,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
           penMode={penMode}
           onPenModeChange={setPenMode}
         />
-      </div>
+      </aside>
     </div>
   );
 }
