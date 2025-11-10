@@ -373,40 +373,6 @@ export const CalendarControls: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex w-full flex-col space-y-2 sm:w-auto">
-          <span className="text-sm font-medium text-black">
-            {t('labels.repositoryPath')}
-          </span>
-          <button
-            type="button"
-            onClick={handleSelectRepositoryPath}
-            disabled={showRepositoryPathPicker}
-            className={clsx(
-              'group relative flex w-full flex-col items-center justify-center gap-1 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
-              showRepositoryPathPicker
-                ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
-                : selectedRepositoryPath
-                  ? 'scale-105 transform border border-blue-500 bg-blue-50 text-blue-700 shadow-lg hover:bg-blue-100'
-                  : 'border border-black bg-white text-black hover:bg-gray-100'
-            )}
-            title={selectedRepositoryPath ? selectedRepositoryPath : t('titles.selectRepositoryPath')}
-          >
-            <span>
-              {showRepositoryPathPicker
-                ? t('buttons.selecting')
-                : selectedRepositoryPath
-                  ? '✓ ' + selectedRepositoryPath.substring(0, 3) + '...'
-                  : t('buttons.selectPath')}
-            </span>
-            {selectedRepositoryPath && selectedRepositoryPath.length > 20 && (
-              <div className="absolute inset-0 overflow-hidden pointer-events-none group-hover:animate-scroll">
-                <span className="whitespace-nowrap text-sm font-medium text-blue-700 group-hover:animate-marquee">
-                  ✓ {selectedRepositoryPath}
-                </span>
-              </div>
-            )}
-          </button>
-        </div>
 
         <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
           <span className="text-sm font-medium text-black sm:invisible">

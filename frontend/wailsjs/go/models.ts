@@ -3,18 +3,17 @@ export namespace main {
 	export class CheckGitInstalledResponse {
 	    installed: boolean;
 	    version: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new CheckGitInstalledResponse(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.installed = source["installed"];
 	        this.version = source["version"];
 	    }
 	}
-	
 	export class ContributionDay {
 	    date: string;
 	    count: number;
@@ -77,6 +76,7 @@ export namespace main {
 	    githubEmail: string;
 	    repoName: string;
 	    contributions: ContributionDay[];
+	    targetPath: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GenerateRepoRequest(source);
@@ -89,6 +89,7 @@ export namespace main {
 	        this.githubEmail = source["githubEmail"];
 	        this.repoName = source["repoName"];
 	        this.contributions = this.convertValues(source["contributions"], ContributionDay);
+	        this.targetPath = source["targetPath"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

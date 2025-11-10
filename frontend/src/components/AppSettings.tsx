@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { useTranslations } from '../i18n';
 
-interface GitPathSettingsProps {
+interface AppSettingsProps {
   onClose: () => void;
   onCheckAgain: () => void;
+  onSelectRepositoryPath?: () => Promise<string | null>;
+  selectedRepositoryPath?: string | null;
 }
 
-const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain }) => {
+const AppSettings: React.FC<AppSettingsProps> = ({
+  onClose,
+  onCheckAgain,
+  onSelectRepositoryPath,
+  selectedRepositoryPath,
+}: AppSettingsProps) => {
   const { t } = useTranslations();
   const [customGitPath, setCustomGitPath] = useState('');
   const [isSettingPath, setIsSettingPath] = useState(false);
   const [setPathResult, setSetPathResult] = useState<{ success: boolean; message: string } | null>(
     null
   );
+  const [showRepositoryPathPicker, setShowRepositoryPathPicker] = useState(false);
 
   const handleSetGitPath = async () => {
     if (!customGitPath.trim()) {
@@ -79,6 +87,16 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain
     }
   };
 
+  const handleSelectRepositoryPath = React.useCallback(async () => {
+    if (!onSelectRepositoryPath) return;
+    setShowRepositoryPathPicker(true);
+    try {
+      await onSelectRepositoryPath();
+    } finally {
+      setShowRepositoryPathPicker(false);
+    }
+  }, [onSelectRepositoryPath]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="mx-4 w-full max-w-lg border border-black bg-white p-8">
@@ -119,6 +137,33 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain
             />
           </div>
 
+          {onSelectRepositoryPath && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-black">
+                {t('labels.repositoryPath')}
+              </label>
+              <button
+                type="button"
+                onClick={handleSelectRepositoryPath}
+                disabled={showRepositoryPathPicker}
+                className={`w-full rounded-none px-3 py-2 text-sm font-medium transition-colors ${
+                  showRepositoryPathPicker
+                    ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
+                    : selectedRepositoryPath
+                      ? 'border border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                      : 'border border-black bg-white text-black hover:bg-gray-100'
+                }`}
+                title={selectedRepositoryPath ? selectedRepositoryPath : t('titles.selectRepositoryPath')}
+              >
+                {showRepositoryPathPicker
+                  ? t('buttons.selecting')
+                  : selectedRepositoryPath
+                    ? '✓ ' + selectedRepositoryPath.substring(0, 3) + '...'
+                    : t('buttons.selectPath')}
+              </button>
+            </div>
+          )}
+
           {setPathResult && (
             <p className={`text-sm ${setPathResult.success ? 'text-black' : 'text-red-600'}`}>
               {setPathResult.message}
@@ -157,4 +202,4 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain
   );
 };
 
-export default GitPathSettings;
+export default AppSettings;

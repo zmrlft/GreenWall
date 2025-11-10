@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import ContributionCalendar, { OneDay } from './components/ContributionCalendar';
 import GitInstallSidebar from './components/GitInstallSidebar';
-import GitPathSettings from './components/GitPathSettings';
+import AppSettings from './components/AppSettings';
 import { TranslationProvider, useTranslations, Language } from './i18n';
 
 function App() {
@@ -48,6 +48,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const { language, setLanguage, t } = useTranslations();
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
+  const [selectedRepositoryPath, setSelectedRepositoryPath] = React.useState<string | null>(null);
+  const calendarRef = React.useRef<any>(null);
 
   const checkGit = React.useCallback(async () => {
     try {
@@ -67,6 +69,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const handleCheckAgain = React.useCallback(() => {
     checkGit();
   }, [checkGit]);
+
+  const handleSelectRepositoryPath = React.useCallback(async () => {
+    try {
+      const { SelectRepositoryPath } = await import('../wailsjs/go/main/App');
+      const path = await SelectRepositoryPath();
+      if (path) {
+        setSelectedRepositoryPath(path);
+        return path;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to select repository path:', error);
+      return null;
+    }
+  }, []);
 
   const languageOptions = React.useMemo(
     () => [
@@ -151,9 +168,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
 
       {/* Git 路径设置弹窗 */}
       {isGitPathSettingsOpen && (
-        <GitPathSettings
+        <AppSettings
           onClose={() => setIsGitPathSettingsOpen(false)}
           onCheckAgain={handleCheckAgain}
+          onSelectRepositoryPath={handleSelectRepositoryPath}
+          selectedRepositoryPath={selectedRepositoryPath}
         />
       )}
     </div>

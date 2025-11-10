@@ -22,12 +22,12 @@ export function ImportContributions() {
   return window['go']['main']['App']['ImportContributions']();
 }
 
-export function SetGitPath(arg1) {
-  return window['go']['main']['App']['SetGitPath'](arg1);
-}
-
 export function SelectRepositoryPath() {
   return window['go']['main']['App']['SelectRepositoryPath']();
+}
+
+export function SetGitPath(arg1) {
+  return window['go']['main']['App']['SetGitPath'](arg1);
 }
 
 export function ValidatePath(arg1) {
