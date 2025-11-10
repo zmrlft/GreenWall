@@ -3,7 +3,9 @@ import './App.css';
 import ContributionCalendar, { OneDay } from './components/ContributionCalendar';
 import GitInstallSidebar from './components/GitInstallSidebar';
 import GitPathSettings from './components/GitPathSettings';
+import { GitHubLogin } from './components/GitHubLogin';
 import { TranslationProvider, useTranslations, Language } from './i18n';
+import { GitHubUser } from './utils/auth';
 
 function App() {
   const generateEmptyYearData = (year: number): OneDay[] => {
@@ -48,6 +50,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const { language, setLanguage, t } = useTranslations();
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
+  const [githubUser, setGithubUser] = React.useState<GitHubUser | null>(null);
 
   const checkGit = React.useCallback(async () => {
     try {
@@ -81,7 +84,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
       <div className="container mx-auto px-4 py-4 md:py-6">
         <main className="flex justify-center">
           <div className="rounded-none bg-white p-6 shadow-none">
-            <ContributionCalendar contributions={contributions} />
+            <ContributionCalendar 
+              contributions={contributions}
+              githubUser={githubUser}
+              loginButton={
+                <GitHubLogin
+                  onLoginSuccess={setGithubUser}
+                  onLogout={() => setGithubUser(null)}
+                />
+              }
+            />
           </div>
         </main>
       </div>

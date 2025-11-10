@@ -6,6 +6,14 @@
 
 请确保你的电脑已经安装了 git。
 
+### GitHub OAuth 登录（可选）
+
+你可以使用 GitHub OAuth 自动填充用户名和邮箱。
+
+- 📖 [OAuth 配置指南](docs/OAUTH_USAGE.md) - 快速开始指南
+- 🔒 [安全配置指南](docs/SECURITY_CONFIG.md) - 推荐的安全配置方法
+- 🚀 [CI/CD 配置指南](docs/CI_CD_SETUP.md) - 在 CI/CD 中安全使用密钥
+
 ![app screenshot](/docs/images/appnew.png)
 
 下载软件，打开，发挥你的艺术才能！生成仓库需要等待一会，生成后复制仓库目录进入仓库文件夹。

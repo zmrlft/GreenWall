@@ -100,14 +100,17 @@ type TranslationDict = {
   characterSelector: {
     title: string;
     selectCharacter: string;
-    tabUppercase: string;
-    tabLowercase: string;
-    tabNumbers: string;
-    tabSymbols: string;
-    previewTooltip: string;
-    characterTool: string;
+    preview: string;
     cancelPreview: string;
     character: string;
+  };
+  oauth: {
+    loginButton: string;
+    loggingIn: string;
+    cancel: string;
+    logout: string;
+    loginCancelled: string;
+    loginFailed: string;
   };
   months: string[];
   weekdays: {
@@ -224,14 +227,17 @@ const translations: Record<Language, TranslationDict> = {
     characterSelector: {
       title: 'Select Pattern',
       selectCharacter: 'Select Character (A-Z, a-z, 0-9)',
-      tabUppercase: 'A-Z',
-      tabLowercase: 'a-z',
-      tabNumbers: '0-9',
-      tabSymbols: '🎨 Symbols',
-      previewTooltip: 'Preview character: {{char}}',
-      characterTool: 'Character Tool',
+      preview: 'Preview',
       cancelPreview: 'Cancel Preview',
       character: 'Character',
+    },
+    oauth: {
+      loginButton: 'Login with GitHub',
+      loggingIn: 'Logging in...',
+      cancel: 'Cancel',
+      logout: 'Logout',
+      loginCancelled: 'Login cancelled',
+      loginFailed: 'Login failed',
     },
     months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     weekdays: {
@@ -343,14 +349,17 @@ const translations: Record<Language, TranslationDict> = {
     characterSelector: {
       title: '选择图案',
       selectCharacter: '选择字符 (A-Z, a-z, 0-9)',
-      tabUppercase: 'A-Z',
-      tabLowercase: 'a-z',
-      tabNumbers: '0-9',
-      tabSymbols: '🎨 符号',
-      previewTooltip: '预览字符: {{char}}',
-      characterTool: '字符工具',
+      preview: '预览',
       cancelPreview: '取消预览',
       character: '字符',
+    },
+    oauth: {
+      loginButton: '使用 GitHub 登录',
+      loggingIn: '登录中...',
+      cancel: '取消',
+      logout: '登出',
+      loginCancelled: '登录已取消',
+      loginFailed: '登录失败',
     },
     months: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
     weekdays: {
