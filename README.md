@@ -21,7 +21,6 @@ Since this application is not yet signed, you may encounter security restriction
 ```bash
 cd the-directory-where-green-wall.app-is-located
 sudo xattr -cr ./green-wall.app
-sudo spctl --master-disable
 sudo xattr -r -d com.apple.quarantine ./green-wall.app
 ```
 

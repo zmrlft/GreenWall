@@ -21,7 +21,6 @@
 ```bash
 cd 你的green-wall.app存在的目录
 sudo xattr -cr ./green-wall.app
-sudo spctl --master-disable
 sudo xattr -r -d com.apple.quarantine ./green-wall.app
 ```
 
