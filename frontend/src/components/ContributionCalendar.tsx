@@ -48,6 +48,15 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   return 0;
 }
 
+// 逐步递进贡献次数 (0 → 1 → 3 → 6 → 9)
+function getNextContribution(current: number): number {
+  if (current < 1) return 1;
+  if (current < 3) return 3;
+  if (current < 6) return 6;
+  if (current < 9) return 9;
+  return current; // 已是最大值
+}
+
 // 将字符转换为像素图案 - 使用预定义的图案数据
 function characterToPattern(char: string): boolean[][] {
   const pattern = getPatternById(char);
@@ -276,9 +285,15 @@ function ContributionCalendar({ contributions: originalContributions, className,
     setUserContributions((prev) => {
       const newMap = new Map(prev);
       for (const dateStr of previewDates) {
-        // 设置为最大贡献值 9
-        newMap.set(dateStr, 9);
-      }
+        const current = prev.get(dateStr) ?? 0;
+
+        if (penMode === 'auto') {
+          // auto 模式：逐步递进
+          newMap.set(dateStr, getNextContribution(current));
+        } else {
+          // manual 模式：直接设置为选定的画笔强度值
+          newMap.set(dateStr, penIntensity);
+        }
       return newMap;
     });
 
@@ -515,13 +530,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
         if (penMode === 'auto') {
           // auto 模式：逐步递进 0 → 1 → 3 → 6 → 9
           const current = prev.get(dateStr) ?? 0;
-          let nextCount = 0;
-          if (current < 1) nextCount = 1;
-          else if (current < 3) nextCount = 3;
-          else if (current < 6) nextCount = 6;
-          else if (current < 9) nextCount = 9;
-          // 已是最深绿色（9）则不再变化
-          else nextCount = current;
+          // 改为调用方法
+          let nextCount = getNextContribution(current);
           
           newMap.set(dateStr, nextCount);
         } else {
