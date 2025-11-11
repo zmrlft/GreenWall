@@ -148,11 +148,11 @@ export const CalendarControls: React.FC<Props> = ({
     setShowPenIntensityPicker(false);
   };
 
-  const renderPenSettingsLabel = () => {
+  const getPenSettingsAriaLabel = () => {
     if (penMode === 'auto') {
       return t('penModes.auto');
     }
-    return `${t('labels.penIntensity')} ${penIntensity}`;
+    return t('titles.penIntensity', { intensity: penIntensity });
   };
 
   return (
@@ -200,14 +200,19 @@ export const CalendarControls: React.FC<Props> = ({
                         ? 'border-white/60 bg-white/10 text-white hover:bg-white/20'
                         : 'border-black/40 bg-black/5 text-black/70'
                     )}
+                    aria-label={getPenSettingsAriaLabel()}
                     onClick={handlePenSettingsButtonClick}
                   >
-                    <span>{renderPenSettingsLabel()}</span>
-                    {penMode === 'manual' && (
-                      <span
-                        className="ml-1 h-3 w-3 rounded-sm border border-white/60"
-                        style={{ backgroundColor: penIntensityColors[penIntensity] }}
-                      />
+                    {penMode === 'auto' ? (
+                      <span>{t('penModes.auto')}</span>
+                    ) : (
+                      <>
+                        <span
+                          className="ml-1 h-3 w-3 rounded-sm border border-white/60"
+                          style={{ backgroundColor: penIntensityColors[penIntensity] }}
+                        />
+                        <span className="sr-only">{getPenSettingsAriaLabel()}</span>
+                      </>
                     )}
                   </button>
                 )}
@@ -240,7 +245,7 @@ export const CalendarControls: React.FC<Props> = ({
               <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-black bg-white p-4 shadow-xl">
                 <div className="space-y-3">
                   <span className="text-sm font-medium text-black">{t('labels.penIntensity')}</span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-row flex-wrap gap-1.5">
                     {penOptions.map((option) => {
                       const isAuto = option === 'auto';
                       const isActive = isAuto
@@ -252,22 +257,31 @@ export const CalendarControls: React.FC<Props> = ({
                           type="button"
                           onClick={() => handlePenOptionSelect(option)}
                           className={clsx(
-                            'flex items-center justify-center gap-2 rounded-none border px-3 py-2 text-sm font-medium transition-colors duration-200',
+                            'flex items-center justify-between rounded-none border px-2 py-1 text-xs font-medium transition-colors duration-200',
                             isActive
                               ? 'border-black bg-black text-white'
                               : 'border-gray-300 bg-white text-gray-700 hover:border-black'
                           )}
+                          aria-label={
+                            isAuto
+                              ? t('penModes.auto')
+                              : t('titles.penIntensity', { intensity: option })
+                          }
                         >
-                          <span>
-                            {isAuto ? t('penModes.auto') : `${t('labels.penIntensity')} ${option}`}
-                          </span>
-                          {!isAuto && (
-                            <span
-                              className="h-3 w-3 rounded-sm border border-black/30"
-                              style={{
-                                backgroundColor: penIntensityColors[option],
-                              }}
-                            />
+                          {isAuto ? (
+                            <span className="tracking-wide">{t('penModes.auto')}</span>
+                          ) : (
+                            <>
+                              <span
+                                className="h-4 w-4 rounded-full border border-black/30"
+                                style={{
+                                  backgroundColor: penIntensityColors[option],
+                                }}
+                              />
+                              <span className="sr-only">
+                                {t('titles.penIntensity', { intensity: option })}
+                              </span>
+                            </>
                           )}
                         </button>
                       );
