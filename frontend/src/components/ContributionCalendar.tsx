@@ -294,6 +294,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
           // manual 模式：直接设置为选定的画笔强度值
           newMap.set(dateStr, penIntensity);
         }
+        
+      }
       return newMap;
     });
 
