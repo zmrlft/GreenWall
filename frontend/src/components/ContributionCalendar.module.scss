@@ -1,7 +1,7 @@
 @import '../css/mixins.scss';
 .container {
-  --cell: 10px;
-  --gap: 3px;
+  --cell: 14px;
+  --gap: 4px;
   --tile-extra: 2px;
 
   display: grid;
@@ -11,8 +11,8 @@
 
   width: fit-content;
   font-size: 12px;
-  padding: 20px;
-  border: solid 1px #000000;
+  padding: 0px;
+  
   border-radius: 0px;
   margin: 0 auto;
   background: #ffffff;

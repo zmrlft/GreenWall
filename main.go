@@ -17,9 +17,10 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "green-wall",
-		Width:  900,
-		Height: 600,
+		Title: "green-wall",
+		// Give the contribution canvas extra breathing room so wide layouts don't get cramped.
+		Width:  1290,
+		Height: 750,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
