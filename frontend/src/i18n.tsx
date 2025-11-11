@@ -11,9 +11,7 @@ type TranslationDict = {
     year: string;
     drawMode: string;
     penIntensity: string;
-    actions: string;
     language: string;
-    dataActions: string;
   };
   placeholders: {
     githubUsername: string;
@@ -107,7 +105,6 @@ type TranslationDict = {
     tabNumbers: string;
     tabSymbols: string;
     previewTooltip: string;
-    characterTool: string;
     cancelPreview: string;
     character: string;
   };
@@ -163,9 +160,7 @@ const translations: Record<Language, TranslationDict> = {
       year: 'Year',
       drawMode: 'Draw Mode',
       penIntensity: 'Pen Intensity',
-      actions: 'Actions',
       language: 'Language',
-      dataActions: 'Data Actions',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -264,7 +259,6 @@ const translations: Record<Language, TranslationDict> = {
       tabNumbers: '0-9',
       tabSymbols: '🎨 Symbols',
       previewTooltip: 'Preview character: {{char}}',
-      characterTool: 'Character Tool',
       cancelPreview: 'Cancel Preview',
       character: 'Character',
     },
@@ -319,9 +313,7 @@ const translations: Record<Language, TranslationDict> = {
       year: '年份',
       drawMode: '绘制模式',
       penIntensity: '画笔强度',
-      actions: '操作',
       language: '语言',
-      dataActions: '数据操作',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -416,7 +408,6 @@ const translations: Record<Language, TranslationDict> = {
       tabNumbers: '0-9',
       tabSymbols: '🎨 符号',
       previewTooltip: '预览字符: {{char}}',
-      characterTool: '字符工具',
       cancelPreview: '取消预览',
       character: '字符',
     },

@@ -731,29 +731,39 @@ function ContributionCalendar({
         </div>
       </div>
 
-      <aside className="workbench__panel">
-        <CalendarControls
-          year={year}
-          drawMode={drawMode}
-          penIntensity={penIntensity}
-          onYearChange={setYear}
-          onDrawModeChange={setDrawMode}
-          onPenIntensityChange={setPenIntensity}
-          onReset={handleReset}
-          onFillAllGreen={handleFillAllGreen}
-          onOpenRemoteRepoModal={handleOpenRemoteModal}
-          canCreateRemoteRepo={Boolean(githubUser)}
-          isGeneratingRepo={isGeneratingRepo}
-          onExportContributions={handleExportContributions}
-          onImportContributions={handleImportContributions}
-          // 字符预览相关
-          onStartCharacterPreview={handleStartCharacterPreview}
-          previewMode={previewMode}
-          onCancelCharacterPreview={handleCancelCharacterPreview}
-          penMode={penMode}
-          onPenModeChange={setPenMode}
-        />
-      </aside>
+      <div className="flex flex-row gap-5">
+        <aside className="workbench__panel">
+          <CalendarControls
+            year={year}
+            drawMode={drawMode}
+            penIntensity={penIntensity}
+            onYearChange={setYear}
+            onDrawModeChange={setDrawMode}
+            onPenIntensityChange={setPenIntensity}
+            onReset={handleReset}
+            onFillAllGreen={handleFillAllGreen}
+            onOpenRemoteRepoModal={handleOpenRemoteModal}
+            canCreateRemoteRepo={Boolean(githubUser)}
+            isGeneratingRepo={isGeneratingRepo}
+            onExportContributions={handleExportContributions}
+            onImportContributions={handleImportContributions}
+            // 字符预览相关
+            onStartCharacterPreview={handleStartCharacterPreview}
+            previewMode={previewMode}
+            onCancelCharacterPreview={handleCancelCharacterPreview}
+            penMode={penMode}
+            onPenModeChange={setPenMode}
+          />
+        </aside>
+        <aside className="workbench__panel">
+          <p className="text-center">
+            ✨ 该区域正在筹备中！各位大神有哪些脑洞大开的功能想法？快来 issues
+            留言，你的创意可能会被实现哦～
+            <br />✨ This area is in the works! Do you have any creative function ideas, dear users?
+            Leave a comment in the issues—your creativity might be realized!
+          </p>
+        </aside>
+      </div>
       {isRemoteModalOpen && (
         <RemoteRepoModal
           open={isRemoteModalOpen}

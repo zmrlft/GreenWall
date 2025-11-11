@@ -4,6 +4,7 @@ import { useTranslations } from '../i18n';
 import { CharacterSelector } from './CharacterSelector';
 
 type PenIntensity = 1 | 3 | 6 | 9;
+type PenOption = PenIntensity | 'auto';
 
 type Props = {
   year?: number;
@@ -55,14 +56,20 @@ export const CalendarControls: React.FC<Props> = ({
     typeof year === 'number' ? String(year) : ''
   );
 
-  // 字符选择状态
+  // Character selector visibility
   const [showCharacterSelector, setShowCharacterSelector] = React.useState<boolean>(false);
-  // 画笔强度选择器显示状态
+  // Pen intensity picker visibility
   const [showPenIntensityPicker, setShowPenIntensityPicker] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     setYearInput(typeof year === 'number' ? String(year) : '');
   }, [year]);
+
+  React.useEffect(() => {
+    if (drawMode !== 'pen') {
+      setShowPenIntensityPicker(false);
+    }
+  }, [drawMode]);
 
   const handleYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
@@ -110,10 +117,49 @@ export const CalendarControls: React.FC<Props> = ({
     }
   };
 
+  const penIntensityColors: Record<PenIntensity, string> = {
+    1: '#9be9a8',
+    3: '#40c463',
+    6: '#30a14e',
+    9: '#216e39',
+  };
+  const penOptions: PenOption[] = [1, 3, 6, 9, 'auto'];
+
+  const handlePenSettingsButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!onPenIntensityChange) {
+      return;
+    }
+    if (drawMode !== 'pen') {
+      onDrawModeChange('pen');
+    }
+    setShowPenIntensityPicker((prev) => !prev);
+  };
+
+  const handlePenOptionSelect = (option: PenOption) => {
+    if (option === 'auto') {
+      onPenModeChange?.('auto');
+      setShowPenIntensityPicker(false);
+      return;
+    }
+    onPenModeChange?.('manual');
+    onPenIntensityChange?.(option);
+    setShowPenIntensityPicker(false);
+  };
+
+  const renderPenSettingsLabel = () => {
+    if (penMode === 'auto') {
+      return t('penModes.auto');
+    }
+    return `${t('labels.penIntensity')} ${penIntensity}`;
+  };
+
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="flex w-full flex-col space-y-2 sm:w-32 sm:flex-none">
+    <div className="flex w-full flex-col gap-6">
+      {/* Row 1: year + draw controls */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+        <div className="flex w-full flex-col gap-2 md:max-w-xs">
           <label htmlFor="year-input" className="text-sm font-medium text-black">
             {t('labels.year')}
           </label>
@@ -125,52 +171,45 @@ export const CalendarControls: React.FC<Props> = ({
             value={yearInput}
             onChange={handleYearChange}
             onBlur={handleYearBlur}
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
           />
         </div>
 
-        <div className="relative flex w-full flex-col space-y-2 sm:w-auto">
-          <span className="text-sm font-medium text-black">{t('labels.drawMode')}</span>
-          {/* Draw Mode 按钮组 */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-2">
-            {/* Pen 和 Eraser 按钮 */}
-            <div className="grid gap-2 sm:flex sm:flex-nowrap sm:gap-2">
+        <div className="relative flex w-full flex-col gap-4 rounded-xl border border-black/10 bg-white/80 p-4 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-black">{t('labels.drawMode')}</span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => {
-                  onDrawModeChange('pen');
-                  if (drawMode !== 'pen') {
-                    setShowPenIntensityPicker(true);
-                  } else {
-                    setShowPenIntensityPicker(!showPenIntensityPicker);
-                  }
-                }}
+                onClick={() => onDrawModeChange('pen')}
                 className={clsx(
-                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200',
                   drawMode === 'pen'
                     ? 'scale-105 transform bg-black text-white shadow-lg'
                     : 'border border-black bg-white text-black hover:bg-gray-100'
                 )}
                 title={t('titles.pen')}
               >
-                {t('drawModes.pen')}
-                {drawMode === 'pen' && onPenIntensityChange && penMode === 'manual' && (
-                  <div
-                    className="ml-2 h-4 w-4 rounded-sm border-2 border-white shadow-sm"
-                    style={{
-                      backgroundColor:
-                        penIntensity === 1
-                          ? '#9be9a8'
-                          : penIntensity === 3
-                            ? '#40c463'
-                            : penIntensity === 6
-                              ? '#30a14e'
-                              : '#216e39',
-                    }}
-                  />
-                )}
-                {drawMode === 'pen' && penMode === 'auto' && (
-                  <div className="ml-2 text-xs font-bold">[AUTO]</div>
+                <span>{t('drawModes.pen')}</span>
+                {onPenIntensityChange && (
+                  <button
+                    type="button"
+                    className={clsx(
+                      'flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200',
+                      drawMode === 'pen'
+                        ? 'border-white/60 bg-white/10 text-white hover:bg-white/20'
+                        : 'border-black/40 bg-black/5 text-black/70'
+                    )}
+                    onClick={handlePenSettingsButtonClick}
+                  >
+                    <span>{renderPenSettingsLabel()}</span>
+                    {penMode === 'manual' && (
+                      <span
+                        className="ml-1 h-3 w-3 rounded-sm border border-white/60"
+                        style={{ backgroundColor: penIntensityColors[penIntensity] }}
+                      />
+                    )}
+                  </button>
                 )}
               </button>
               <button
@@ -180,7 +219,7 @@ export const CalendarControls: React.FC<Props> = ({
                   setShowPenIntensityPicker(false);
                 }}
                 className={clsx(
-                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200',
                   drawMode === 'eraser'
                     ? 'scale-105 transform bg-black text-white shadow-lg'
                     : 'border border-black bg-white text-black hover:bg-gray-100'
@@ -190,102 +229,65 @@ export const CalendarControls: React.FC<Props> = ({
                 {t('drawModes.eraser')}
               </button>
             </div>
-
-            {/* Manual/Auto 模式切换 - 通过竖直分隔符分组 */}
-            {drawMode === 'pen' && (
-              <>
-                <div className="hidden h-8 border-l border-gray-300 sm:block" />
-                <div className="flex gap-2 sm:gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onPenModeChange?.('manual')}
-                    className={clsx(
-                      'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
-                      penMode === 'manual'
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-                    )}
-                    title={t('titles.penManualMode')}
-                  >
-                    {t('penModes.manual')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onPenModeChange?.('auto')}
-                    className={clsx(
-                      'flex-1 rounded-none px-2 py-1 text-xs font-medium transition-colors duration-200 sm:flex-none',
-                      penMode === 'auto'
-                        ? 'bg-green-600 text-white'
-                        : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-                    )}
-                    title={t('titles.penAutoMode')}
-                  >
-                    {t('penModes.auto')}
-                  </button>
-                </div>
-              </>
-            )}
           </div>
 
-          {/* 悬浮的画笔强度滑动条 - 仅在 manual 模式下显示 */}
-          {drawMode === 'pen' &&
-            penMode === 'manual' &&
-            showPenIntensityPicker &&
-            onPenIntensityChange && (
-              <>
-                {/* 遮罩层 */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowPenIntensityPicker(false)}
-                />
-                {/* 悬浮滑动条面板 */}
-                <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-none border border-black bg-white p-4 shadow-xl">
-                  <div className="space-y-3">
-                    <span className="text-sm font-medium text-black">
-                      {t('labels.penIntensity')}
-                    </span>
-                    <input
-                      type="range"
-                      min="1"
-                      max="9"
-                      step="1"
-                      value={penIntensity}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        let mappedValue: PenIntensity;
-                        if (value <= 2) mappedValue = 1;
-                        else if (value <= 4) mappedValue = 3;
-                        else if (value <= 7) mappedValue = 6;
-                        else mappedValue = 9;
-                        onPenIntensityChange(mappedValue);
-                      }}
-                      className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, #ebedf0 0%, #9be9a8 25%, #40c463 50%, #30a14e 75%, #216e39 100%)`,
-                      }}
-                      title={t('titles.penIntensity', { intensity: penIntensity })}
-                    />
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>1</span>
-                      <span>3</span>
-                      <span>6</span>
-                      <span>9</span>
-                    </div>
+          {drawMode === 'pen' && onPenIntensityChange && showPenIntensityPicker && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowPenIntensityPicker(false)}
+              />
+              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-black bg-white p-4 shadow-xl">
+                <div className="space-y-3">
+                  <span className="text-sm font-medium text-black">{t('labels.penIntensity')}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {penOptions.map((option) => {
+                      const isAuto = option === 'auto';
+                      const isActive = isAuto
+                        ? penMode === 'auto'
+                        : penMode === 'manual' && penIntensity === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => handlePenOptionSelect(option)}
+                          className={clsx(
+                            'flex items-center justify-center gap-2 rounded-none border px-3 py-2 text-sm font-medium transition-colors duration-200',
+                            isActive
+                              ? 'border-black bg-black text-white'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-black'
+                          )}
+                        >
+                          <span>
+                            {isAuto ? t('penModes.auto') : `${t('labels.penIntensity')} ${option}`}
+                          </span>
+                          {!isAuto && (
+                            <span
+                              className="h-3 w-3 rounded-sm border border-black/30"
+                              style={{
+                                backgroundColor: penIntensityColors[option],
+                              }}
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </>
-            )}
+              </div>
+            </>
+          )}
         </div>
+      </div>
 
-        <div className="flex w-full flex-col space-y-2 sm:w-auto">
-          <span className="text-sm font-medium text-black">
-            {t('characterSelector.characterTool')}
-          </span>
+      {/* Row 2: character tool + import/export */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+        <div className="flex w-full flex-col gap-2 md:flex-1">
           <button
             type="button"
             onClick={handleCharacterButtonClick}
             className={clsx(
-              'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200 sm:w-auto',
+              'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200',
               previewMode
                 ? 'scale-105 transform bg-orange-600 text-white shadow-lg'
                 : 'border border-black bg-white text-black hover:bg-gray-100'
@@ -298,15 +300,12 @@ export const CalendarControls: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
-          <span className="text-sm font-medium text-black sm:invisible">
-            {t('labels.dataActions')}
-          </span>
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        <div className="flex w-full flex-col gap-2 md:flex-1">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={onExportContributions}
-              className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
+              className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100"
               title={t('titles.export')}
             >
               {t('buttons.export')}
@@ -314,52 +313,52 @@ export const CalendarControls: React.FC<Props> = ({
             <button
               type="button"
               onClick={onImportContributions}
-              className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
+              className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100"
               title={t('titles.import')}
             >
               {t('buttons.import')}
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:items-end">
-          <span className="text-sm font-medium text-black sm:invisible">{t('labels.actions')}</span>
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
-            <button
-              type="button"
-              onClick={onFillAllGreen}
-              className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100 sm:w-auto"
-              title={t('titles.allGreen')}
-            >
-              {t('buttons.allGreen')}
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="w-full rounded-none bg-black px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-800 sm:w-auto"
-              title={t('titles.reset')}
-            >
-              {t('buttons.reset')}
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenRemoteRepoModal}
-              disabled={disableRemoteRepo}
-              className={clsx(
-                'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
-                disableRemoteRepo
-                  ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
-                  : 'border border-black bg-white text-black hover:bg-gray-100'
-              )}
-              title={t('titles.generate')}
-            >
-              {isGeneratingRepo ? t('buttons.generating') : t('buttons.createRemoteRepo')}
-            </button>
-          </div>
+      {/* Row 3: remaining actions */}
+      <div className="flex w-full flex-col gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={onFillAllGreen}
+            className="w-full rounded-none border border-black bg-white px-4 py-2 text-sm font-medium text-black transition-colors duration-200 hover:bg-gray-100"
+            title={t('titles.allGreen')}
+          >
+            {t('buttons.allGreen')}
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="w-full rounded-none bg-black px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-800"
+            title={t('titles.reset')}
+          >
+            {t('buttons.reset')}
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenRemoteRepoModal}
+            disabled={disableRemoteRepo}
+            className={clsx(
+              'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200',
+              disableRemoteRepo
+                ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
+                : 'border border-black bg-white text-black hover:bg-gray-100'
+            )}
+            title={t('titles.generate')}
+          >
+            {isGeneratingRepo ? t('buttons.generating') : t('buttons.createRemoteRepo')}
+          </button>
         </div>
       </div>
 
-      {/* 字符选择弹窗 */}
+      {/* Character selector modal */}
       {showCharacterSelector && (
         <CharacterSelector
           onSelect={handleCharacterSelect}
