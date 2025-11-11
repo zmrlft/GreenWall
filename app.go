@@ -66,6 +66,8 @@ type GenerateRepoResponse struct {
 var repoNameSanitiser = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
 var githubRepoNameValidator = regexp.MustCompile(`^[a-zA-Z0-9._-]{1,100}$`)
 
+const githubAuthChangedEvent = "github:auth-changed"
+
 type CheckGitInstalledResponse struct {
 	Installed bool   `json:"installed"`
 	Version   string `json:"version"`
@@ -532,6 +534,7 @@ func (a *App) AuthenticateWithToken(req GithubAuthRequest) (*GithubAuthResponse,
 
 	a.githubToken = token
 	a.githubUser = user
+	a.emitGithubAuthChanged()
 
 	if req.Remember {
 		if err := a.saveGithubToken(token); err != nil && a.ctx != nil {
@@ -563,6 +566,7 @@ func (a *App) GetGithubLoginStatus() *GithubLoginStatus {
 func (a *App) LogoutGithub() error {
 	a.githubToken = ""
 	a.githubUser = nil
+	a.emitGithubAuthChanged()
 	return a.clearSavedToken()
 }
 
@@ -609,11 +613,11 @@ func (a *App) fetchGithubUser(token string) (*GithubUserProfile, error) {
 			}
 		} else {
 			email = pickBestEmail(emails)
-			if a.ctx != nil {
-				if raw, err := json.Marshal(emails); err == nil {
-					runtime.LogInfof(a.ctx, "GitHub /user/emails response: %s", raw)
-				}
-			}
+			// if a.ctx != nil {
+			// 	if raw, err := json.Marshal(emails); err == nil {
+			// 		runtime.LogInfof(a.ctx, "GitHub /user/emails response: %s", raw)
+			// 	}
+			// }
 		}
 	}
 
@@ -859,6 +863,7 @@ func (a *App) loadRememberedGithubToken() error {
 
 	a.githubToken = token
 	a.githubUser = user
+	a.emitGithubAuthChanged()
 	return nil
 }
 
@@ -882,4 +887,17 @@ func cloneGithubUser(user *GithubUserProfile) *GithubUserProfile {
 	}
 	clone := *user
 	return &clone
+}
+
+func (a *App) emitGithubAuthChanged() {
+	if a.ctx == nil {
+		return
+	}
+
+	status := &GithubLoginStatus{
+		Authenticated: a.githubUser != nil,
+		User:          cloneGithubUser(a.githubUser),
+	}
+
+	runtime.EventsEmit(a.ctx, githubAuthChangedEvent, status)
 }

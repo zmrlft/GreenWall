@@ -5,7 +5,7 @@ import GitInstallSidebar from './components/GitInstallSidebar';
 import GitPathSettings from './components/GitPathSettings';
 import LoginModal from './components/LoginModal';
 import { TranslationProvider, useTranslations, Language } from './i18n';
-import { BrowserOpenURL } from '../wailsjs/runtime/runtime';
+import { BrowserOpenURL, EventsOn } from '../wailsjs/runtime/runtime';
 import type { main } from '../wailsjs/go/models';
 
 function App() {
@@ -83,6 +83,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
         console.error('Failed to fetch GitHub login status:', error);
       }
     })();
+  }, []);
+
+  React.useEffect(() => {
+    const unsubscribe = EventsOn('github:auth-changed', (status: main.GithubLoginStatus) => {
+      if (status && status.authenticated && status.user) {
+        setGithubUser(status.user);
+        return;
+      }
+      setGithubUser(null);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleCheckAgain = React.useCallback(() => {
