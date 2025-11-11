@@ -533,7 +533,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
           // auto 模式：逐步递进 0 → 1 → 3 → 6 → 9
           const current = prev.get(dateStr) ?? 0;
           // 改为调用方法
-          let nextCount = getNextContribution(current);
+          const nextCount = getNextContribution(current);
           
           newMap.set(dateStr, nextCount);
         } else {
