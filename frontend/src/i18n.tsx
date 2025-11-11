@@ -11,9 +11,7 @@ type TranslationDict = {
     year: string;
     drawMode: string;
     penIntensity: string;
-    actions: string;
     language: string;
-    dataActions: string;
   };
   placeholders: {
     githubUsername: string;
@@ -35,6 +33,7 @@ type TranslationDict = {
     generating: string;
     export: string;
     import: string;
+    createRemoteRepo: string;
   };
   titles: {
     pen: string;
@@ -56,6 +55,7 @@ type TranslationDict = {
     exportError: string;
     importSuccess: string;
     importError: string;
+    remoteLoginRequired: string;
   };
   gitInstall: {
     title: string;
@@ -105,7 +105,6 @@ type TranslationDict = {
     tabNumbers: string;
     tabSymbols: string;
     previewTooltip: string;
-    characterTool: string;
     cancelPreview: string;
     character: string;
   };
@@ -119,6 +118,37 @@ type TranslationDict = {
     english: string;
     chinese: string;
   };
+  loginModal: {
+    title: string;
+    tokenLabel: string;
+    tokenPlaceholder: string;
+    remember: string;
+    helpLink: string;
+    submit: string;
+    submitting: string;
+    close: string;
+    hint: string;
+    success: string;
+    emailFallback: string;
+    missingUser: string;
+  };
+  remoteModal: {
+    title: string;
+    description: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    nameHelp: string;
+    privacyLabel: string;
+    publicOption: string;
+    privateOption: string;
+    repoDescriptionLabel: string;
+    repoDescriptionPlaceholder: string;
+    cancel: string;
+    confirm: string;
+    confirming: string;
+    nameRequired: string;
+    nameInvalid: string;
+  };
 };
 
 const translations: Record<Language, TranslationDict> = {
@@ -131,9 +161,7 @@ const translations: Record<Language, TranslationDict> = {
       year: 'Year',
       drawMode: 'Draw Mode',
       penIntensity: 'Pen Intensity',
-      actions: 'Actions',
       language: 'Language',
-      dataActions: 'Data Actions',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -155,6 +183,7 @@ const translations: Record<Language, TranslationDict> = {
       generating: 'Generating...',
       export: 'Export',
       import: 'Import',
+      createRemoteRepo: 'Create Remote Repo',
     },
     titles: {
       pen: 'Pen mode - click or drag to add contributions',
@@ -177,6 +206,8 @@ const translations: Record<Language, TranslationDict> = {
       exportError: 'Failed to export contributions: {{message}}',
       importSuccess: 'Contributions imported successfully',
       importError: 'Failed to import contributions: {{message}}',
+      remoteLoginRequired:
+        'Please sign in with your GitHub token before creating a remote repository.',
     },
     gitInstall: {
       title: 'Git Installation Required',
@@ -229,7 +260,6 @@ const translations: Record<Language, TranslationDict> = {
       tabNumbers: '0-9',
       tabSymbols: '🎨 Symbols',
       previewTooltip: 'Preview character: {{char}}',
-      characterTool: 'Character Tool',
       cancelPreview: 'Cancel Preview',
       character: 'Character',
     },
@@ -243,6 +273,38 @@ const translations: Record<Language, TranslationDict> = {
       english: 'English',
       chinese: '中文',
     },
+    loginModal: {
+      title: 'GitHub Login',
+      tokenLabel: 'Personal Access Token (classic)',
+      tokenPlaceholder: 'Paste your PAT',
+      remember: 'Remember this token (stored locally only)',
+      helpLink: 'Read how to get a PAT',
+      submit: 'Sign in with Token',
+      submitting: 'Verifying...',
+      close: 'Close',
+      hint: 'Your token is only used for GitHub calls and stored locally if you choose to remember it.',
+      success: 'Login successful',
+      emailFallback: 'Email not public',
+      missingUser: 'GitHub profile missing in response',
+    },
+    remoteModal: {
+      title: 'Create Remote Repository',
+      description:
+        'GreenWall will reuse your generated commits, create a GitHub repository, add it as origin, and push everything for you.',
+      nameLabel: 'Repository Name',
+      namePlaceholder: 'my-contributions',
+      nameHelp: 'Use letters, numbers, ".", "_" or "-" (up to 100 characters).',
+      privacyLabel: 'Visibility',
+      publicOption: 'Public',
+      privateOption: 'Private',
+      repoDescriptionLabel: 'Description (optional)',
+      repoDescriptionPlaceholder: 'Explain what this repository is about',
+      cancel: 'Cancel',
+      confirm: 'Generate & Push',
+      confirming: 'Working...',
+      nameRequired: 'Repository name is required.',
+      nameInvalid: 'Repository name can only include letters, numbers, ".", "_" or "-".',
+    },
   },
   zh: {
     languageName: '中文',
@@ -253,9 +315,7 @@ const translations: Record<Language, TranslationDict> = {
       year: '年份',
       drawMode: '绘制模式',
       penIntensity: '画笔强度',
-      actions: '操作',
       language: '语言',
-      dataActions: '数据操作',
     },
     placeholders: {
       githubUsername: 'octocat',
@@ -277,6 +337,7 @@ const translations: Record<Language, TranslationDict> = {
       generating: '生成中...',
       export: '导出',
       import: '导入',
+      createRemoteRepo: '创建远程仓库',
     },
     titles: {
       pen: '画笔模式 - 点击或拖拽添加贡献',
@@ -298,6 +359,7 @@ const translations: Record<Language, TranslationDict> = {
       exportError: '导出贡献数据失败：{{message}}',
       importSuccess: '贡献数据已成功导入',
       importError: '导入贡献数据失败：{{message}}',
+      remoteLoginRequired: '请先登录 GitHub 再创建远程仓库。',
     },
     gitInstall: {
       title: '需要安装 Git',
@@ -348,7 +410,6 @@ const translations: Record<Language, TranslationDict> = {
       tabNumbers: '0-9',
       tabSymbols: '🎨 符号',
       previewTooltip: '预览字符: {{char}}',
-      characterTool: '字符工具',
       cancelPreview: '取消预览',
       character: '字符',
     },
@@ -361,6 +422,37 @@ const translations: Record<Language, TranslationDict> = {
     languageSwitcher: {
       english: 'English',
       chinese: '中文',
+    },
+    loginModal: {
+      title: 'GitHub 登录',
+      tokenLabel: 'Personal Access Token (classic)',
+      tokenPlaceholder: '粘贴你的 PAT',
+      remember: '记住这个 token（仅保存在本机）',
+      helpLink: '查看如何获取 PAT',
+      submit: '使用 Token 登录',
+      submitting: '验证中...',
+      close: '关闭',
+      hint: '我们只会将 token 用于调用 GitHub，并在本地安全保存。',
+      success: '登录成功',
+      emailFallback: '未公开邮箱',
+      missingUser: '未能获取 GitHub 用户信息',
+    },
+    remoteModal: {
+      title: '创建远程仓库',
+      description: 'GreenWall 会复用刚生成的提交，创建 GitHub 仓库并自动推送。',
+      nameLabel: '仓库名称',
+      namePlaceholder: 'my-contributions',
+      nameHelp: '仅可使用字母、数字、“.”、“_”或“-”，最多 100 个字符。',
+      privacyLabel: '可见性',
+      publicOption: '公开',
+      privateOption: '私有',
+      repoDescriptionLabel: '仓库描述（可选）',
+      repoDescriptionPlaceholder: '简单介绍一下这个仓库',
+      cancel: '取消',
+      confirm: '生成并推送',
+      confirming: '处理中...',
+      nameRequired: '请填写仓库名称。',
+      nameInvalid: '仓库名称只能包含字母、数字、.、_ 或 -。',
     },
   },
 };

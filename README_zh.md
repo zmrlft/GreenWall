@@ -6,13 +6,23 @@
 
 请确保你的电脑已经安装了 git。
 
-![app screenshot](/docs/images/appnew.png)
+![app screenshot](/docs/images/app_zh.png)
 
-下载软件，打开，发挥你的艺术才能！生成仓库需要等待一会，生成后复制仓库目录进入仓库文件夹。
+下载软件，打开后，首先要获取你的PAT来登录github，你可以参考这个：[如何获取你的github访问令牌](docs/githubtoken.md)
+
+登录成功左上角会显示你的头像和名字。拖动鼠标在日历上尽情画画，发挥你的艺术才能！画完后点击创建远程仓库，你可以自定义仓库名称和描述，选择仓库是否公开，确认无误后点击生成并且推送，软件会自动在你的GitHub上创建对应的仓库。
+
+注意： GitHub 可能需要 5 分钟至两天才会显示你的贡献度图案。你可以把仓库设置为私人仓库，并在贡献统计中允许显示私人仓库的贡献，这样他人看不到仓库内容但可以看到贡献记录。
+![private setting screenshot](docs/images/privatesetting.png)
+
+### 快速提示
+
+- 绘画过程中右键可以切换画笔和橡皮擦
+- 可以调节画笔的强度
 
 ### Windows/Linux
 
-下载后直接点击运行即可。
+下载后直接点击运行即可。软件开源，报毒正常
 
 ### macOS
 
@@ -27,25 +37,6 @@ sudo xattr -r -d com.apple.quarantine ./green-wall.app
 **提示：** 这些指令并不需要全部执行，从上往下依次尝试，如果某条指令解决了问题就无需继续执行。
 
 **警告：** 命令执行后不会自动弹出应用界面，需要手动双击应用来启动（命令只是改变了文件属性）。
-
-### 快速提示
-
-- 绘画过程中右键可以切换画笔和橡皮擦
-
-## 下一步操作
-
-1. 登录你的 GitHub 账号，创建一个空的远程仓库（不要勾选 README、.gitignore 或 License）。
-2. 在当前目录执行以下命令，把本地仓库推送到远程仓库：
-
-```bash
-git remote add origin <远程仓库地址>
-git branch -M main
-git push -u origin main
-```
-
-注意：推送后 GitHub 可能需要 5 分钟至两天才会显示你的贡献度。你可以把仓库设置为私人仓库，并在贡献统计中允许显示私人仓库的贡献，这样他人看不到仓库内容但可以看到贡献记录。
-
-![private setting screenshot](docs/images/privatesetting.png)
 
 ## 效果图
 
