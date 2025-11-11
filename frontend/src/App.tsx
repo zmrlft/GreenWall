@@ -3,8 +3,10 @@ import './App.css';
 import ContributionCalendar, { OneDay } from './components/ContributionCalendar';
 import GitInstallSidebar from './components/GitInstallSidebar';
 import GitPathSettings from './components/GitPathSettings';
+import LoginModal from './components/LoginModal';
 import { TranslationProvider, useTranslations, Language } from './i18n';
 import { BrowserOpenURL } from '../wailsjs/runtime/runtime';
+import type { main } from '../wailsjs/go/models';
 
 function App() {
   const generateEmptyYearData = (year: number): OneDay[] => {
@@ -49,6 +51,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const { language, setLanguage, t } = useTranslations();
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
+  const [githubUser, setGithubUser] = React.useState<main.GithubUserProfile | null>(null);
 
   const checkGit = React.useCallback(async () => {
     try {
@@ -65,6 +69,22 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
     checkGit();
   }, [checkGit]);
 
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { GetGithubLoginStatus } = await import('../wailsjs/go/main/App');
+        const status = await GetGithubLoginStatus();
+        if (status.authenticated && status.user) {
+          setGithubUser(status.user);
+        } else {
+          setGithubUser(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch GitHub login status:', error);
+      }
+    })();
+  }, []);
+
   const handleCheckAgain = React.useCallback(() => {
     checkGit();
   }, [checkGit]);
@@ -78,6 +98,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   );
 
   const loginLabel = language === 'zh' ? '登录' : 'Log in';
+  const logoutLabel = language === 'zh' ? '退出' : 'Log out';
+  const handleLogout = React.useCallback(async () => {
+    try {
+      const { LogoutGithub } = await import('../wailsjs/go/main/App');
+      await LogoutGithub();
+      setGithubUser(null);
+    } catch (error) {
+      console.error('Failed to log out from GitHub:', error);
+    }
+  }, []);
+  const handleAuthSuccess = React.useCallback((user: main.GithubUserProfile) => {
+    setGithubUser(user);
+  }, []);
+  const displayName = githubUser?.name?.trim() || githubUser?.login || '';
+
   const openRepository = React.useCallback(() => {
     BrowserOpenURL('https://github.com/zmrlft/GreenWall');
   }, []);
@@ -86,9 +121,42 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
     <div className="app-shell">
       <div className="app-shell__surface">
         <header className="app-shell__topbar">
-          <button type="button" className="app-shell__login">
-            {loginLabel}
-          </button>
+          <div className="app-shell__identity">
+            {githubUser ? (
+              <>
+                <button
+                  type="button"
+                  className="app-shell__user"
+                  onClick={() => setIsLoginModalOpen(true)}
+                >
+                  {githubUser.avatarUrl ? (
+                    <img
+                      src={githubUser.avatarUrl}
+                      alt={displayName}
+                      className="app-shell__avatar"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="app-shell__avatar app-shell__avatar--fallback">
+                      {displayName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="app-shell__user-name">{displayName}</span>
+                </button>
+                <button type="button" className="app-shell__logout" onClick={handleLogout}>
+                  {logoutLabel}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="app-shell__login"
+                onClick={() => setIsLoginModalOpen(true)}
+              >
+                {loginLabel}
+              </button>
+            )}
+          </div>
           <div className="app-shell__actions">
             <button
               type="button"
@@ -138,6 +206,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
         <GitPathSettings
           onClose={() => setIsGitPathSettingsOpen(false)}
           onCheckAgain={handleCheckAgain}
+        />
+      )}
+      {isLoginModalOpen && (
+        <LoginModal
+          open={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+          onSuccess={handleAuthSuccess}
         />
       )}
     </div>

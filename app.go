@@ -1,27 +1,30 @@
 package main
 
 import (
-    "bytes"
-    "context"
-    "fmt"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "regexp"
-    "sort"
-    "strings"
-    "time"
-   
-    "encoding/json"
-   
-    "github.com/wailsapp/wails/v2/pkg/runtime"
-   )
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+)
 
 // App struct
 type App struct {
 	ctx          context.Context
 	repoBasePath string
-	gitPath      string // 自定义git路径，空则使用系统默认路径
+	gitPath      string // custom git path; empty means use the system default
+	githubToken  string
+	githubUser   *GithubUserProfile
 }
 
 // NewApp creates a new App application struct
@@ -35,11 +38,9 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-}
-
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+	if err := a.loadRememberedGithubToken(); err != nil {
+		runtime.LogWarningf(ctx, "Failed to restore GitHub login: %v", err)
+	}
 }
 
 type ContributionDay struct {
@@ -77,6 +78,35 @@ type SetGitPathResponse struct {
 	Version string `json:"version"`
 }
 
+type GithubAuthRequest struct {
+	Token    string `json:"token"`
+	Remember bool   `json:"remember"`
+}
+
+type GithubUserProfile struct {
+	Login     string `json:"login"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatarUrl"`
+}
+
+type GithubAuthResponse struct {
+	User       *GithubUserProfile `json:"user"`
+	Remembered bool               `json:"remembered"`
+}
+
+type GithubLoginStatus struct {
+	Authenticated bool               `json:"authenticated"`
+	User          *GithubUserProfile `json:"user,omitempty"`
+}
+
+type githubEmailEntry struct {
+	Email      string `json:"email"`
+	Primary    bool   `json:"primary"`
+	Verified   bool   `json:"verified"`
+	Visibility string `json:"visibility"`
+}
+
 // CheckGitInstalled checks if Git is installed on the system
 func (a *App) CheckGitInstalled() (*CheckGitInstalledResponse, error) {
 	gitCmd := a.getGitCommand()
@@ -97,7 +127,7 @@ func (a *App) CheckGitInstalled() (*CheckGitInstalledResponse, error) {
 // SetGitPath allows the user to set a custom git path
 func (a *App) SetGitPath(req SetGitPathRequest) (*SetGitPathResponse, error) {
 	gitPath := strings.TrimSpace(req.GitPath)
-	
+
 	// 如果留空，使用系统默认路径
 	if gitPath == "" {
 		a.gitPath = ""
@@ -110,7 +140,7 @@ func (a *App) SetGitPath(req SetGitPathRequest) (*SetGitPathResponse, error) {
 
 	// 验证路径是否有效
 	gitPath = filepath.Clean(gitPath)
-	
+
 	// 检查文件是否存在
 	if _, err := os.Stat(gitPath); os.IsNotExist(err) {
 		return &SetGitPathResponse{
@@ -212,77 +242,77 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		return nil, err
 	}
 
-    // Optimize: use git fast-import to avoid spawning a process per commit.
-    // Also disable slow features for this repo.
-    _ = a.runGitCommand(repoPath, "config", "commit.gpgsign", "false")
-    _ = a.runGitCommand(repoPath, "config", "gc.auto", "0")
-    _ = a.runGitCommand(repoPath, "config", "core.autocrlf", "false")
-    _ = a.runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
+	// Optimize: use git fast-import to avoid spawning a process per commit.
+	// Also disable slow features for this repo.
+	_ = a.runGitCommand(repoPath, "config", "commit.gpgsign", "false")
+	_ = a.runGitCommand(repoPath, "config", "gc.auto", "0")
+	_ = a.runGitCommand(repoPath, "config", "core.autocrlf", "false")
+	_ = a.runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
 
-    // Sort contributions by date ascending to produce chronological history
-    contribs := make([]ContributionDay, 0, len(req.Contributions))
-    for _, c := range req.Contributions {
-        if c.Count > 0 {
-            contribs = append(contribs, c)
-        }
-    }
-    sort.Slice(contribs, func(i, j int) bool { return contribs[i].Date < contribs[j].Date })
+	// Sort contributions by date ascending to produce chronological history
+	contribs := make([]ContributionDay, 0, len(req.Contributions))
+	for _, c := range req.Contributions {
+		if c.Count > 0 {
+			contribs = append(contribs, c)
+		}
+	}
+	sort.Slice(contribs, func(i, j int) bool { return contribs[i].Date < contribs[j].Date })
 
-    // Build fast-import stream
-    var stream bytes.Buffer
-    // Create README blob once and mark it
-    fmt.Fprintf(&stream, "blob\nmark :1\n")
-    fmt.Fprintf(&stream, "data %d\n%s\n", len(readmeContent), readmeContent)
+	// Build fast-import stream
+	var stream bytes.Buffer
+	// Create README blob once and mark it
+	fmt.Fprintf(&stream, "blob\nmark :1\n")
+	fmt.Fprintf(&stream, "data %d\n%s\n", len(readmeContent), readmeContent)
 
-    // Prepare to accumulate activity log content across commits
-    var activityBuf bytes.Buffer
-    nextMark := 2
-    totalCommits := 0
-    branch := "refs/heads/main"
+	// Prepare to accumulate activity log content across commits
+	var activityBuf bytes.Buffer
+	nextMark := 2
+	totalCommits := 0
+	branch := "refs/heads/main"
 
-    for _, day := range contribs {
-        parsedDate, err := time.Parse("2006-01-02", day.Date)
-        if err != nil {
-            return nil, fmt.Errorf("invalid date %q: %w", day.Date, err)
-        }
-        for i := 0; i < day.Count; i++ {
-            // Update activity content in-memory
-            entry := fmt.Sprintf("%s commit %d\n", day.Date, i+1)
-            activityBuf.WriteString(entry)
+	for _, day := range contribs {
+		parsedDate, err := time.Parse("2006-01-02", day.Date)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date %q: %w", day.Date, err)
+		}
+		for i := 0; i < day.Count; i++ {
+			// Update activity content in-memory
+			entry := fmt.Sprintf("%s commit %d\n", day.Date, i+1)
+			activityBuf.WriteString(entry)
 
-            // Emit blob for activity.log
-            fmt.Fprintf(&stream, "blob\nmark :%d\n", nextMark)
-            act := activityBuf.Bytes()
-            fmt.Fprintf(&stream, "data %d\n", len(act))
-            stream.Write(act)
-            stream.WriteString("\n")
+			// Emit blob for activity.log
+			fmt.Fprintf(&stream, "blob\nmark :%d\n", nextMark)
+			act := activityBuf.Bytes()
+			fmt.Fprintf(&stream, "data %d\n", len(act))
+			stream.Write(act)
+			stream.WriteString("\n")
 
-            // Emit commit that points to README (:1) and activity (:nextMark)
-            commitTime := parsedDate.Add(time.Duration(i) * time.Second)
-            secs := commitTime.Unix()
-            tz := commitTime.Format("-0700")
-            msg := fmt.Sprintf("Contribution on %s (%d/%d)", day.Date, i+1, day.Count)
-            fmt.Fprintf(&stream, "commit %s\n", branch)
-            fmt.Fprintf(&stream, "author %s <%s> %d %s\n", username, email, secs, tz)
-            fmt.Fprintf(&stream, "committer %s <%s> %d %s\n", username, email, secs, tz)
-            fmt.Fprintf(&stream, "data %d\n%s\n", len(msg), msg)
-            fmt.Fprintf(&stream, "M 100644 :1 %s\n", filepath.Base(readmePath))
-            fmt.Fprintf(&stream, "M 100644 :%d activity.log\n", nextMark)
+			// Emit commit that points to README (:1) and activity (:nextMark)
+			commitTime := parsedDate.Add(time.Duration(i) * time.Second)
+			secs := commitTime.Unix()
+			tz := commitTime.Format("-0700")
+			msg := fmt.Sprintf("Contribution on %s (%d/%d)", day.Date, i+1, day.Count)
+			fmt.Fprintf(&stream, "commit %s\n", branch)
+			fmt.Fprintf(&stream, "author %s <%s> %d %s\n", username, email, secs, tz)
+			fmt.Fprintf(&stream, "committer %s <%s> %d %s\n", username, email, secs, tz)
+			fmt.Fprintf(&stream, "data %d\n%s\n", len(msg), msg)
+			fmt.Fprintf(&stream, "M 100644 :1 %s\n", filepath.Base(readmePath))
+			fmt.Fprintf(&stream, "M 100644 :%d activity.log\n", nextMark)
 
-            nextMark++
-            totalCommits++
-        }
-    }
-    stream.WriteString("done\n")
+			nextMark++
+			totalCommits++
+		}
+	}
+	stream.WriteString("done\n")
 
-    // Feed stream to fast-import
-    if totalCommits > 0 {
-        if err := a.runGitFastImport(repoPath, &stream); err != nil {
-            return nil, fmt.Errorf("fast-import failed: %w", err)
-        }
-        // Update working tree to the generated branch for user convenience
-        _ = a.runGitCommand(repoPath, "checkout", "-f", "main")
-    }
+	// Feed stream to fast-import
+	if totalCommits > 0 {
+		if err := a.runGitFastImport(repoPath, &stream); err != nil {
+			return nil, fmt.Errorf("fast-import failed: %w", err)
+		}
+		// Update working tree to the generated branch for user convenience
+		_ = a.runGitCommand(repoPath, "checkout", "-f", "main")
+	}
 
 	if err := openDirectory(repoPath); err != nil {
 		return nil, fmt.Errorf("open repo directory: %w", err)
@@ -398,15 +428,243 @@ func (a *App) runGitCommand(dir string, args ...string) error {
 
 // runGitFastImport runs `git fast-import` with the given stream as stdin.
 func (a *App) runGitFastImport(dir string, r *bytes.Buffer) error {
-    gitCmd := a.getGitCommand()
-    cmd := exec.Command(gitCmd, "fast-import", "--quiet")
-    cmd.Dir = dir
-    configureCommand(cmd, true)
-    cmd.Stdin = r
-    var stderr bytes.Buffer
-    cmd.Stderr = &stderr
-    if err := cmd.Run(); err != nil {
-        return fmt.Errorf("git fast-import: %w (%s)", err, strings.TrimSpace(stderr.String()))
-    }
-    return nil
+	gitCmd := a.getGitCommand()
+	cmd := exec.Command(gitCmd, "fast-import", "--quiet")
+	cmd.Dir = dir
+	configureCommand(cmd, true)
+	cmd.Stdin = r
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git fast-import: %w (%s)", err, strings.TrimSpace(stderr.String()))
+	}
+	return nil
+}
+func (a *App) AuthenticateWithToken(req GithubAuthRequest) (*GithubAuthResponse, error) {
+	token := strings.TrimSpace(req.Token)
+	if token == "" {
+		return nil, fmt.Errorf("token cannot be empty")
+	}
+
+	user, err := a.fetchGithubUser(token)
+	if err != nil {
+		return nil, err
+	}
+
+	a.githubToken = token
+	a.githubUser = user
+
+	if req.Remember {
+		if err := a.saveGithubToken(token); err != nil && a.ctx != nil {
+			runtime.LogWarningf(a.ctx, "failed to store GitHub token: %v", err)
+		}
+	} else {
+		if err := a.clearSavedToken(); err != nil && a.ctx != nil {
+			runtime.LogWarningf(a.ctx, "failed to clear saved GitHub token: %v", err)
+		}
+	}
+
+	return &GithubAuthResponse{
+		User:       cloneGithubUser(user),
+		Remembered: req.Remember,
+	}, nil
+}
+
+func (a *App) GetGithubLoginStatus() *GithubLoginStatus {
+	if a.githubUser == nil {
+		return &GithubLoginStatus{Authenticated: false}
+	}
+
+	return &GithubLoginStatus{
+		Authenticated: true,
+		User:          cloneGithubUser(a.githubUser),
+	}
+}
+
+func (a *App) LogoutGithub() error {
+	a.githubToken = ""
+	a.githubUser = nil
+	return a.clearSavedToken()
+}
+
+func (a *App) fetchGithubUser(token string) (*GithubUserProfile, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
+	if err != nil {
+		return nil, fmt.Errorf("build GitHub request failed: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch GitHub user failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("token invalid or expired")
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, fmt.Errorf("GitHub API returned error (%d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var payload struct {
+		Login     string `json:"login"`
+		Name      string `json:"name"`
+		Email     string `json:"email"`
+		AvatarURL string `json:"avatar_url"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("decode GitHub user payload failed: %w", err)
+	}
+
+	email := payload.Email
+	if email == "" {
+		if emails, err := a.fetchGithubEmails(token); err != nil {
+			if a.ctx != nil {
+				runtime.LogWarningf(a.ctx, "fetch GitHub emails failed: %v", err)
+			}
+		} else {
+			email = pickBestEmail(emails)
+			if a.ctx != nil {
+				if raw, err := json.Marshal(emails); err == nil {
+					runtime.LogInfof(a.ctx, "GitHub /user/emails response: %s", raw)
+				}
+			}
+		}
+	}
+
+	return &GithubUserProfile{
+		Login:     payload.Login,
+		Name:      payload.Name,
+		Email:     email,
+		AvatarURL: payload.AvatarURL,
+	}, nil
+}
+
+func (a *App) fetchGithubEmails(token string) ([]githubEmailEntry, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user/emails", nil)
+	if err != nil {
+		return nil, fmt.Errorf("build GitHub email request failed: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch GitHub emails failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("token invalid or expired when fetching emails")
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, fmt.Errorf("GitHub API returned error for /user/emails (%d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var entries []githubEmailEntry
+	if err := json.NewDecoder(resp.Body).Decode(&entries); err != nil {
+		return nil, fmt.Errorf("decode GitHub emails payload failed: %w", err)
+	}
+
+	return entries, nil
+}
+
+func pickBestEmail(entries []githubEmailEntry) string {
+	for _, entry := range entries {
+		if entry.Primary && entry.Verified && entry.Email != "" {
+			return entry.Email
+		}
+	}
+	for _, entry := range entries {
+		if entry.Verified && entry.Email != "" {
+			return entry.Email
+		}
+	}
+	for _, entry := range entries {
+		if entry.Email != "" {
+			return entry.Email
+		}
+	}
+	return ""
+}
+
+func (a *App) saveGithubToken(token string) error {
+	path, err := a.tokenStoragePath()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(token), 0o600)
+}
+
+func (a *App) clearSavedToken() error {
+	path, err := a.tokenStoragePath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+func (a *App) loadRememberedGithubToken() error {
+	path, err := a.tokenStoragePath()
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		return nil
+	}
+
+	user, err := a.fetchGithubUser(token)
+	if err != nil {
+		_ = os.Remove(path)
+		return err
+	}
+
+	a.githubToken = token
+	a.githubUser = user
+	return nil
+}
+
+func (a *App) tokenStoragePath() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	appDir := filepath.Join(dir, "green-wall")
+	if err := os.MkdirAll(appDir, 0o700); err != nil {
+		return "", err
+	}
+
+	return filepath.Join(appDir, "github_token"), nil
+}
+
+func cloneGithubUser(user *GithubUserProfile) *GithubUserProfile {
+	if user == nil {
+		return nil
+	}
+	clone := *user
+	return &clone
 }

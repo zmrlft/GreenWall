@@ -119,6 +119,19 @@ type TranslationDict = {
     english: string;
     chinese: string;
   };
+  loginModal: {
+    title: string;
+    tokenLabel: string;
+    tokenPlaceholder: string;
+    remember: string;
+    submit: string;
+    submitting: string;
+    close: string;
+    hint: string;
+    success: string;
+    emailFallback: string;
+    missingUser: string;
+  };
 };
 
 const translations: Record<Language, TranslationDict> = {
@@ -243,6 +256,19 @@ const translations: Record<Language, TranslationDict> = {
       english: 'English',
       chinese: '中文',
     },
+    loginModal: {
+      title: 'GitHub Login',
+      tokenLabel: 'Personal Access Token (classic)',
+      tokenPlaceholder: 'Paste your PAT',
+      remember: 'Remember this token (stored locally only)',
+      submit: 'Sign in with Token',
+      submitting: 'Verifying...',
+      close: 'Close',
+      hint: 'Your token is only used for GitHub calls and stored locally if you choose to remember it.',
+      success: 'Login successful',
+      emailFallback: 'Email not public',
+      missingUser: 'GitHub profile missing in response',
+    },
   },
   zh: {
     languageName: '中文',
@@ -361,6 +387,19 @@ const translations: Record<Language, TranslationDict> = {
     languageSwitcher: {
       english: 'English',
       chinese: '中文',
+    },
+    loginModal: {
+      title: 'GitHub 登录',
+      tokenLabel: 'Personal Access Token (classic)',
+      tokenPlaceholder: '粘贴你的 PAT',
+      remember: '记住这个 token（仅保存在本机）',
+      submit: '使用 Token 登录',
+      submitting: '验证中...',
+      close: '关闭',
+      hint: '我们只会将 token 用于调用 GitHub，并在本地安全保存。',
+      success: '登录成功',
+      emailFallback: '未公开邮箱',
+      missingUser: '未能获取 GitHub 用户信息',
     },
   },
 };
