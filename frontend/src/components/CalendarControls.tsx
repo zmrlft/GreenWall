@@ -195,10 +195,10 @@ export const CalendarControls: React.FC<Props> = ({
                   <button
                     type="button"
                     className={clsx(
-                      'flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200',
+                      'flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200',
                       drawMode === 'pen'
-                        ? 'border-white/60 bg-white/10 text-white hover:bg-white/20'
-                        : 'border-black/40 bg-black/5 text-black/70'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : 'bg-black/5 text-black'
                     )}
                     aria-label={getPenSettingsAriaLabel()}
                     onClick={handlePenSettingsButtonClick}
@@ -208,7 +208,7 @@ export const CalendarControls: React.FC<Props> = ({
                     ) : (
                       <>
                         <span
-                          className="ml-1 h-3 w-3 rounded-sm border border-white/60"
+                          className="ml-1 h-3 w-3 rounded-sm"
                           style={{ backgroundColor: penIntensityColors[penIntensity] }}
                         />
                         <span className="sr-only">{getPenSettingsAriaLabel()}</span>
@@ -242,7 +242,7 @@ export const CalendarControls: React.FC<Props> = ({
                 className="fixed inset-0 z-40"
                 onClick={() => setShowPenIntensityPicker(false)}
               />
-              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-black bg-white p-4 shadow-xl">
+              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl bg-white/95 p-4 shadow-xl">
                 <div className="space-y-3">
                   <span className="text-sm font-medium text-black">{t('labels.penIntensity')}</span>
                   <div className="flex flex-row flex-wrap gap-1.5">
@@ -257,10 +257,10 @@ export const CalendarControls: React.FC<Props> = ({
                           type="button"
                           onClick={() => handlePenOptionSelect(option)}
                           className={clsx(
-                            'flex items-center justify-between rounded-none border px-2 py-1 text-xs font-medium transition-colors duration-200',
+                            'flex items-center justify-between rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200',
                             isActive
-                              ? 'border-black bg-black text-white'
-                              : 'border-gray-300 bg-white text-gray-700 hover:border-black'
+                              ? 'bg-black text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           )}
                           aria-label={
                             isAuto
@@ -273,7 +273,7 @@ export const CalendarControls: React.FC<Props> = ({
                           ) : (
                             <>
                               <span
-                                className="h-4 w-4 rounded-full border border-black/30"
+                                className="h-4 w-4 rounded-full"
                                 style={{
                                   backgroundColor: penIntensityColors[option],
                                 }}
