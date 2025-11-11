@@ -49,19 +49,22 @@ type ContributionDay struct {
 }
 
 type GenerateRepoRequest struct {
-	Year           int               `json:"year"`
-	GithubUsername string            `json:"githubUsername"`
-	GithubEmail    string            `json:"githubEmail"`
-	RepoName       string            `json:"repoName"`
-	Contributions  []ContributionDay `json:"contributions"`
+	Year           int                `json:"year"`
+	GithubUsername string             `json:"githubUsername"`
+	GithubEmail    string             `json:"githubEmail"`
+	RepoName       string             `json:"repoName"`
+	Contributions  []ContributionDay  `json:"contributions"`
+	RemoteRepo     *RemoteRepoOptions `json:"remoteRepo,omitempty"`
 }
 
 type GenerateRepoResponse struct {
 	RepoPath    string `json:"repoPath"`
 	CommitCount int    `json:"commitCount"`
+	RemoteURL   string `json:"remoteUrl,omitempty"`
 }
 
 var repoNameSanitiser = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+var githubRepoNameValidator = regexp.MustCompile(`^[a-zA-Z0-9._-]{1,100}$`)
 
 type CheckGitInstalledResponse struct {
 	Installed bool   `json:"installed"`
@@ -76,6 +79,13 @@ type SetGitPathResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Version string `json:"version"`
+}
+
+type RemoteRepoOptions struct {
+	Enabled     bool   `json:"enabled"`
+	Name        string `json:"name"`
+	Private     bool   `json:"private"`
+	Description string `json:"description"`
 }
 
 type GithubAuthRequest struct {
@@ -105,6 +115,16 @@ type githubEmailEntry struct {
 	Primary    bool   `json:"primary"`
 	Verified   bool   `json:"verified"`
 	Visibility string `json:"visibility"`
+}
+
+type githubRepository struct {
+	Name     string `json:"name"`
+	FullName string `json:"full_name"`
+	HTMLURL  string `json:"html_url"`
+	CloneURL string `json:"clone_url"`
+	Owner    struct {
+		Login string `json:"login"`
+	} `json:"owner"`
 }
 
 // CheckGitInstalled checks if Git is installed on the system
@@ -196,6 +216,26 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		return nil, fmt.Errorf("no commits to generate")
 	}
 
+	var remoteOptions *RemoteRepoOptions
+	if req.RemoteRepo != nil && req.RemoteRepo.Enabled {
+		trimmedName := strings.TrimSpace(req.RemoteRepo.Name)
+		if trimmedName == "" {
+			return nil, fmt.Errorf("remote repository name cannot be empty")
+		}
+		if !githubRepoNameValidator.MatchString(trimmedName) {
+			return nil, fmt.Errorf("remote repository name may only contain letters, numbers, '.', '_' or '-'")
+		}
+		if a.githubToken == "" || a.githubUser == nil {
+			return nil, fmt.Errorf("GitHub login is required to create a remote repository")
+		}
+		remoteOptions = &RemoteRepoOptions{
+			Enabled:     true,
+			Name:        trimmedName,
+			Private:     req.RemoteRepo.Private,
+			Description: strings.TrimSpace(req.RemoteRepo.Description),
+		}
+	}
+
 	username := strings.TrimSpace(req.GithubUsername)
 	if username == "" {
 		username = "zmrlft"
@@ -210,15 +250,20 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 	}
 
 	repoName := strings.TrimSpace(req.RepoName)
+	if remoteOptions != nil {
+		repoName = remoteOptions.Name
+	}
 	if repoName == "" {
 		repoName = username
 		if req.Year > 0 {
 			repoName = fmt.Sprintf("%s-%d", repoName, req.Year)
 		}
 	}
-	repoName = sanitiseRepoName(repoName)
-	if repoName == "" {
-		repoName = "contributions"
+	if remoteOptions == nil {
+		repoName = sanitiseRepoName(repoName)
+		if repoName == "" {
+			repoName = "contributions"
+		}
 	}
 
 	repoPath, err := os.MkdirTemp(a.repoBasePath, repoName+"-")
@@ -314,6 +359,30 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 		_ = a.runGitCommand(repoPath, "checkout", "-f", "main")
 	}
 
+	var remoteURL string
+	if remoteOptions != nil {
+		createdRepo, err := a.createGithubRepository(remoteOptions)
+		if err != nil {
+			return nil, err
+		}
+		targetURL := strings.TrimSpace(createdRepo.CloneURL)
+		if targetURL == "" {
+			return nil, fmt.Errorf("GitHub did not return a clone URL for the new repository")
+		}
+		ownerLogin := createdRepo.Owner.Login
+		if ownerLogin == "" && a.githubUser != nil {
+			ownerLogin = a.githubUser.Login
+		}
+		if err := a.configureRemoteAndPush(repoPath, targetURL, ownerLogin, a.githubToken); err != nil {
+			return nil, err
+		}
+		if createdRepo.HTMLURL != "" {
+			remoteURL = createdRepo.HTMLURL
+		} else {
+			remoteURL = targetURL
+		}
+	}
+
 	if err := openDirectory(repoPath); err != nil {
 		return nil, fmt.Errorf("open repo directory: %w", err)
 	}
@@ -321,6 +390,7 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 	return &GenerateRepoResponse{
 		RepoPath:    repoPath,
 		CommitCount: totalCommits,
+		RemoteURL:   remoteURL,
 	}, nil
 }
 
@@ -596,6 +666,142 @@ func pickBestEmail(entries []githubEmailEntry) string {
 		}
 	}
 	return ""
+}
+
+func (a *App) createGithubRepository(opts *RemoteRepoOptions) (*githubRepository, error) {
+	if a.githubToken == "" {
+		return nil, fmt.Errorf("missing GitHub token for remote repository creation")
+	}
+
+	payload := map[string]interface{}{
+		"name":    opts.Name,
+		"private": opts.Private,
+	}
+	if desc := strings.TrimSpace(opts.Description); desc != "" {
+		payload["description"] = desc
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("encode GitHub repository payload: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://api.github.com/user/repos", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("build GitHub repository request failed: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Authorization", "Bearer "+a.githubToken)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("create GitHub repository failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, fmt.Errorf("GitHub API returned error for repository creation (%d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var repo githubRepository
+	if err := json.NewDecoder(resp.Body).Decode(&repo); err != nil {
+		return nil, fmt.Errorf("decode GitHub repository response failed: %w", err)
+	}
+	return &repo, nil
+}
+
+func (a *App) configureRemoteAndPush(repoPath string, remoteURL string, username string, token string) error {
+	if username == "" && a.githubUser != nil {
+		username = a.githubUser.Login
+	}
+	if username == "" {
+		username = "git"
+	}
+
+	// Remove any existing origin to avoid conflicts, ignore errors if it doesn't exist.
+	_ = a.runGitCommand(repoPath, "remote", "remove", "origin")
+
+	if err := a.runGitCommand(repoPath, "remote", "add", "origin", remoteURL); err != nil {
+		return fmt.Errorf("add remote origin: %w", err)
+	}
+
+	if err := a.gitPushWithToken(repoPath, username, token); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) gitPushWithToken(repoPath, username, token string) error {
+	helperPath, cleanup, err := createGitAskPassHelper()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	gitCmd := a.getGitCommand()
+	cmd := exec.Command(gitCmd, "push", "-u", "origin", "main")
+	cmd.Dir = repoPath
+	configureCommand(cmd, true)
+
+	env := os.Environ()
+	env = append(env,
+		fmt.Sprintf("GIT_ASKPASS=%s", helperPath),
+		"GIT_TERMINAL_PROMPT=0",
+		fmt.Sprintf("GITHUB_ASKPASS_USERNAME=%s", username),
+		fmt.Sprintf("GITHUB_ASKPASS_TOKEN=%s", token),
+	)
+	cmd.Env = env
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git push: %w (%s)", err, strings.TrimSpace(stderr.String()))
+	}
+
+	return nil
+}
+
+func createGitAskPassHelper() (string, func(), error) {
+	isWindows := os.PathSeparator == '\\'
+	pattern := "gw-askpass-*"
+	if isWindows {
+		pattern = "gw-askpass-*.cmd"
+	}
+
+	file, err := os.CreateTemp("", pattern)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("create askpass helper failed: %w", err)
+	}
+	path := file.Name()
+
+	var script string
+	if isWindows {
+		script = "@echo off\r\nsetlocal EnableDelayedExpansion\r\nset prompt=%*\r\necho !prompt! | findstr /I \"Username\" >nul\r\nif %errorlevel%==0 (\r\n  echo %GITHUB_ASKPASS_USERNAME%\r\n) else (\r\n  echo %GITHUB_ASKPASS_TOKEN%\r\n)\r\nendlocal\r\n"
+	} else {
+		script = "#!/bin/sh\ncase \"$1\" in\n*Username*) printf '%s\\n' \"$GITHUB_ASKPASS_USERNAME\" ;;\n*) printf '%s\\n' \"$GITHUB_ASKPASS_TOKEN\" ;;\nesac\n"
+	}
+
+	if _, err := file.WriteString(script); err != nil {
+		file.Close()
+		return "", func() {}, fmt.Errorf("write askpass helper failed: %w", err)
+	}
+	file.Close()
+
+	if !isWindows {
+		if err := os.Chmod(path, 0o700); err != nil {
+			return "", func() {}, fmt.Errorf("chmod askpass helper failed: %w", err)
+		}
+	}
+
+	cleanup := func() {
+		_ = os.Remove(path)
+	}
+	return path, cleanup, nil
 }
 
 func (a *App) saveGithubToken(token string) error {

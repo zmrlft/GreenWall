@@ -275,7 +275,7 @@ body {
   box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
 }
 
-.login-modal__backdrop {
+.modal__backdrop {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
@@ -286,7 +286,7 @@ body {
   z-index: 40;
 }
 
-.login-modal {
+.modal {
   width: 440px;
   max-width: 100%;
   background: #ffffff;
@@ -295,7 +295,7 @@ body {
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
 }
 
-.login-modal__header {
+.modal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -303,12 +303,12 @@ body {
   border-bottom: 1px solid #f1f5f9;
 }
 
-.login-modal__header h2 {
+.modal__header h2 {
   margin: 0;
   font-size: 1.2rem;
 }
 
-.login-modal__close {
+.modal__close {
   border: none;
   background: transparent;
   font-size: 1.5rem;
@@ -317,14 +317,14 @@ body {
   color: #475569;
 }
 
-.login-modal__body {
+.modal__body {
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.login-modal__field {
+.modal__field {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -332,7 +332,7 @@ body {
   text-align: left;
 }
 
-.login-modal__field input {
+.modal__field input {
   border-radius: 14px;
   border: 1px solid #cbd5f5;
   padding: 12px 14px;
@@ -340,61 +340,82 @@ body {
   font-family: inherit;
 }
 
-.login-modal__field input:focus {
+.modal__field textarea {
+  border-radius: 14px;
+  border: 1px solid #cbd5f5;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modal__field input:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-.login-modal__options {
+.modal__field textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.modal__options {
   display: flex;
   flex-direction: column;
   gap: 6px;
   text-align: left;
 }
 
-.login-modal__remember {
+.modal__options--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal__remember {
   display: flex;
   gap: 8px;
   font-size: 0.85rem;
   color: #475569;
 }
 
-.login-modal__hint {
+.modal__hint {
   margin: 0;
   font-size: 0.8rem;
   color: #94a3b8;
 }
 
-.login-modal__status {
+.modal__status {
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 0.9rem;
 }
 
-.login-modal__status--error {
+.modal__status--error {
   background: #fee2e2;
   color: #b91c1c;
 }
 
-.login-modal__status--success {
+.modal__status--success {
   background: #dcfce7;
   color: #15803d;
 }
 
-.login-modal__profile {
+.modal__profile {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.login-modal__profile-info {
+.modal__profile-info {
   display: flex;
   gap: 14px;
   align-items: center;
 }
 
-.login-modal__profile-avatar {
+.modal__profile-avatar {
   width: 60px;
   height: 60px;
   border-radius: 16px;
@@ -408,30 +429,30 @@ body {
   color: #1f2937;
 }
 
-.login-modal__profile-avatar--fallback {
+.modal__profile-avatar--fallback {
   font-size: 1.25rem;
 }
 
-.login-modal__profile-name {
+.modal__profile-name {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
 }
 
-.login-modal__profile-login,
-.login-modal__profile-email {
+.modal__profile-login,
+.modal__profile-email {
   margin: 0;
   font-size: 0.85rem;
   color: #475569;
 }
 
-.login-modal__actions {
+.modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
 
-.login-modal__button {
+.modal__button {
   border-radius: 12px;
   padding: 10px 18px;
   font-size: 0.9rem;
@@ -440,22 +461,22 @@ body {
   border: 1px solid transparent;
 }
 
-.login-modal__button--ghost {
+.modal__button--ghost {
   border-color: #e2e8f0;
   background: #ffffff;
   color: #0f172a;
 }
 
-.login-modal__button--ghost:hover {
+.modal__button--ghost:hover {
   border-color: #cbd5f5;
 }
 
-.login-modal__button--primary {
+.modal__button--primary {
   background: #0f172a;
   color: #ffffff;
 }
 
-.login-modal__button--primary:disabled {
+.modal__button--primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -503,3 +524,4 @@ body {
   }
 
 }
+

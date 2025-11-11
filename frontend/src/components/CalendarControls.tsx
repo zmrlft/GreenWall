@@ -21,6 +21,8 @@ type Props = {
   onGithubEmailChange: (email: string) => void;
   onRepoNameChange: (name: string) => void;
   onGenerateRepo?: () => void;
+  onOpenRemoteRepoModal?: () => void;
+  canCreateRemoteRepo?: boolean;
   isGeneratingRepo?: boolean;
   onExportContributions?: () => void;
   onImportContributions?: () => void;
@@ -49,6 +51,8 @@ export const CalendarControls: React.FC<Props> = ({
   onGithubEmailChange,
   onRepoNameChange,
   onGenerateRepo,
+  onOpenRemoteRepoModal,
+  canCreateRemoteRepo = false,
   isGeneratingRepo,
   onExportContributions,
   onImportContributions,
@@ -105,10 +109,16 @@ export const CalendarControls: React.FC<Props> = ({
     isGeneratingRepo ||
     githubUsername.trim() === '' ||
     githubEmail.trim() === '';
+  const disableRemoteRepo = disableGenerateRepo || !onOpenRemoteRepoModal || !canCreateRemoteRepo;
 
   const handleGenerateRepo = () => {
     if (!onGenerateRepo) return;
     onGenerateRepo();
+  };
+
+  const handleOpenRemoteRepoModal = () => {
+    if (!onOpenRemoteRepoModal) return;
+    onOpenRemoteRepoModal();
   };
 
   const handleCharacterSelect = (char: string) => {
@@ -232,9 +242,7 @@ export const CalendarControls: React.FC<Props> = ({
                   />
                 )}
                 {drawMode === 'pen' && penMode === 'auto' && (
-                  <div className="ml-2 text-xs font-bold">
-                    [AUTO]
-                  </div>
+                  <div className="ml-2 text-xs font-bold">[AUTO]</div>
                 )}
               </button>
               <button
@@ -292,48 +300,53 @@ export const CalendarControls: React.FC<Props> = ({
           </div>
 
           {/* 悬浮的画笔强度滑动条 - 仅在 manual 模式下显示 */}
-          {drawMode === 'pen' && penMode === 'manual' && showPenIntensityPicker && onPenIntensityChange && (
-            <>
-              {/* 遮罩层 */}
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowPenIntensityPicker(false)}
-              />
-              {/* 悬浮滑动条面板 */}
-              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-none border border-black bg-white p-4 shadow-xl">
-                <div className="space-y-3">
-                  <span className="text-sm font-medium text-black">{t('labels.penIntensity')}</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="9"
-                    step="1"
-                    value={penIntensity}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      let mappedValue: PenIntensity;
-                      if (value <= 2) mappedValue = 1;
-                      else if (value <= 4) mappedValue = 3;
-                      else if (value <= 7) mappedValue = 6;
-                      else mappedValue = 9;
-                      onPenIntensityChange(mappedValue);
-                    }}
-                    className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                    style={{
-                      background: `linear-gradient(to right, #ebedf0 0%, #9be9a8 25%, #40c463 50%, #30a14e 75%, #216e39 100%)`,
-                    }}
-                    title={t('titles.penIntensity', { intensity: penIntensity })}
-                  />
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>1</span>
-                    <span>3</span>
-                    <span>6</span>
-                    <span>9</span>
+          {drawMode === 'pen' &&
+            penMode === 'manual' &&
+            showPenIntensityPicker &&
+            onPenIntensityChange && (
+              <>
+                {/* 遮罩层 */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowPenIntensityPicker(false)}
+                />
+                {/* 悬浮滑动条面板 */}
+                <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-none border border-black bg-white p-4 shadow-xl">
+                  <div className="space-y-3">
+                    <span className="text-sm font-medium text-black">
+                      {t('labels.penIntensity')}
+                    </span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="9"
+                      step="1"
+                      value={penIntensity}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        let mappedValue: PenIntensity;
+                        if (value <= 2) mappedValue = 1;
+                        else if (value <= 4) mappedValue = 3;
+                        else if (value <= 7) mappedValue = 6;
+                        else mappedValue = 9;
+                        onPenIntensityChange(mappedValue);
+                      }}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #ebedf0 0%, #9be9a8 25%, #40c463 50%, #30a14e 75%, #216e39 100%)`,
+                      }}
+                      title={t('titles.penIntensity', { intensity: penIntensity })}
+                    />
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>1</span>
+                      <span>3</span>
+                      <span>6</span>
+                      <span>9</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
         </div>
 
         <div className="flex w-full flex-col space-y-2 sm:w-auto">
@@ -413,6 +426,20 @@ export const CalendarControls: React.FC<Props> = ({
               title={t('titles.generate')}
             >
               {isGeneratingRepo ? t('buttons.generating') : t('buttons.generateRepo')}
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenRemoteRepoModal}
+              disabled={disableRemoteRepo}
+              className={clsx(
+                'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
+                disableRemoteRepo
+                  ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
+                  : 'border border-black bg-white text-black hover:bg-gray-100'
+              )}
+              title={t('titles.generate')}
+            >
+              {t('buttons.createRemoteRepo')}
             </button>
           </div>
         </div>

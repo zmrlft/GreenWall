@@ -197,7 +197,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
           </div>
         </header>
 
-        <ContributionCalendar contributions={contributions} />
+        <ContributionCalendar
+          contributions={contributions}
+          isGithubAuthenticated={Boolean(githubUser)}
+        />
       </div>
 
       {isGitInstalled === false && <GitInstallSidebar onCheckAgain={handleCheckAgain} />}

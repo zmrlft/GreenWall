@@ -70,12 +70,31 @@ export namespace main {
 	        this.filePath = source["filePath"];
 	    }
 	}
+	export class RemoteRepoOptions {
+	    enabled: boolean;
+	    name: string;
+	    private: boolean;
+	    description: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RemoteRepoOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.name = source["name"];
+	        this.private = source["private"];
+	        this.description = source["description"];
+	    }
+	}
 	export class GenerateRepoRequest {
 	    year: number;
 	    githubUsername: string;
 	    githubEmail: string;
 	    repoName: string;
 	    contributions: ContributionDay[];
+	    remoteRepo?: RemoteRepoOptions;
 	
 	    static createFrom(source: any = {}) {
 	        return new GenerateRepoRequest(source);
@@ -88,6 +107,7 @@ export namespace main {
 	        this.githubEmail = source["githubEmail"];
 	        this.repoName = source["repoName"];
 	        this.contributions = this.convertValues(source["contributions"], ContributionDay);
+	        this.remoteRepo = this.convertValues(source["remoteRepo"], RemoteRepoOptions);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -111,6 +131,7 @@ export namespace main {
 	export class GenerateRepoResponse {
 	    repoPath: string;
 	    commitCount: number;
+	    remoteUrl?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GenerateRepoResponse(source);
@@ -120,6 +141,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.repoPath = source["repoPath"];
 	        this.commitCount = source["commitCount"];
+	        this.remoteUrl = source["remoteUrl"];
 	    }
 	}
 	export class GithubAuthRequest {
@@ -249,6 +271,7 @@ export namespace main {
 		    return a;
 		}
 	}
+	
 	export class SetGitPathRequest {
 	    gitPath: string;
 	

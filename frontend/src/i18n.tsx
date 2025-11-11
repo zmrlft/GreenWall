@@ -35,6 +35,7 @@ type TranslationDict = {
     generating: string;
     export: string;
     import: string;
+    createRemoteRepo: string;
   };
   titles: {
     pen: string;
@@ -56,6 +57,7 @@ type TranslationDict = {
     exportError: string;
     importSuccess: string;
     importError: string;
+    remoteLoginRequired: string;
   };
   gitInstall: {
     title: string;
@@ -132,6 +134,23 @@ type TranslationDict = {
     emailFallback: string;
     missingUser: string;
   };
+  remoteModal: {
+    title: string;
+    description: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    nameHelp: string;
+    privacyLabel: string;
+    publicOption: string;
+    privateOption: string;
+    repoDescriptionLabel: string;
+    repoDescriptionPlaceholder: string;
+    cancel: string;
+    confirm: string;
+    confirming: string;
+    nameRequired: string;
+    nameInvalid: string;
+  };
 };
 
 const translations: Record<Language, TranslationDict> = {
@@ -168,6 +187,7 @@ const translations: Record<Language, TranslationDict> = {
       generating: 'Generating...',
       export: 'Export',
       import: 'Import',
+      createRemoteRepo: 'Create Remote Repo',
     },
     titles: {
       pen: 'Pen mode - click or drag to add contributions',
@@ -190,6 +210,8 @@ const translations: Record<Language, TranslationDict> = {
       exportError: 'Failed to export contributions: {{message}}',
       importSuccess: 'Contributions imported successfully',
       importError: 'Failed to import contributions: {{message}}',
+      remoteLoginRequired:
+        'Please sign in with your GitHub token before creating a remote repository.',
     },
     gitInstall: {
       title: 'Git Installation Required',
@@ -269,6 +291,24 @@ const translations: Record<Language, TranslationDict> = {
       emailFallback: 'Email not public',
       missingUser: 'GitHub profile missing in response',
     },
+    remoteModal: {
+      title: 'Create Remote Repository',
+      description:
+        'GreenWall will reuse your generated commits, create a GitHub repository, add it as origin, and push everything for you.',
+      nameLabel: 'Repository Name',
+      namePlaceholder: 'my-contributions',
+      nameHelp: 'Use letters, numbers, ".", "_" or "-" (up to 100 characters).',
+      privacyLabel: 'Visibility',
+      publicOption: 'Public',
+      privateOption: 'Private',
+      repoDescriptionLabel: 'Description (optional)',
+      repoDescriptionPlaceholder: 'Explain what this repository is about',
+      cancel: 'Cancel',
+      confirm: 'Generate & Push',
+      confirming: 'Working...',
+      nameRequired: 'Repository name is required.',
+      nameInvalid: 'Repository name can only include letters, numbers, ".", "_" or "-".',
+    },
   },
   zh: {
     languageName: '中文',
@@ -303,6 +343,7 @@ const translations: Record<Language, TranslationDict> = {
       generating: '生成中...',
       export: '导出',
       import: '导入',
+      createRemoteRepo: '创建远程仓库',
     },
     titles: {
       pen: '画笔模式 - 点击或拖拽添加贡献',
@@ -324,6 +365,7 @@ const translations: Record<Language, TranslationDict> = {
       exportError: '导出贡献数据失败：{{message}}',
       importSuccess: '贡献数据已成功导入',
       importError: '导入贡献数据失败：{{message}}',
+      remoteLoginRequired: '请先登录 GitHub 再创建远程仓库。',
     },
     gitInstall: {
       title: '需要安装 Git',
@@ -400,6 +442,23 @@ const translations: Record<Language, TranslationDict> = {
       success: '登录成功',
       emailFallback: '未公开邮箱',
       missingUser: '未能获取 GitHub 用户信息',
+    },
+    remoteModal: {
+      title: '创建远程仓库',
+      description: 'GreenWall 会复用刚生成的提交，创建 GitHub 仓库并自动推送。',
+      nameLabel: '仓库名称',
+      namePlaceholder: 'my-contributions',
+      nameHelp: '仅可使用字母、数字、“.”、“_”或“-”，最多 100 个字符。',
+      privacyLabel: '可见性',
+      publicOption: '公开',
+      privateOption: '私有',
+      repoDescriptionLabel: '仓库描述（可选）',
+      repoDescriptionPlaceholder: '简单介绍一下这个仓库',
+      cancel: '取消',
+      confirm: '生成并推送',
+      confirming: '处理中...',
+      nameRequired: '请填写仓库名称。',
+      nameInvalid: '仓库名称只能包含字母、数字、.、_ 或 -。',
     },
   },
 };

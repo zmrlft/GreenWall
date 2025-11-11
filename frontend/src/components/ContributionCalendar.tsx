@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import styles from './ContributionCalendar.module.scss';
 import { CalendarControls } from './CalendarControls';
+import RemoteRepoModal, { RemoteRepoPayload } from './RemoteRepoModal';
 import { GenerateRepo, ExportContributions, ImportContributions } from '../../wailsjs/go/main/App';
 import { main } from '../../wailsjs/go/models';
 import { useTranslations } from '../i18n';
@@ -83,6 +84,7 @@ export type OneDay = { level: number; count: number; date: string };
 type Props = {
   contributions: OneDay[];
   className?: string;
+  isGithubAuthenticated?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 type DrawMode = 'pen' | 'eraser';
@@ -95,7 +97,12 @@ type ContainerVars = React.CSSProperties & {
   '--gap'?: string;
 };
 
-function ContributionCalendar({ contributions: originalContributions, className, ...rest }: Props) {
+function ContributionCalendar({
+  contributions: originalContributions,
+  className,
+  isGithubAuthenticated = false,
+  ...rest
+}: Props) {
   const { style: externalStyle, ...divProps } = rest;
   // 选中日期状态 - 改为存储每个日期的贡献次数
   const { t, dictionary } = useTranslations();
@@ -120,6 +127,7 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
+  const [isRemoteModalOpen, setIsRemoteModalOpen] = React.useState<boolean>(false);
   const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [containerVars, setContainerVars] = React.useState<ContainerVars>({});
@@ -141,6 +149,9 @@ function ContributionCalendar({ contributions: originalContributions, className,
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);
   const tomorrowTime = tomorrowStart.getTime();
+  const remoteRepoDefaultName =
+    repoName.trim() ||
+    (githubUsername.trim() ? `${githubUsername.trim()}-${year}` : `green-wall-${year}`);
   const isCurrentYear = year === currentYear;
 
   const isFutureDate = React.useCallback(
@@ -401,52 +412,105 @@ function ContributionCalendar({ contributions: originalContributions, className,
     return () => window.removeEventListener('resize', onResize);
   }, [isMaximized]);
 
-  const handleGenerateRepo = React.useCallback(async () => {
-    const trimmedUsername = githubUsername.trim();
-    const trimmedEmail = githubEmail.trim();
-    const trimmedRepoName = repoName.trim();
+  const runGenerateRepo = React.useCallback(
+    async (remoteRepoOptions?: RemoteRepoPayload) => {
+      const trimmedUsername = githubUsername.trim();
+      const trimmedEmail = githubEmail.trim();
+      const trimmedRepoName = (remoteRepoOptions?.name ?? repoName).trim();
 
-    if (trimmedUsername === '' || trimmedEmail === '') {
+      if (trimmedUsername === '' || trimmedEmail === '') {
+        window.alert(t('messages.generateRepoMissing'));
+        return;
+      }
+
+      const contributionsForBackend = filteredContributions
+        .map((c) => {
+          const override = userContributions.get(c.date);
+          const finalCount = override !== undefined ? override : c.count;
+
+          return {
+            date: c.date,
+            count: finalCount,
+          };
+        })
+        .filter((entry) => entry.count > 0);
+
+      if (contributionsForBackend.length === 0) {
+        window.alert(t('messages.noContributions'));
+        return;
+      }
+
+      if (remoteRepoOptions && trimmedRepoName !== repoName.trim()) {
+        setRepoName(trimmedRepoName);
+      }
+
+      setIsGeneratingRepo(true);
+      try {
+        const payload = main.GenerateRepoRequest.createFrom({
+          year,
+          githubUsername: trimmedUsername,
+          githubEmail: trimmedEmail,
+          repoName: trimmedRepoName,
+          contributions: contributionsForBackend,
+          remoteRepo: remoteRepoOptions
+            ? {
+                enabled: true,
+                name: remoteRepoOptions.name.trim(),
+                private: remoteRepoOptions.isPrivate,
+                description: remoteRepoOptions.description.trim(),
+              }
+            : undefined,
+        });
+        const result = await GenerateRepo(payload);
+        const baseMessage = `Repository created at ${result.repoPath} with ${result.commitCount} commits.`;
+        const fullMessage =
+          result.remoteUrl && result.remoteUrl !== ''
+            ? `${baseMessage}\nRemote repository: ${result.remoteUrl}`
+            : baseMessage;
+        window.alert(fullMessage);
+      } catch (error) {
+        console.error('Failed to generate repository', error);
+        const message = error instanceof Error ? error.message : String(error);
+        window.alert(t('messages.generateRepoError', { message }));
+      } finally {
+        setIsGeneratingRepo(false);
+      }
+    },
+    [
+      filteredContributions,
+      githubEmail,
+      githubUsername,
+      repoName,
+      t,
+      userContributions,
+      year,
+      setRepoName,
+    ]
+  );
+
+  const handleGenerateRepo = React.useCallback(() => {
+    runGenerateRepo();
+  }, [runGenerateRepo]);
+
+  const handleRemoteModalSubmit = React.useCallback(
+    (payload: RemoteRepoPayload) => {
+      setIsRemoteModalOpen(false);
+      runGenerateRepo(payload);
+    },
+    [runGenerateRepo]
+  );
+
+  const handleOpenRemoteModal = React.useCallback(() => {
+    if (!isGithubAuthenticated) {
+      window.alert(t('messages.remoteLoginRequired'));
+      return;
+    }
+    if (githubUsername.trim() === '' || githubEmail.trim() === '') {
       window.alert(t('messages.generateRepoMissing'));
       return;
     }
-
-    const contributionsForBackend = filteredContributions
-      .map((c) => {
-        const override = userContributions.get(c.date);
-        const finalCount = override !== undefined ? override : c.count;
-
-        return {
-          date: c.date,
-          count: finalCount,
-        };
-      })
-      .filter((entry) => entry.count > 0);
-
-    if (contributionsForBackend.length === 0) {
-      window.alert(t('messages.noContributions'));
-      return;
-    }
-
-    setIsGeneratingRepo(true);
-    try {
-      const payload = main.GenerateRepoRequest.createFrom({
-        year,
-        githubUsername: trimmedUsername,
-        githubEmail: trimmedEmail,
-        repoName: trimmedRepoName,
-        contributions: contributionsForBackend,
-      });
-      const result = await GenerateRepo(payload);
-      window.alert(`Repository created at ${result.repoPath} with ${result.commitCount} commits.`);
-    } catch (error) {
-      console.error('Failed to generate repository', error);
-      const message = error instanceof Error ? error.message : String(error);
-      window.alert(t('messages.generateRepoError', { message }));
-    } finally {
-      setIsGeneratingRepo(false);
-    }
-  }, [filteredContributions, githubEmail, githubUsername, repoName, userContributions, year, t]);
+    setIsRemoteModalOpen(true);
+  }, [githubEmail, githubUsername, isGithubAuthenticated, t]);
 
   const handleExportContributions = React.useCallback(async () => {
     const contributionsToExport = filteredContributions
@@ -763,6 +827,8 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onGithubEmailChange={setGithubEmail}
           onRepoNameChange={setRepoName}
           onGenerateRepo={handleGenerateRepo}
+          onOpenRemoteRepoModal={handleOpenRemoteModal}
+          canCreateRemoteRepo={isGithubAuthenticated}
           isGeneratingRepo={isGeneratingRepo}
           onExportContributions={handleExportContributions}
           onImportContributions={handleImportContributions}
@@ -774,6 +840,17 @@ function ContributionCalendar({ contributions: originalContributions, className,
           onPenModeChange={setPenMode}
         />
       </aside>
+      {isRemoteModalOpen && (
+        <RemoteRepoModal
+          open={isRemoteModalOpen}
+          defaultName={remoteRepoDefaultName}
+          defaultDescription=""
+          defaultPrivate
+          isSubmitting={isGeneratingRepo}
+          onClose={() => setIsRemoteModalOpen(false)}
+          onSubmit={handleRemoteModalSubmit}
+        />
+      )}
     </div>
   );
 }

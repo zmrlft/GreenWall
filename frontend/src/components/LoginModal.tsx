@@ -77,21 +77,21 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
   const displayName = profile?.name?.trim() || profile?.login || '';
 
   return (
-    <div className="login-modal__backdrop" role="presentation">
-      <div className="login-modal" role="dialog" aria-modal="true" aria-label={labels.title}>
-        <div className="login-modal__header">
+    <div className="modal__backdrop" role="presentation">
+      <div className="modal" role="dialog" aria-modal="true" aria-label={labels.title}>
+        <div className="modal__header">
           <h2>{labels.title}</h2>
           <button
             type="button"
-            className="login-modal__close"
+            className="modal__close"
             aria-label={labels.close}
             onClick={onClose}
           >
             ×
           </button>
         </div>
-        <form className="login-modal__body" onSubmit={handleSubmit}>
-          <label className="login-modal__field">
+        <form className="modal__body" onSubmit={handleSubmit}>
+          <label className="modal__field">
             <span>{labels.tokenLabel}</span>
             <input
               type="password"
@@ -104,8 +104,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
               required
             />
           </label>
-          <div className="login-modal__options">
-            <label className="login-modal__remember">
+          <div className="modal__options">
+            <label className="modal__remember">
               <input
                 type="checkbox"
                 checked={remember}
@@ -113,48 +113,40 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
               />
               <span>{labels.remember}</span>
             </label>
-            <p className="login-modal__hint">{labels.hint}</p>
+            <p className="modal__hint">{labels.hint}</p>
           </div>
-          {error && <div className="login-modal__status login-modal__status--error">{error}</div>}
+          {error && <div className="modal__status modal__status--error">{error}</div>}
           {profile && successMessage && (
-            <div className="login-modal__profile">
-              <div className="login-modal__status login-modal__status--success">
-                {successMessage}
-              </div>
-              <div className="login-modal__profile-info">
+            <div className="modal__profile">
+              <div className="modal__status modal__status--success">{successMessage}</div>
+              <div className="modal__profile-info">
                 {profile.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
                     alt={displayName}
-                    className="login-modal__profile-avatar"
+                    className="modal__profile-avatar"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="login-modal__profile-avatar login-modal__profile-avatar--fallback">
+                  <div className="modal__profile-avatar modal__profile-avatar--fallback">
                     {displayName.slice(0, 1).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <p className="login-modal__profile-name">{displayName}</p>
-                  <p className="login-modal__profile-login">@{profile.login}</p>
-                  <p className="login-modal__profile-email">
-                    {profile.email || labels.emailFallback}
-                  </p>
+                  <p className="modal__profile-name">{displayName}</p>
+                  <p className="modal__profile-login">@{profile.login}</p>
+                  <p className="modal__profile-email">{profile.email || labels.emailFallback}</p>
                 </div>
               </div>
             </div>
           )}
-          <div className="login-modal__actions">
-            <button
-              type="button"
-              className="login-modal__button login-modal__button--ghost"
-              onClick={onClose}
-            >
+          <div className="modal__actions">
+            <button type="button" className="modal__button modal__button--ghost" onClick={onClose}>
               {labels.close}
             </button>
             <button
               type="submit"
-              className="login-modal__button login-modal__button--primary"
+              className="modal__button modal__button--primary"
               disabled={isSubmitting || !token.trim()}
             >
               {isSubmitting ? labels.submitting : labels.submit}
