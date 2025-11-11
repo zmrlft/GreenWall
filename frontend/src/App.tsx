@@ -4,6 +4,7 @@ import ContributionCalendar, { OneDay } from './components/ContributionCalendar'
 import GitInstallSidebar from './components/GitInstallSidebar';
 import GitPathSettings from './components/GitPathSettings';
 import { TranslationProvider, useTranslations, Language } from './i18n';
+import { BrowserOpenURL } from '../wailsjs/runtime/runtime';
 
 function App() {
   const generateEmptyYearData = (year: number): OneDay[] => {
@@ -77,6 +78,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   );
 
   const loginLabel = language === 'zh' ? '登录' : 'Log in';
+  const openRepository = React.useCallback(() => {
+    BrowserOpenURL('https://github.com/zmrlft/GreenWall');
+  }, []);
 
   return (
     <div className="app-shell">
@@ -109,10 +113,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
                 );
               })}
             </div>
-            <a
-              href="https://github.com/zmrlft/GreenWall"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={openRepository}
               aria-label="Open GreenWall repository on GitHub"
               className="app-shell__icon-button"
             >
@@ -122,7 +125,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
                   d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.257.82-.577 0-.285-.01-1.04-.015-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.776.42-1.305.763-1.605-2.665-.303-5.466-1.335-5.466-5.935 0-1.312.47-2.382 1.236-3.22-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23A11.5 11.5 0 0 1 12 5.8a11.5 11.5 0 0 1 3.003.404c2.292-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.873.118 3.176.77.838 1.236 1.908 1.236 3.22 0 4.61-2.804 5.628-5.475 5.923.431.372.816 1.103.816 2.222 0 1.605-.014 2.897-.014 3.293 0 .322.218.694.825.576C20.565 21.796 24 17.297 24 12 24 5.37 18.63 0 12 0Z"
                 />
               </svg>
-            </a>
+            </button>
           </div>
         </header>
 
