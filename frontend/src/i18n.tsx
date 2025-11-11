@@ -123,6 +123,7 @@ type TranslationDict = {
     tokenLabel: string;
     tokenPlaceholder: string;
     remember: string;
+    helpLink: string;
     submit: string;
     submitting: string;
     close: string;
@@ -277,6 +278,7 @@ const translations: Record<Language, TranslationDict> = {
       tokenLabel: 'Personal Access Token (classic)',
       tokenPlaceholder: 'Paste your PAT',
       remember: 'Remember this token (stored locally only)',
+      helpLink: 'Read how to get a PAT',
       submit: 'Sign in with Token',
       submitting: 'Verifying...',
       close: 'Close',
@@ -426,6 +428,7 @@ const translations: Record<Language, TranslationDict> = {
       tokenLabel: 'Personal Access Token (classic)',
       tokenPlaceholder: '粘贴你的 PAT',
       remember: '记住这个 token（仅保存在本机）',
+      helpLink: '查看如何获取 PAT',
       submit: '使用 Token 登录',
       submitting: '验证中...',
       close: '关闭',

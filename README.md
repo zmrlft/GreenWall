@@ -4,11 +4,22 @@
 
 ## How to use
 
-Make sure git is installed on your computer.
+Make sure Git is installed on your computer.
 
-![app screenshot](/docs/images/appnew_en.png)
+![app screenshot](/docs/images/app.png)
 
-Download the application, open it, and let your creativity flow! Generating a repository may take a while. After generation, copy the repository folder and enter it to continue.
+Download the app, open it, and first grab a Personal Access Token (PAT) so you can sign in to GitHub. You can follow this guide: [how to get your PAT](docs/githubtoken_en.md).
+
+Once you’re logged in you’ll see your avatar and name in the upper-left corner. Drag across the calendar to paint your design. When you’re satisfied, click **Create Remote Repo**. You can edit the repo name and description, choose whether it’s public or private, and then press **Generate & Push** to let the app create and push the repository for you automatically.
+
+> **Heads-up:** GitHub may take anywhere from 5 minutes to 2 days to show the contributions on your profile. You can keep the repo private and enable “Include private contributions” in your profile settings so others can’t see the repo content but the contribution streak still counts.
+
+![private setting screenshot](docs/images/privatesetting.png)
+
+### Quick Tips
+
+- Right-click while painting to toggle between the brush and the eraser.
+- Use the brush intensity control to switch between different shades of green.
 
 ### Windows/Linux
 
@@ -27,25 +38,6 @@ sudo xattr -r -d com.apple.quarantine ./green-wall.app
 **Tip:** You don't need to execute all of these commands. Try them in order from top to bottom, and stop once one resolves the issue.
 
 **Warning:** The commands will not automatically launch the application. You need to manually double-click the app to start it (the commands only modify file attributes).
-
-### Quick Tips
-
-- Right-clicking during the painting process can switch between the brush and the eraser.
-
-## Next steps
-
-1. Log in to your GitHub account and create an empty remote repository (do not select README, .gitignore or License).
-2. From the generated repository directory run the following commands to push your local repo to the remote:
-
-```bash
-git remote add origin <remote-repo-url>
-git branch -M main
-git push -u origin main
-```
-
-Note: After pushing, GitHub may take anywhere from 5 minutes to two days to show the contribution on your profile. You can make the repository private and enable contributions from private repositories in your GitHub contribution settings so others can't see the repo contents but your contribution activity will still be counted.
-
-![private setting screenshot](docs/images/privatesetting.png)
 
 ## Rendering
 

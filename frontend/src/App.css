@@ -303,9 +303,33 @@ body {
   border-bottom: 1px solid #f1f5f9;
 }
 
+.modal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .modal__header h2 {
   margin: 0;
   font-size: 1.2rem;
+}
+
+.modal__help {
+  border: none;
+  background: #e2e8f0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #0f172a;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.modal__help:hover {
+  background: #cbd5f5;
+  color: #0a0f1c;
 }
 
 .modal__close {

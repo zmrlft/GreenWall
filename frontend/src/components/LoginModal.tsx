@@ -1,6 +1,7 @@
 import React from 'react';
 import type { main } from '../../wailsjs/go/models';
 import { AuthenticateWithToken } from '../../wailsjs/go/main/App';
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 import { useTranslations } from '../i18n';
 
 type LoginModalProps = {
@@ -18,12 +19,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
   const [successMessage, setSuccessMessage] = React.useState('');
 
   const { t } = useTranslations();
+  const tokenGuideUrl = 'https://github.com/zmrlft/GreenWall/blob/main/docs/githubtoken_en.md';
   const labels = React.useMemo(
     () => ({
       title: t('loginModal.title'),
       tokenLabel: t('loginModal.tokenLabel'),
       tokenPlaceholder: t('loginModal.tokenPlaceholder'),
       remember: t('loginModal.remember'),
+      helpLink: t('loginModal.helpLink'),
       submit: t('loginModal.submit'),
       submitting: t('loginModal.submitting'),
       close: t('loginModal.close'),
@@ -34,6 +37,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
     }),
     [t]
   );
+
+  const handleOpenTokenGuide = React.useCallback(() => {
+    BrowserOpenURL(tokenGuideUrl);
+  }, [tokenGuideUrl]);
 
   React.useEffect(() => {
     if (!open) {
@@ -81,14 +88,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose, onSuccess }) => 
       <div className="modal" role="dialog" aria-modal="true" aria-label={labels.title}>
         <div className="modal__header">
           <h2>{labels.title}</h2>
-          <button
-            type="button"
-            className="modal__close"
-            aria-label={labels.close}
-            onClick={onClose}
-          >
-            ×
-          </button>
+          <div className="modal__header-actions">
+            <button
+              type="button"
+              className="modal__help"
+              aria-label={labels.helpLink}
+              title={labels.helpLink}
+              onClick={handleOpenTokenGuide}
+            >
+              ?
+            </button>
+            <button
+              type="button"
+              className="modal__close"
+              aria-label={labels.close}
+              onClick={onClose}
+            >
+              ×
+            </button>
+          </div>
         </div>
         <form className="modal__body" onSubmit={handleSubmit}>
           <label className="modal__field">
