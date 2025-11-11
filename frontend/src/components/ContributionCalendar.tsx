@@ -8,37 +8,6 @@ import { main } from '../../wailsjs/go/models';
 import { useTranslations } from '../i18n';
 import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
 import { getPatternById, gridToBoolean } from '../data/characterPatterns';
-const STORAGE_KEYS = {
-  username: 'github-contributor.username',
-  email: 'github-contributor.email',
-  repoName: 'github-contributor.repoName',
-};
-
-function readStoredValue(key: string): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  try {
-    return window.localStorage.getItem(key) ?? '';
-  } catch {
-    return '';
-  }
-}
-
-function writeStoredValue(key: string, value: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  try {
-    if (value === '') {
-      window.localStorage.removeItem(key);
-    } else {
-      window.localStorage.setItem(key, value);
-    }
-  } catch {
-    // Ignore storage errors and keep runtime behaviour unaffected.
-  }
-}
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -84,7 +53,7 @@ export type OneDay = { level: number; count: number; date: string };
 type Props = {
   contributions: OneDay[];
   className?: string;
-  isGithubAuthenticated?: boolean;
+  githubUser?: main.GithubUserProfile | null;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 type DrawMode = 'pen' | 'eraser';
@@ -100,7 +69,7 @@ type ContainerVars = React.CSSProperties & {
 function ContributionCalendar({
   contributions: originalContributions,
   className,
-  isGithubAuthenticated = false,
+  githubUser,
   ...rest
 }: Props) {
   const { style: externalStyle, ...divProps } = rest;
@@ -110,15 +79,6 @@ function ContributionCalendar({
 
   const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
   const [year, setYear] = React.useState<number>(new Date().getFullYear());
-  const [githubUsername, setGithubUsername] = React.useState<string>(() =>
-    readStoredValue(STORAGE_KEYS.username)
-  );
-  const [githubEmail, setGithubEmail] = React.useState<string>(() =>
-    readStoredValue(STORAGE_KEYS.email)
-  );
-  const [repoName, setRepoName] = React.useState<string>(() =>
-    readStoredValue(STORAGE_KEYS.repoName)
-  );
 
   // 绘画模式状态
   const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
@@ -149,9 +109,9 @@ function ContributionCalendar({
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);
   const tomorrowTime = tomorrowStart.getTime();
-  const remoteRepoDefaultName =
-    repoName.trim() ||
-    (githubUsername.trim() ? `${githubUsername.trim()}-${year}` : `green-wall-${year}`);
+  const remoteRepoDefaultName = githubUser?.login?.trim()
+    ? `${githubUser.login.trim()}-${year}`
+    : `green-wall-${year}`;
   const isCurrentYear = year === currentYear;
 
   const isFutureDate = React.useCallback(
@@ -297,18 +257,6 @@ function ContributionCalendar({
     handleCancelCharacterPreview();
   }, [previewMode, previewDates, handleCancelCharacterPreview]);
 
-  React.useEffect(() => {
-    writeStoredValue(STORAGE_KEYS.username, githubUsername);
-  }, [githubUsername]);
-
-  React.useEffect(() => {
-    writeStoredValue(STORAGE_KEYS.email, githubEmail);
-  }, [githubEmail]);
-
-  React.useEffect(() => {
-    writeStoredValue(STORAGE_KEYS.repoName, repoName);
-  }, [repoName]);
-
   // 检测窗口是否最大化/全屏，用于切换布局与放大样式
   React.useEffect(() => {
     let disposed = false;
@@ -413,13 +361,13 @@ function ContributionCalendar({
   }, [isMaximized]);
 
   const runGenerateRepo = React.useCallback(
-    async (remoteRepoOptions?: RemoteRepoPayload) => {
-      const trimmedUsername = githubUsername.trim();
-      const trimmedEmail = githubEmail.trim();
-      const trimmedRepoName = (remoteRepoOptions?.name ?? repoName).trim();
+    async (remoteRepoOptions: RemoteRepoPayload) => {
+      const githubLogin = githubUser?.login?.trim() ?? '';
+      const githubEmail =
+        githubUser?.email?.trim() || (githubLogin ? `${githubLogin}@users.noreply.github.com` : '');
 
-      if (trimmedUsername === '' || trimmedEmail === '') {
-        window.alert(t('messages.generateRepoMissing'));
+      if (githubLogin === '' || githubEmail === '') {
+        window.alert(t('messages.remoteLoginRequired'));
         return;
       }
 
@@ -427,11 +375,7 @@ function ContributionCalendar({
         .map((c) => {
           const override = userContributions.get(c.date);
           const finalCount = override !== undefined ? override : c.count;
-
-          return {
-            date: c.date,
-            count: finalCount,
-          };
+          return { date: c.date, count: finalCount };
         })
         .filter((entry) => entry.count > 0);
 
@@ -440,26 +384,20 @@ function ContributionCalendar({
         return;
       }
 
-      if (remoteRepoOptions && trimmedRepoName !== repoName.trim()) {
-        setRepoName(trimmedRepoName);
-      }
-
       setIsGeneratingRepo(true);
       try {
         const payload = main.GenerateRepoRequest.createFrom({
           year,
-          githubUsername: trimmedUsername,
-          githubEmail: trimmedEmail,
-          repoName: trimmedRepoName,
+          githubUsername: githubLogin,
+          githubEmail,
+          repoName: remoteRepoOptions.name.trim(),
           contributions: contributionsForBackend,
-          remoteRepo: remoteRepoOptions
-            ? {
-                enabled: true,
-                name: remoteRepoOptions.name.trim(),
-                private: remoteRepoOptions.isPrivate,
-                description: remoteRepoOptions.description.trim(),
-              }
-            : undefined,
+          remoteRepo: {
+            enabled: true,
+            name: remoteRepoOptions.name.trim(),
+            private: remoteRepoOptions.isPrivate,
+            description: remoteRepoOptions.description.trim(),
+          },
         });
         const result = await GenerateRepo(payload);
         const baseMessage = `Repository created at ${result.repoPath} with ${result.commitCount} commits.`;
@@ -476,21 +414,8 @@ function ContributionCalendar({
         setIsGeneratingRepo(false);
       }
     },
-    [
-      filteredContributions,
-      githubEmail,
-      githubUsername,
-      repoName,
-      t,
-      userContributions,
-      year,
-      setRepoName,
-    ]
+    [filteredContributions, githubUser, t, userContributions, year]
   );
-
-  const handleGenerateRepo = React.useCallback(() => {
-    runGenerateRepo();
-  }, [runGenerateRepo]);
 
   const handleRemoteModalSubmit = React.useCallback(
     (payload: RemoteRepoPayload) => {
@@ -501,16 +426,12 @@ function ContributionCalendar({
   );
 
   const handleOpenRemoteModal = React.useCallback(() => {
-    if (!isGithubAuthenticated) {
+    if (!githubUser?.login) {
       window.alert(t('messages.remoteLoginRequired'));
       return;
     }
-    if (githubUsername.trim() === '' || githubEmail.trim() === '') {
-      window.alert(t('messages.generateRepoMissing'));
-      return;
-    }
     setIsRemoteModalOpen(true);
-  }, [githubEmail, githubUsername, isGithubAuthenticated, t]);
+  }, [githubUser, t]);
 
   const handleExportContributions = React.useCallback(async () => {
     const contributionsToExport = filteredContributions
@@ -820,15 +741,8 @@ function ContributionCalendar({
           onPenIntensityChange={setPenIntensity}
           onReset={handleReset}
           onFillAllGreen={handleFillAllGreen}
-          githubUsername={githubUsername}
-          githubEmail={githubEmail}
-          repoName={repoName}
-          onGithubUsernameChange={setGithubUsername}
-          onGithubEmailChange={setGithubEmail}
-          onRepoNameChange={setRepoName}
-          onGenerateRepo={handleGenerateRepo}
           onOpenRemoteRepoModal={handleOpenRemoteModal}
-          canCreateRemoteRepo={isGithubAuthenticated}
+          canCreateRemoteRepo={Boolean(githubUser)}
           isGeneratingRepo={isGeneratingRepo}
           onExportContributions={handleExportContributions}
           onImportContributions={handleImportContributions}

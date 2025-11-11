@@ -14,13 +14,6 @@ type Props = {
   onPenIntensityChange?: (intensity: PenIntensity) => void;
   onReset?: () => void;
   onFillAllGreen?: () => void;
-  githubUsername: string;
-  githubEmail: string;
-  repoName: string;
-  onGithubUsernameChange: (username: string) => void;
-  onGithubEmailChange: (email: string) => void;
-  onRepoNameChange: (name: string) => void;
-  onGenerateRepo?: () => void;
   onOpenRemoteRepoModal?: () => void;
   canCreateRemoteRepo?: boolean;
   isGeneratingRepo?: boolean;
@@ -44,13 +37,6 @@ export const CalendarControls: React.FC<Props> = ({
   onPenIntensityChange,
   onReset,
   onFillAllGreen,
-  githubUsername,
-  githubEmail,
-  repoName,
-  onGithubUsernameChange,
-  onGithubEmailChange,
-  onRepoNameChange,
-  onGenerateRepo,
   onOpenRemoteRepoModal,
   canCreateRemoteRepo = false,
   isGeneratingRepo,
@@ -104,18 +90,7 @@ export const CalendarControls: React.FC<Props> = ({
     }
   };
 
-  const disableGenerateRepo =
-    !onGenerateRepo ||
-    isGeneratingRepo ||
-    githubUsername.trim() === '' ||
-    githubEmail.trim() === '';
-  const disableRemoteRepo = disableGenerateRepo || !onOpenRemoteRepoModal || !canCreateRemoteRepo;
-
-  const handleGenerateRepo = () => {
-    if (!onGenerateRepo) return;
-    onGenerateRepo();
-  };
-
+  const disableRemoteRepo = !onOpenRemoteRepoModal || !canCreateRemoteRepo || isGeneratingRepo;
   const handleOpenRemoteRepoModal = () => {
     if (!onOpenRemoteRepoModal) return;
     onOpenRemoteRepoModal();
@@ -137,53 +112,6 @@ export const CalendarControls: React.FC<Props> = ({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-nowrap sm:gap-4">
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-          <label htmlFor="github-username-input" className="text-sm font-medium text-black">
-            {t('labels.githubUsername')}
-          </label>
-          <input
-            id="github-username-input"
-            type="text"
-            value={githubUsername}
-            onChange={(event) => onGithubUsernameChange(event.target.value)}
-            placeholder={t('placeholders.githubUsername')}
-            autoComplete="username"
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-          <label htmlFor="github-email-input" className="text-sm font-medium text-black">
-            {t('labels.githubEmail')}
-          </label>
-          <input
-            id="github-email-input"
-            type="email"
-            value={githubEmail}
-            onChange={(event) => onGithubEmailChange(event.target.value)}
-            placeholder={t('placeholders.githubEmail')}
-            autoComplete="email"
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        <div className="flex w-full flex-col space-y-2 sm:flex-1 sm:min-w-[14rem]">
-          <label htmlFor="repo-name-input" className="text-sm font-medium text-black">
-            {t('labels.repoName')}
-          </label>
-          <input
-            id="repo-name-input"
-            type="text"
-            value={repoName}
-            onChange={(event) => onRepoNameChange(event.target.value)}
-            placeholder={t('placeholders.repoName')}
-            autoComplete="off"
-            className="w-full rounded-none border border-black px-3 py-2 transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-      </div>
-
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex w-full flex-col space-y-2 sm:w-32 sm:flex-none">
           <label htmlFor="year-input" className="text-sm font-medium text-black">
@@ -415,20 +343,6 @@ export const CalendarControls: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={handleGenerateRepo}
-              disabled={disableGenerateRepo}
-              className={clsx(
-                'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200 sm:w-auto',
-                disableGenerateRepo
-                  ? 'cursor-not-allowed border border-gray-400 bg-gray-200 text-gray-500'
-                  : 'border border-black bg-white text-black hover:bg-gray-100'
-              )}
-              title={t('titles.generate')}
-            >
-              {isGeneratingRepo ? t('buttons.generating') : t('buttons.generateRepo')}
-            </button>
-            <button
-              type="button"
               onClick={handleOpenRemoteRepoModal}
               disabled={disableRemoteRepo}
               className={clsx(
@@ -439,7 +353,7 @@ export const CalendarControls: React.FC<Props> = ({
               )}
               title={t('titles.generate')}
             >
-              {t('buttons.createRemoteRepo')}
+              {isGeneratingRepo ? t('buttons.generating') : t('buttons.createRemoteRepo')}
             </button>
           </div>
         </div>

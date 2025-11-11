@@ -237,12 +237,18 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 	}
 
 	username := strings.TrimSpace(req.GithubUsername)
+	if a.githubUser != nil && strings.TrimSpace(a.githubUser.Login) != "" {
+		username = strings.TrimSpace(a.githubUser.Login)
+	}
 	if username == "" {
-		username = "zmrlft"
+		username = "greenwall"
 	}
 	email := strings.TrimSpace(req.GithubEmail)
+	if email == "" && a.githubUser != nil && strings.TrimSpace(a.githubUser.Email) != "" {
+		email = strings.TrimSpace(a.githubUser.Email)
+	}
 	if email == "" {
-		email = "2643895326@qq.com"
+		email = fmt.Sprintf("%s@users.noreply.github.com", username)
 	}
 
 	if err := os.MkdirAll(a.repoBasePath, 0o755); err != nil {
@@ -380,6 +386,9 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 			remoteURL = createdRepo.HTMLURL
 		} else {
 			remoteURL = targetURL
+		}
+		if remoteURL != "" && a.ctx != nil {
+			runtime.BrowserOpenURL(a.ctx, remoteURL)
 		}
 	}
 
