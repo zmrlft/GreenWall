@@ -9,5 +9,14 @@
   "author": {
     "name": "zmrlft",
     "email": "2643895326@qq.com"
-  }
+  },
+  "info": {
+    "productName": "GreenWall",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 zmrlft",
+    "companyName": "GreenWall"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": ""
 }
