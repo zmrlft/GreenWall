@@ -301,6 +301,7 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 	_ = a.runGitCommand(repoPath, "config", "gc.auto", "0")
 	_ = a.runGitCommand(repoPath, "config", "core.autocrlf", "false")
 	_ = a.runGitCommand(repoPath, "config", "core.fsyncObjectFiles", "false")
+	_ = a.runGitCommand(repoPath, "config", "credential.helper", "") // ensure global helpers can't override askpass
 
 	// Sort contributions by date ascending to produce chronological history
 	contribs := make([]ContributionDay, 0, len(req.Contributions))
