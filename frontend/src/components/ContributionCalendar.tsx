@@ -272,7 +272,7 @@ function ContributionCalendar({
 
     // 取消预览
     handleCancelCharacterPreview();
-  }, [previewMode, previewDates, handleCancelCharacterPreview]);
+  }, [previewMode, previewDates, handleCancelCharacterPreview, penIntensity, penMode]);
 
   // 检测窗口是否最大化/全屏，用于切换布局与放大样式
   React.useEffect(() => {
