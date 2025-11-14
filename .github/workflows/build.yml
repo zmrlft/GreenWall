@@ -140,6 +140,11 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
+          echo "=== Copying app icon to Resources directory ==="
+          APP_PATH="build/bin/green-wall.app"
+          RESOURCES_PATH="$APP_PATH/Contents/Resources"
+          mkdir -p "$RESOURCES_PATH"
+          cp "build/darwin/appIcon.icns" "$RESOURCES_PATH/"
 
       - name: Create signature (macOS)
         if: matrix.os == 'macos-latest'
