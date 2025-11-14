@@ -141,6 +141,25 @@ jobs:
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
 
+      - name: Create Ad-hoc signature for macOS app
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "=== Creating Ad-hoc signature for macOS app ==="
+          APP_PATH="build/bin/green-wall.app"
+          if [ -d "$APP_PATH" ]; then
+            echo "Found app at: $APP_PATH"
+            echo "Signing app with Ad-hoc signature..."
+            codesign --sign - --deep --force "$APP_PATH"
+            echo "Verifying signature..."
+            codesign --verify --verbose "$APP_PATH"
+            echo "Displaying signature info..."
+            codesign --display --verbose=4 "$APP_PATH"
+          else
+            echo "App not found at: $APP_PATH"
+            echo "Searching for .app files..."
+            find build -name "*.app" -type d
+          fi
+
       - name: List build output (Linux/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
@@ -169,10 +188,21 @@ jobs:
       - name: Create macOS archive
         if: matrix.os == 'macos-latest'
         run: |
-          npm install --global create-dmg
-          cd build/bin
-          create-dmg --no-code-sign "green-wall.app" .
-          mv *.dmg ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.dmg
+          echo "=== Creating macOS DMG with signed app ==="
+          APP_PATH="build/bin/green-wall.app"
+          if [ -d "$APP_PATH" ]; then
+            echo "Verifying app signature before DMG creation..."
+            codesign --verify --verbose "$APP_PATH"
+            echo "Creating DMG..."
+            npm install --global create-dmg
+            cd build/bin
+            create-dmg --no-code-sign "green-wall.app" .
+            mv *.dmg ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.dmg
+            echo "DMG created successfully with signed app"
+          else
+            echo "Error: App not found at $APP_PATH"
+            exit 1
+          fi
 
       - name: Create Linux archive
         if: matrix.os == 'ubuntu-latest'
