@@ -27,6 +27,8 @@ type Props = {
   // 画笔模式
   penMode?: 'manual' | 'auto';
   onPenModeChange?: (mode: 'manual' | 'auto') => void;
+  weekStart?: number; // 0 = Sunday, 1 = Monday
+  onWeekStartChange?: (v: number) => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -50,6 +52,8 @@ export const CalendarControls: React.FC<Props> = ({
   // 画笔模式
   penMode = 'manual',
   onPenModeChange,
+  weekStart = 1,
+  onWeekStartChange,
 }) => {
   const { t } = useTranslations();
   const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -173,6 +177,20 @@ export const CalendarControls: React.FC<Props> = ({
             onBlur={handleYearBlur}
             className="w-full rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
           />
+          <div className="mt-2">
+            <label htmlFor="week-start-select" className="text-sm font-medium text-black">
+              {t('labels.weekStart')}
+            </label>
+            <select
+              id="week-start-select"
+              value={String(weekStart)}
+              onChange={(e) => onWeekStartChange?.(Number(e.target.value))}
+              className="w-full rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="0">{t('labels.weekStartSunday')}</option>
+              <option value="1">{t('labels.weekStartMonday')}</option>
+            </select>
+          </div>
         </div>
 
         <div className="relative flex w-full flex-col gap-4 rounded-xl border border-black/10 bg-white/80 p-4 shadow-sm">
