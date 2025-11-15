@@ -11,6 +11,9 @@ type TranslationDict = {
     year: string;
     drawMode: string;
     penIntensity: string;
+    weekStart: string;
+    weekStartSunday: string;
+    weekStartMonday: string;
     language: string;
   };
   placeholders: {
@@ -160,6 +163,9 @@ const translations: Record<Language, TranslationDict> = {
       repoName: 'Repository Name',
       year: 'Year',
       drawMode: 'Draw Mode',
+      weekStart: 'Week Start',
+      weekStartSunday: 'Sunday',
+      weekStartMonday: 'Monday',
       penIntensity: 'Pen Intensity',
       language: 'Language',
     },
@@ -314,6 +320,9 @@ const translations: Record<Language, TranslationDict> = {
       repoName: '仓库名称',
       year: '年份',
       drawMode: '绘制模式',
+      weekStart: '周起始',
+      weekStartSunday: '周日',
+      weekStartMonday: '周一',
       penIntensity: '画笔强度',
       language: '语言',
     },

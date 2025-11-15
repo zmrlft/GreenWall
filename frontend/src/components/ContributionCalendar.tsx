@@ -106,6 +106,24 @@ function ContributionCalendar({
   const [previewCharacter, setPreviewCharacter] = React.useState<string>('');
   const [previewDates, setPreviewDates] = React.useState<Set<string>>(new Set());
 
+  // weekStart: 0 = Sunday, 1 = Monday. Persist in localStorage key 'gw_weekStart'.
+  const [weekStart, setWeekStart] = React.useState<number>(() => {
+    try {
+      const v = typeof window !== 'undefined' ? localStorage.getItem('gw_weekStart') : null;
+      return v !== null ? Number(v) : 1; // default to Monday
+    } catch {
+      return 1;
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('gw_weekStart', String(weekStart));
+    } catch {
+      // ignore
+    }
+  }, [weekStart]);
+
   // 允许选择年份，过滤贡献数据
   const filteredContributions = originalContributions.filter(
     (c) => new Date(c.date).getFullYear() === year
@@ -157,8 +175,9 @@ function ContributionCalendar({
 
       // 计算中心日期的行列位置
       const firstDayOfWeek = yearStart.getDay(); // 0=周日, 1=周一, ...
-      const centerDayOfWeek = centerDate.getDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
+      const offset = (firstDayOfWeek - weekStart + 7) % 7;
+      const centerDayOfWeek = (centerDate.getDay() - weekStart + 7) % 7;
+      const centerWeek = Math.floor((daysSinceYearStart + offset) / 7);
       const centerRow = centerDayOfWeek;
 
       // 图案尺寸
@@ -202,7 +221,7 @@ function ContributionCalendar({
 
       return previewDatesSet;
     },
-    [filteredContributions, year, isFutureDate]
+    [filteredContributions, year, isFutureDate, weekStart]
   );
 
   const getTooltip = React.useCallback(
@@ -265,7 +284,6 @@ function ContributionCalendar({
           // manual 模式：直接设置为选定的画笔强度值
           newMap.set(dateStr, penIntensity);
         }
-        
       }
       return newMap;
     });
@@ -501,7 +519,7 @@ function ContributionCalendar({
   const hasContributions = filteredContributions.length > 0;
   const firstContribution = hasContributions ? filteredContributions[0] : undefined;
   const firstDate = firstContribution ? new Date(firstContribution.date) : new Date(year, 0, 1);
-  const startRow = firstDate.getDay();
+  const startRow = (firstDate.getDay() - weekStart + 7) % 7;
   const months: (React.ReactElement | undefined)[] = [];
   let latestMonth = -1;
 
@@ -519,7 +537,7 @@ function ContributionCalendar({
           const current = prev.get(dateStr) ?? 0;
           // 改为调用方法
           const nextCount = getNextContribution(current);
-          
+
           newMap.set(dateStr, nextCount);
         } else {
           // manual 模式：直接设置为选定的画笔强度值
@@ -600,7 +618,7 @@ function ContributionCalendar({
     const displayCount = userContribution > 0 ? userContribution : c.count;
 
     // 在星期天的月份出现变化的列上面显示月份。
-    if (date.getDay() === 0 && month !== latestMonth) {
+    if (date.getDay() === weekStart && month !== latestMonth) {
       // 计算月份对应的列，从 1 开始、左上角格子留空所以 +2
       const gridColumn = 2 + Math.floor((i + startRow) / 7);
       latestMonth = month;
@@ -709,6 +727,13 @@ function ContributionCalendar({
     return null;
   }
 
+  // 准备周标签（显示 Mon / Wed / Fri），并根据 weekStart 调整它们在网格中的行位置
+  const weekLabelItems = [
+    { day: 1, text: t('weekdays.mon') },
+    { day: 3, text: t('weekdays.wed') },
+    { day: 5, text: t('weekdays.fri') },
+  ];
+
   return (
     <div className="workbench">
       <div className="workbench__canvas">
@@ -723,9 +748,14 @@ function ContributionCalendar({
           onMouseUp={handleMouseUp}
         >
           {renderedMonths}
-          <span className={styles.week}>Mon</span>
-          <span className={styles.week}>Wed</span>
-          <span className={styles.week}>Fri</span>
+          {weekLabelItems.map((w) => {
+            const gridRow = 2 + ((w.day - weekStart + 7) % 7);
+            return (
+              <span className={styles.week} key={w.day} style={{ gridRow }}>
+                {w.text}
+              </span>
+            );
+          })}
 
           <div className={styles.tiles}>{tiles}</div>
           <div className={styles.total}>
@@ -765,6 +795,8 @@ function ContributionCalendar({
             onCancelCharacterPreview={handleCancelCharacterPreview}
             penMode={penMode}
             onPenModeChange={setPenMode}
+            weekStart={weekStart}
+            onWeekStartChange={setWeekStart}
           />
         </aside>
         <aside className="workbench__panel">
