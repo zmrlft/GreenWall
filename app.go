@@ -342,7 +342,8 @@ func (a *App) GenerateRepo(req GenerateRepoRequest) (*GenerateRepoResponse, erro
 			stream.WriteString("\n")
 
 			// Emit commit that points to README (:1) and activity (:nextMark)
-			commitTime := parsedDate.Add(time.Duration(i) * time.Second)
+			// Shift to midday UTC so GitHub won't classify the commit into the previous day across time zones.
+			commitTime := parsedDate.Add(12*time.Hour + time.Duration(i)*time.Second)
 			secs := commitTime.Unix()
 			tz := commitTime.Format("-0700")
 			msg := fmt.Sprintf("Contribution on %s (%d/%d)", day.Date, i+1, day.Count)
