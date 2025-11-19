@@ -154,6 +154,12 @@
     animation: pulse 1.5s infinite;
   }
 
+  // 选择状态样式 - 只加边框，保持原有颜色
+  &.selection {
+    outline: 2px solid #2563eb !important;
+    outline-offset: 1px;
+  }
+
   @keyframes pulse {
     0% {
       opacity: 1;
