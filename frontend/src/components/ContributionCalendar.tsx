@@ -811,7 +811,7 @@ function ContributionCalendar({
   // Ctrl+C: 复制选区 / Ctrl+V: 粘贴 / 右键: 取消
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'c' && copyMode && selectionStart && selectionEnd) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && copyMode && selectionStart && selectionEnd) {
         e.preventDefault();
         const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
         setSelectionBuffer(buffer);
