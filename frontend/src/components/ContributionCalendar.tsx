@@ -825,7 +825,7 @@ function ContributionCalendar({
         setSelectionDates(new Set());
       }
 
-      if (e.ctrlKey && e.key === 'v' && selectionBuffer) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && selectionBuffer) {
         e.preventDefault();
         if (!pastePreviewActive) {
           setPastePreviewActive(true);
