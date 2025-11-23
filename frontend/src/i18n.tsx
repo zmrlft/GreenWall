@@ -29,6 +29,7 @@ type TranslationDict = {
   buttons: {
     allGreen: string;
     reset: string;
+    copyMode: string;
     generateRepo: string;
     generating: string;
     export: string;
@@ -43,6 +44,7 @@ type TranslationDict = {
     penAutoMode: string;
     allGreen: string;
     reset: string;
+    copyMode: string;
     generate: string;
     export: string;
     import: string;
@@ -179,6 +181,7 @@ const translations: Record<Language, TranslationDict> = {
     buttons: {
       allGreen: 'All Green',
       reset: 'Reset',
+      copyMode: 'Copy Mode',
       generateRepo: 'Generate Repo',
       generating: 'Generating...',
       export: 'Export',
@@ -196,6 +199,7 @@ const translations: Record<Language, TranslationDict> = {
       generate: 'Create a local git repository matching this contribution calendar',
       export: 'Export current contributions to a JSON file',
       import: 'Import contributions from a JSON file',
+      copyMode: 'Copy mode - select area then press Ctrl+C to copy',
     },
     messages: {
       generateRepoMissing:
@@ -333,6 +337,7 @@ const translations: Record<Language, TranslationDict> = {
     buttons: {
       allGreen: '全绿',
       reset: '重置',
+      copyMode: '复制模式',
       generateRepo: '生成仓库',
       generating: '生成中...',
       export: '导出',
@@ -350,6 +355,7 @@ const translations: Record<Language, TranslationDict> = {
       generate: '创建与当前贡献图匹配的本地 Git 仓库',
       export: '导出当前贡献数据到 JSON 文件',
       import: '从 JSON 文件导入贡献数据',
+      copyMode: '复制模式 - 选中区域后按 Ctrl+C 复制',
     },
     messages: {
       generateRepoMissing: '请先填写 GitHub 用户名和邮箱，然后再生成仓库。',

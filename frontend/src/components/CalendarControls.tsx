@@ -20,6 +20,9 @@ type Props = {
   isGeneratingRepo?: boolean;
   onExportContributions?: () => void;
   onImportContributions?: () => void;
+  // 复制模式
+  copyMode?: boolean;
+  onCopyModeToggle?: () => void;
   // 字符预览相关
   onStartCharacterPreview?: (char: string) => void;
   previewMode?: boolean;
@@ -43,6 +46,9 @@ export const CalendarControls: React.FC<Props> = ({
   isGeneratingRepo,
   onExportContributions,
   onImportContributions,
+  // 复制模式
+  copyMode = false,
+  onCopyModeToggle,
   // 字符预览相关
   onStartCharacterPreview,
   previewMode,
@@ -338,7 +344,7 @@ export const CalendarControls: React.FC<Props> = ({
 
       {/* Row 3: remaining actions */}
       <div className="flex w-full flex-col gap-2">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
           <button
             type="button"
             onClick={onFillAllGreen}
@@ -354,6 +360,19 @@ export const CalendarControls: React.FC<Props> = ({
             title={t('titles.reset')}
           >
             {t('buttons.reset')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onCopyModeToggle?.()}
+            className={clsx(
+              'w-full rounded-none px-4 py-2 text-sm font-medium transition-colors duration-200',
+              copyMode
+                ? 'bg-black text-white'
+                : 'border border-black bg-white text-black hover:bg-gray-100'
+            )}
+            title={t('titles.copyMode') || 'Ctrl+C复制选定区域'}
+          >
+            {t('buttons.copyMode')}
           </button>
           <button
             type="button"
