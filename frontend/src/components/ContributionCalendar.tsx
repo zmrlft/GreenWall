@@ -254,6 +254,9 @@ function ContributionCalendar({
     setPreviewCharacter(char);
     setPreviewDates(new Set()); // 初始为空，等待鼠标悬停
     setPreviewMode(true);
+    // 清除粘贴预览状态，避免冲突
+    setPastePreviewActive(false);
+    setPastePreviewDates(new Set());
   }, []);
 
   // helper: convert date -> {row, col}
@@ -300,23 +303,47 @@ function ContributionCalendar({
 
   const buildBufferFromSelection = React.useCallback(
     (startDate: string, endDate: string) => {
-      const { set, minRow, minCol, maxRow, maxCol } = computeSelectionDates(startDate, endDate);
-      const width = maxCol - minCol + 1;
-      const height = maxRow - minRow + 1;
-      const data: number[][] = Array.from({ length: height }, () => Array(width).fill(0));
+      const { set } = computeSelectionDates(startDate, endDate);
+
+      // 首先收集所有有颜色的格子
+      const coloredCells: { row: number; col: number; value: number }[] = [];
 
       for (const dateStr of set) {
         const coord = getDateCoord(dateStr);
-        const r = coord.row - minRow;
-        const c = coord.col - minCol;
         const current =
           userContributions.get(dateStr) ??
           filteredContributions.find((x) => x.date === dateStr)?.count ??
           0;
-        // 只复制有贡献的格子，空格子不复制
+        // 只收集有贡献的格子
         if (current > 0) {
-          data[r][c] = current;
+          coloredCells.push({
+            row: coord.row,
+            col: coord.col,
+            value: current,
+          });
         }
+      }
+
+      // 如果没有涂色的格子，返回空buffer
+      if (coloredCells.length === 0) {
+        return { width: 0, height: 0, data: [] };
+      }
+
+      // 计算涂色格子的边界
+      const coloredMinRow = Math.min(...coloredCells.map((c) => c.row));
+      const coloredMaxRow = Math.max(...coloredCells.map((c) => c.row));
+      const coloredMinCol = Math.min(...coloredCells.map((c) => c.col));
+      const coloredMaxCol = Math.max(...coloredCells.map((c) => c.col));
+
+      const width = coloredMaxCol - coloredMinCol + 1;
+      const height = coloredMaxRow - coloredMinRow + 1;
+      const data: number[][] = Array.from({ length: height }, () => Array(width).fill(0));
+
+      // 将涂色格子填入data数组
+      for (const cell of coloredCells) {
+        const r = cell.row - coloredMinRow;
+        const c = cell.col - coloredMinCol;
+        data[r][c] = cell.value;
       }
 
       return { width, height, data };
@@ -394,7 +421,8 @@ function ContributionCalendar({
         for (let py = 0; py < patternHeight; py++) {
           for (let px = 0; px < patternWidth; px++) {
             const val = pattern[py][px];
-            if (val === undefined) continue;
+            // 只处理有颜色的格子，跳过空格子
+            if (!val || val === 0) continue;
             const offsetY = py - patternCenterY;
             const offsetX = px - patternCenterX;
             const targetRow = centerRow + offsetY;
@@ -405,16 +433,16 @@ function ContributionCalendar({
               targetDate.setDate(targetDate.getDate() + daysOffset);
               const dateStr = targetDate.toISOString().slice(0, 10);
               if (isFutureDate(dateStr)) continue;
-              if (val > 0) {
-                newMap.set(dateStr, val);
-              } else {
-                newMap.delete(dateStr);
-              }
+              newMap.set(dateStr, val);
             }
           }
         }
         return newMap;
       });
+
+      // 应用粘贴后清除预览状态
+      setPastePreviewActive(false);
+      setPastePreviewDates(new Set());
     },
     [selectionBuffer, year, isFutureDate]
   );
@@ -759,14 +787,14 @@ function ContributionCalendar({
       return;
     }
 
-    // 预览模式：字符预览
+    // 预览模式：字符预览（优先级最高）
     if (previewMode && previewCharacter) {
       const newPreviewDates = calculatePreviewDates(previewCharacter, dateStr);
       setPreviewDates(newPreviewDates);
       return;
     }
 
-    // 粘贴预览跟随鼠标（优先级最高）
+    // 粘贴预览跟随鼠标
     if (pastePreviewActive && selectionBuffer) {
       setLastHoveredDate(dateStr);
       const newPreview = calculateBufferPreviewDates(selectionBuffer, dateStr);
@@ -814,8 +842,18 @@ function ContributionCalendar({
       if (e.ctrlKey && e.key === 'c' && copyMode && selectionStart && selectionEnd) {
         e.preventDefault();
         const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
+
+        // 统计复制的有色格子数量
+        const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
+
+        if (coloredCount === 0) {
+          setToast('选区中没有涂色的格子');
+          setTimeout(() => setToast(null), 2000);
+          return;
+        }
+
         setSelectionBuffer(buffer);
-        setToast('复制成功');
+        setToast(`复制成功：${coloredCount} 个涂色格子`);
         setTimeout(() => setToast(null), 2000);
         // 复制后自动启用粘贴预览模式
         setPastePreviewActive(true);
@@ -904,22 +942,26 @@ function ContributionCalendar({
             : getTooltip(displayOneDay, date)
         }
         onMouseDown={(e) => {
-          // 处理字符预览应用/取消
-          if (previewMode && isCharacterPreviewDate) {
+          // 处理字符预览应用/取消（预览模式下所有格子都响应，不仅仅是预览格子）
+          if (previewMode) {
             if (e.button === 0) {
+              // 左键应用预览
               handleApplyCharacterPreview();
             } else if (e.button === 2) {
+              // 右键取消预览
               e.preventDefault();
               handleCancelCharacterPreview();
             }
             return;
           }
 
-          // 处理粘贴预览：左键应用粘贴，右键取消预览
-          if (pastePreviewActive && isPastePreviewDate) {
+          // 处理粘贴预览：左键任意位置应用粘贴（以点击位置为中心），右键任意位置取消预览
+          if (pastePreviewActive) {
             if (e.button === 0) {
+              // 左键应用粘贴，以当前点击的格子为中心
               applyPaste(c.date);
             } else if (e.button === 2) {
+              // 右键任意位置都可以取消预览
               e.preventDefault();
               setPastePreviewActive(false);
               setPastePreviewDates(new Set());
