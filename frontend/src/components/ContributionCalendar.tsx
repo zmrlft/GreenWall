@@ -1124,12 +1124,7 @@ function ContributionCalendar({
           />
         </aside>
         <aside className="workbench__panel">
-          <p className="text-center">
-            ✨ 该区域正在筹备中！各位大神有哪些脑洞大开的功能想法？快来 issues
-            留言，你的创意可能会被实现哦～
-            <br />✨ This area is in the works! Do you have any creative function ideas, dear users?
-            Leave a comment in the issues—your creativity might be realized!
-          </p>
+          <p className="text-center">{t('workbench.placeholder')}</p>
         </aside>
       </div>
       {isRemoteModalOpen && (
