@@ -99,6 +99,9 @@ type TranslationDict = {
     legendLess: string;
     legendMore: string;
   };
+  workbench: {
+    placeholder: string;
+  };
   characterSelector: {
     title: string;
     selectCharacter: string;
@@ -256,6 +259,10 @@ const translations: Record<Language, TranslationDict> = {
       legendLess: 'Less',
       legendMore: 'More',
     },
+    workbench: {
+      placeholder:
+        '✨ This area is under development! Got any wild feature ideas? Drop them in the issues and your creativity might ship~ Tips: Right-click to switch between the brush and eraser. In copy mode, select a pattern, press Ctrl+C to copy it, then Ctrl+V or left-click to paste.',
+    },
     characterSelector: {
       title: 'Select Pattern',
       selectCharacter: 'Select Character (A-Z, a-z, 0-9)',
@@ -407,6 +414,10 @@ const translations: Record<Language, TranslationDict> = {
       tooltipFuture: '{{date}} 为未来日期，禁止编辑',
       legendLess: '较少',
       legendMore: '更多',
+    },
+    workbench: {
+      placeholder:
+        '✨ 该区域正在开发中！大家有哪些脑洞大开的功能想法？快来 issues 留言，你的创意可能会被实现哦~操作说明：右键可以切换画笔和橡皮擦，复制模式下框选好图案后按 ctrl+C 复制图案，ctrl+V 或者左键粘贴图案',
     },
     characterSelector: {
       title: '选择图案',
