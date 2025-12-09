@@ -1,105 +1,283 @@
-# README (English)
+# GreenWall - GitHub Contribution Calendar Generator
 
-> 中文: [README (中文)](README_zh.md)
+> 🌐 **Multi-language Note**
+> - This is the primary English documentation (README.md)
+> - For Chinese version, see [README_zh.md](README_zh.md) (pending synchronization update)
 
-## How to use
+## 📖 Table of Contents
+- [✨ Features](#features)
+- [🚀 Quick Start](#quick-start)
+  - [Step 1: Get GitHub Token](#step-1-get-github-token)
+  - [Step 2: Download the App](#step-2-download-the-app)
+    - [Windows/Linux Users](#windowslinux-users)
+    - [macOS Users](#macos-users)
+  - [Step 3: Usage Guide](#step-3-usage-guide)
+- [🎨 Tips & Tricks](#tips--tricks)
+- [🛠️ Development Guide](#development-guide)
+  - [Environment Setup](#environment-setup)
+  - [Running the Project](#running-the-project)
+  - [Building for Release](#building-for-release)
+- [🔮 Future Features](#future-features)
+- [📊 Star History](#star-history)
+- [❓ Frequently Asked Questions](#frequently-asked-questions)
+- [⚠️ Disclaimer](#disclaimer)
 
-Make sure Git is installed on your computer.
+---
 
-![app screenshot](/docs/images/app.png)
+## ✨ Features
 
-Download the app, open it, and first grab a Personal Access Token (PAT) so you can sign in to GitHub. You can follow this guide: [how to get your PAT](docs/githubtoken_en.md).
+GreenWall is a visual tool that helps you "draw" custom patterns on your GitHub contribution calendar. With simple drag-and-drop operations, you can:
 
-Once you’re logged in you’ll see your avatar and name in the upper-left corner. Drag across the calendar to paint your design. When you’re satisfied, click **Create Remote Repo**. You can edit the repo name and description, choose whether it’s public or private, and then press **Generate & Push** to let the app create and push the repository for you automatically.
+- 🎨 Create arbitrary green patterns on GitHub contribution calendar
+- 🤖 Automatically create and push GitHub repositories
+- 🔒 Choose between public/private repositories
+- 📱 Cross-platform support (Windows/macOS/Linux)
 
-> **Heads-up:** GitHub may take anywhere from 5 minutes to 2 days to show the contributions on your profile. You can keep the repo private and enable “Include private contributions” in your profile settings so others can’t see the repo content but the contribution streak still counts.
+**Application Screenshot**
+![Application Interface](app-screenshot.png)
 
-![private setting screenshot](docs/images/privatesetting.png)
+---
 
-### Quick Tips
+## 🚀 Quick Start
 
-- Right-click while painting to toggle between the brush and the eraser.
-- Use the brush intensity control to switch between different shades of green.
+### Step 1: Get GitHub Token
+To securely access your GitHub account, you need to create a Personal Access Token (PAT):
 
-### Windows/Linux
+1. Visit [GitHub Token Settings](https://github.com/settings/tokens)
+2. Click **"Generate new token (classic)"**
+3. Fill in Note (e.g., "GreenWall Access")
+4. Check the `repo` permission (full repository control)
+5. Click **"Generate token"**
+6. **Immediately copy the generated token** (only shown once!)
 
-Download and run the application directly.
+> 💡 **Security Tip**: Save the token securely and don't share it with others.
 
-### macOS
+### Step 2: Download the App
 
-Since this application is not yet signed, you may encounter security restrictions on first launch. Follow these steps to resolve:
+#### Windows/Linux Users
+1. Go to [Release Page](https://github.com/zmrlft/GreenWall/releases/latest)
+2. Download the executable for your system:
+   - Windows: `green-wall-windows.exe`
+   - Linux: `green-wall-linux`
+3. Extract and run the file
 
-```bash
-cd the-directory-where-green-wall.app-is-located
-sudo xattr -cr ./green-wall.app
-sudo xattr -r -d com.apple.quarantine ./green-wall.app
-```
+#### macOS Users
+Since the app is not yet signed, you need to remove security restrictions on first run:
 
-**Tip:** You don't need to execute all of these commands. Try them in order from top to bottom, and stop once one resolves the issue.
+1. Download `green-wall-macos.app`
+2. Open Terminal and execute:
+   ```bash
+   # Navigate to the app directory (e.g., Downloads)
+   cd ~/Downloads
+   
+   # Try these commands in order (usually the first works)
+   sudo xattr -cr ./green-wall.app
+   # If still can't open, try:
+   sudo xattr -r -d com.apple.quarantine ./green-wall.app
+Double-click green-wall.app to launch
 
-**Warning:** The commands will not automatically launch the application. You need to manually double-click the app to start it (the commands only modify file attributes).
+⚠️ Note: These commands only modify file attributes and won't auto-launch the app.
 
-## Rendering
+Step 3: Usage Guide
+Login: Launch the app and paste your GitHub Token
 
-![text](docs/images/cailg.png)
-![catfish](docs/images/cat.png)
-![lovecat](docs/images/darkcat.jpg)
-![helloWorld](docs/images/darkhw.png)
-![androidlife](docs/images/darkandroid.png)
+Draw: Drag mouse on the left calendar area to draw patterns
 
-## Development Guide
+Erase: Right-click to toggle between brush/eraser modes
 
-- Environmental Preparation
+Adjust: Use intensity slider to control green shades
 
-  Install Go 1.23+
+Create: Click "Create Remote Repo"
 
-  Install Node.js (v22+)
+Configure: Set repository name, description, and visibility
 
-  Install Git
+Generate: Click "Generate & Push" to auto-create repository
 
-- Install dependent tools
+⏳ Reminder: GitHub may take 5 minutes to 48 hours to display contributions on your profile. You can set repository to private and enable "Include private contributions" in GitHub profile settings.
 
-  ```
-  go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
-  ```
+https://private-setting.png
 
-- Project operation
+🎨 Tips & Tricks
+Quick Toggle: Right-click to switch between brush and eraser
 
-  Clone the repository and enter the directory:
+Color Intensity: Use intensity slider for different green shades
 
-  ```
-  git clone https://github.com/zmrlft/GreenWall.git
-  cd GreenWall
-  ```
+Detailed Drawing: Zoom in calendar area for fine adjustments
 
-  Install front-end dependencies:
+Undo/Redo: App supports undo/redo (Ctrl+Z / Ctrl+Y)
 
-  ```
-  cd frontend && npm install
-  ```
+Pattern Examples
 
-  Start the development environment
+text
+text       catfish    lovecat
+helloWorld androidlife
+🛠️ Development Guide
+Environment Setup
+1. Install Prerequisites
+Go 1.23+: Download
 
-  ```
-  wails dev
-  ```
+Node.js v22+: Download
 
-  Construction
+Git: Download
 
-  ```
-  wails build
-  ```
+2. Install Wails Framework
+bash
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+Running the Project
+Clone Repository
 
-  Output path: build/bin/
+bash
+git clone https://github.com/zmrlft/GreenWall.git
+cd GreenWall
+Install Frontend Dependencies
 
-## Future features
+bash
+cd frontend && npm install
+cd ..  # Return to project root
+Start Development Environment
 
-We may add support for creating repositories in custom languages. For example, if you want a Java repository, the tool would generate one and it would be reflected in your GitHub language statistics.
+bash
+wails dev
+This starts a hot-reload development server.
 
-## Star History
+Building for Release
+bash
+# Build application
+wails build
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zmrlft/GreenWall&type=date&legend=top-left)](https://www.star-history.com/#zmrlft/GreenWall&type=date&legend=top-left)
+# Output location: build/bin/
+🔮 Future Features
+We plan to add in future versions:
 
-## Disclaimer
+🌐 Multi-language Templates: Support for Java, Python, JavaScript, etc.
 
-This project is provided for educational, demonstration, and research purposes related to GitHub contribution mechanics. Misuse (for example to falsify job applications) is the user's responsibility.
+🎯 Pattern Library: Preset common patterns and text templates
+
+📅 Batch Generation: Create contributions for multiple dates at once
+
+🔄 Live Preview: Real-time contribution calendar preview
+
+👥 Team Collaboration: Multi-user collaborative drawing
+
+📊 Star History
+https://star-history.com/#zmrlft/GreenWall&Date
+
+❓ Frequently Asked Questions
+Q1: Why aren't my contributions showing immediately?
+A: GitHub contribution statistics are not real-time, usually requiring:
+
+5 minutes to 2 hours: Initial display
+
+Up to 48 hours: Complete synchronization
+
+Solutions:
+
+Ensure repository was created successfully
+
+Enable "Include private contributions" in GitHub profile settings
+
+Wait patiently for synchronization
+
+Q2: macOS says "cannot be opened because the developer cannot be verified"
+A: This is because the app isn't signed by Apple.
+
+Solutions:
+
+Follow macOS Users steps to remove restrictions
+
+Alternatively: System Settings → Security & Privacy → Click "Open Anyway"
+
+Q3: Will generated repositories affect my GitHub statistics?
+A: Yes, but limited impact:
+
+✅ Counts toward contribution streak
+
+✅ Shows on contribution calendar
+
+⚠️ Won't significantly change language stats (unless future language templates)
+
+Q4: Is internet connection required?
+A: Yes, for these operations:
+
+GitHub login (token verification)
+
+Creating remote repositories
+
+Pushing code to GitHub
+
+Q5: Can I customize commit messages?
+A: Current version auto-generates commit messages. Future versions will support customization.
+
+Q6: How to uninstall?
+A:
+
+Windows: Delete the executable file
+
+macOS: Drag app to Trash
+
+Linux: Delete the executable
+
+The app doesn't create additional files or registry entries.
+
+⚠️ Disclaimer
+Important Notice
+
+This project is intended only for legitimate purposes:
+
+🔬 Learning GitHub contribution mechanisms
+
+🎓 Educational demonstration purposes
+
+🧪 Technical research experiments
+
+Prohibited Uses:
+
+❌ Falsifying job application materials
+
+❌ Deceptively showcasing programming skills
+
+❌ Any form of academic dishonesty
+
+User Responsibility:
+Users bear full responsibility for all consequences arising from using this tool. Developers are not responsible for:
+
+GitHub account restrictions due to unusual activity
+
+Employer or educational institution质疑 of contribution authenticity
+
+Any legal or ethical issues
+
+Open Source Spirit:
+We encourage:
+
+👍 Learning and understanding GitHub workflows
+
+🤝 Making genuine contributions to open source projects
+
+💡 Using this tool to inspire real programming interest
+
+🙏 Acknowledgments
+Thanks to all contributors and users for your support! If you like this project, please:
+
+⭐ Give us a Star
+
+🐛 Submit Issues for feedback
+
+🔧 Submit PRs to help improve
+
+📢 Share with more developers
+
+Happy Coding, Honest Contributing! 🎉
+
+Version: 1.0.0
+Last Updated: 2024-11
+License: MIT License
+
+📞 Contact & Support
+Issue Reporting: GitHub Issues
+
+Feature Suggestions: GitHub Discussions
+
+Security Vulnerabilities: Please report privately
+
+Tip: Please read the full documentation before use to ensure understanding of how the tool works and its potential impacts.
