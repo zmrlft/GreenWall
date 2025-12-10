@@ -8,6 +8,8 @@ export function CheckGitInstalled():Promise<main.CheckGitInstalledResponse>;
 
 export function ExportContributions(arg1:main.ExportContributionsRequest):Promise<main.ExportContributionsResponse>;
 
+export function GenerateRandomContributions(arg1:main.RandomPaintRequest):Promise<main.RandomPaintResponse>;
+
 export function GenerateRepo(arg1:main.GenerateRepoRequest):Promise<main.GenerateRepoResponse>;
 
 export function GetGithubLoginStatus():Promise<main.GithubLoginStatus>;

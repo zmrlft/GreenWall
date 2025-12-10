@@ -30,6 +30,8 @@ type Props = {
   // 画笔模式
   penMode?: 'manual' | 'auto';
   onPenModeChange?: (mode: 'manual' | 'auto') => void;
+  // 新增：随机刷墙回调
+  onOpenRandomModal?: () => void;
 };
 
 export const CalendarControls: React.FC<Props> = ({
@@ -56,6 +58,8 @@ export const CalendarControls: React.FC<Props> = ({
   // 画笔模式
   penMode = 'manual',
   onPenModeChange,
+  // 新增：随机刷墙回调
+  onOpenRandomModal,
 }) => {
   const { t } = useTranslations();
   const [yearInput, setYearInput] = React.useState<string>(() =>
@@ -321,7 +325,7 @@ export const CalendarControls: React.FC<Props> = ({
         </div>
 
         <div className="flex w-full flex-col gap-2 md:flex-1">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <button
               type="button"
               onClick={onExportContributions}
@@ -337,6 +341,15 @@ export const CalendarControls: React.FC<Props> = ({
               title={t('titles.import')}
             >
               {t('buttons.import')}
+            </button>
+            {/* 新增：随机刷墙按钮 */}
+            <button
+              type="button"
+              onClick={onOpenRandomModal}
+              className="w-full rounded-none border border-purple-600 bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-purple-700"
+              title="随机生成贡献数据"
+            >
+              🎲 随机刷墙
             </button>
           </div>
         </div>
