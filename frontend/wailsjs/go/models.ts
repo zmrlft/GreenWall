@@ -271,6 +271,66 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class RandomPaintRequest {
+	    startDate: string;
+	    endDate: string;
+	    density: number;
+	    minPerDay: number;
+	    maxPerDay: number;
+	    excludeWeekend: boolean;
+	    randomSeed: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RandomPaintRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.startDate = source["startDate"];
+	        this.endDate = source["endDate"];
+	        this.density = source["density"];
+	        this.minPerDay = source["minPerDay"];
+	        this.maxPerDay = source["maxPerDay"];
+	        this.excludeWeekend = source["excludeWeekend"];
+	        this.randomSeed = source["randomSeed"];
+	    }
+	}
+	export class RandomPaintResponse {
+	    contributions: ContributionDay[];
+	    totalDays: number;
+	    activeDays: number;
+	    totalCommits: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RandomPaintResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contributions = this.convertValues(source["contributions"], ContributionDay);
+	        this.totalDays = source["totalDays"];
+	        this.activeDays = source["activeDays"];
+	        this.totalCommits = source["totalCommits"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	export class SetGitPathRequest {
 	    gitPath: string;

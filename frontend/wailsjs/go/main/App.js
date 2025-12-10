@@ -14,6 +14,10 @@ export function ExportContributions(arg1) {
   return window['go']['main']['App']['ExportContributions'](arg1);
 }
 
+export function GenerateRandomContributions(arg1) {
+  return window['go']['main']['App']['GenerateRandomContributions'](arg1);
+}
+
 export function GenerateRepo(arg1) {
   return window['go']['main']['App']['GenerateRepo'](arg1);
 }

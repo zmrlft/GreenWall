@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -55,6 +56,25 @@ type GenerateRepoRequest struct {
 	RepoName       string             `json:"repoName"`
 	Contributions  []ContributionDay  `json:"contributions"`
 	RemoteRepo     *RemoteRepoOptions `json:"remoteRepo,omitempty"`
+}
+
+// RandomPaintRequest 随机刷墙请求参数
+type RandomPaintRequest struct {
+	StartDate      string  `json:"startDate"`      // 格式: "2024-01-01"
+	EndDate        string  `json:"endDate"`        // 格式: "2024-12-31"
+	Density        float64 `json:"density"`        // 0.0-1.0，活跃天数比例
+	MinPerDay      int     `json:"minPerDay"`      // 每天最少提交数
+	MaxPerDay      int     `json:"maxPerDay"`      // 每天最多提交数
+	ExcludeWeekend bool    `json:"excludeWeekend"` // 是否排除周末
+	RandomSeed     int64   `json:"randomSeed"`     // 随机种子，0表示使用时间戳
+}
+
+// RandomPaintResponse 随机刷墙响应
+type RandomPaintResponse struct {
+	Contributions []ContributionDay `json:"contributions"`
+	TotalDays     int               `json:"totalDays"`    // 总天数
+	ActiveDays    int               `json:"activeDays"`   // 活跃天数
+	TotalCommits  int               `json:"totalCommits"` // 总提交数
 }
 
 type GenerateRepoResponse struct {
@@ -475,6 +495,107 @@ func (a *App) ImportContributions() (*ImportContributionsResponse, error) {
 	}
 
 	return &ImportContributionsResponse{Contributions: contributions}, nil
+}
+
+// 在 ExportContributions 或 ImportContributions 函数之后添加
+
+// GenerateRandomContributions 生成随机贡献数据
+func (a *App) GenerateRandomContributions(req RandomPaintRequest) (*RandomPaintResponse, error) {
+	// 参数验证
+	startDate, err := time.Parse("2006-01-02", req.StartDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid start date: %w", err)
+	}
+
+	endDate, err := time.Parse("2006-01-02", req.EndDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid end date: %w", err)
+	}
+
+	if startDate.After(endDate) {
+		return nil, fmt.Errorf("start date must be before end date")
+	}
+
+	if req.Density < 0 || req.Density > 1 {
+		return nil, fmt.Errorf("density must be between 0 and 1")
+	}
+
+	if req.MinPerDay < 0 {
+		return nil, fmt.Errorf("minPerDay must be positive")
+	}
+
+	if req.MaxPerDay < req.MinPerDay {
+		return nil, fmt.Errorf("maxPerDay must be greater than or equal to minPerDay")
+	}
+
+	// 初始化随机数生成器
+	var seed int64
+	if req.RandomSeed == 0 {
+		seed = time.Now().UnixNano()
+	} else {
+		seed = req.RandomSeed
+	}
+	rng := rand.New(rand.NewSource(seed))
+
+	// 生成贡献数据
+	contributions := []ContributionDay{}
+	totalCommits := 0
+	activeDays := 0
+
+	currentDate := startDate
+	for !currentDate.After(endDate) {
+		// 检查是否排除周末
+		if req.ExcludeWeekend {
+			weekday := currentDate.Weekday()
+			if weekday == time.Saturday || weekday == time.Sunday {
+				currentDate = currentDate.AddDate(0, 0, 1)
+				continue
+			}
+		}
+
+		dateStr := currentDate.Format("2006-01-02")
+
+		// 根据密度决定今天是否有贡献
+		if rng.Float64() <= req.Density {
+			// 生成当天的提交次数
+			var commitsToday int
+			if req.MaxPerDay == req.MinPerDay {
+				commitsToday = req.MinPerDay
+			} else {
+				commitsToday = req.MinPerDay + rng.Intn(req.MaxPerDay-req.MinPerDay+1)
+			}
+
+			// 确保至少有一次提交
+			if commitsToday < 1 {
+				commitsToday = 1
+			}
+
+			contributions = append(contributions, ContributionDay{
+				Date:  dateStr,
+				Count: commitsToday,
+			})
+
+			totalCommits += commitsToday
+			activeDays++
+		}
+
+		currentDate = currentDate.AddDate(0, 0, 1)
+	}
+
+	// 按日期排序
+	sort.Slice(contributions, func(i, j int) bool {
+		return contributions[i].Date < contributions[j].Date
+	})
+
+	// 计算总天数
+	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1
+
+	return &RandomPaintResponse{
+		Contributions: contributions,
+		TotalDays:     totalDays,
+		ActiveDays:    activeDays,
+		TotalCommits:  totalCommits,
+	}, nil
 }
 
 func sanitiseRepoName(input string) string {
