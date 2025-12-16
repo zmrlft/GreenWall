@@ -8,6 +8,7 @@ import { main } from '../../wailsjs/go/models';
 import { useTranslations } from '../i18n';
 import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
 import { getPatternById, gridToBoolean } from '../data/characterPatterns';
+import { useContributionHistory } from '../hooks/useContributionHistory';
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -86,7 +87,8 @@ function ContributionCalendar({
   const { t, dictionary } = useTranslations();
   const monthNames = dictionary.months;
 
-  const [userContributions, setUserContributions] = React.useState<Map<string, number>>(new Map());
+  const { userContributions, setUserContributions, pushSnapshot, undo, redo } =
+    useContributionHistory(new Map());
   const [year, setYear] = React.useState<number>(new Date().getFullYear());
 
   // 绘画模式状态
@@ -234,10 +236,14 @@ function ContributionCalendar({
   );
 
   // 清除所有选中
-  const handleReset = () => setUserContributions(new Map());
+  const handleReset = () => {
+    pushSnapshot();
+    setUserContributions(new Map());
+  };
 
-  // 将可编辑的格子全部填充为最深绿色计数为 9）
+  // 将可编辑的格子全部填充为最深绿色（计数为 9）
   const handleFillAllGreen = () => {
+    pushSnapshot();
     setUserContributions((prev) => {
       const newMap = new Map(prev);
       for (const c of filteredContributions) {
@@ -416,7 +422,8 @@ function ContributionCalendar({
       const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
       const centerRow = centerDate.getDay();
 
-      setUserContributions((prev) => {
+      pushSnapshot();
+      setUserContributions((prev: Map<string, number>) => {
         const newMap = new Map(prev);
         for (let py = 0; py < patternHeight; py++) {
           for (let px = 0; px < patternWidth; px++) {
@@ -444,7 +451,7 @@ function ContributionCalendar({
       setPastePreviewActive(false);
       setPastePreviewDates(new Set());
     },
-    [selectionBuffer, year, isFutureDate]
+    [selectionBuffer, year, isFutureDate, pushSnapshot, setUserContributions]
   );
 
   // 取消字符预览
@@ -458,7 +465,8 @@ function ContributionCalendar({
   const handleApplyCharacterPreview = React.useCallback(() => {
     if (!previewMode || previewDates.size === 0) return;
 
-    setUserContributions((prev) => {
+    pushSnapshot();
+    setUserContributions((prev: Map<string, number>) => {
       const newMap = new Map(prev);
       for (const dateStr of previewDates) {
         const current = prev.get(dateStr) ?? 0;
@@ -476,7 +484,15 @@ function ContributionCalendar({
 
     // 取消预览
     handleCancelCharacterPreview();
-  }, [previewMode, previewDates, handleCancelCharacterPreview, penIntensity, penMode]);
+  }, [
+    previewMode,
+    previewDates,
+    handleCancelCharacterPreview,
+    penIntensity,
+    penMode,
+    pushSnapshot,
+    setUserContributions,
+  ]);
 
   // 检测窗口是否最大化/全屏，用于切换布局与放大样式
   React.useEffect(() => {
@@ -686,6 +702,7 @@ function ContributionCalendar({
       result.contributions.forEach((c) => {
         importedMap.set(c.date, c.count);
       });
+      pushSnapshot();
       setUserContributions(importedMap);
       window.alert(t('messages.importSuccess'));
     } catch (error) {
@@ -693,7 +710,7 @@ function ContributionCalendar({
       const message = error instanceof Error ? error.message : String(error);
       window.alert(t('messages.importError', { message }));
     }
-  }, [t]);
+  }, [t, pushSnapshot, setUserContributions]);
 
   // 计算总贡献次数（考虑用户设置的数据）
   const total = filteredContributions.reduce((sum, c) => {
@@ -715,7 +732,7 @@ function ContributionCalendar({
       return;
     }
     if (mode === 'pen') {
-      setUserContributions((prev) => {
+      setUserContributions((prev: Map<string, number>) => {
         const newMap = new Map(prev);
 
         if (penMode === 'auto') {
@@ -733,7 +750,7 @@ function ContributionCalendar({
         return newMap;
       });
     } else if (mode === 'eraser') {
-      setUserContributions((prev) => {
+      setUserContributions((prev: Map<string, number>) => {
         const newMap = new Map(prev);
         newMap.delete(dateStr);
         return newMap;
@@ -836,9 +853,41 @@ function ContributionCalendar({
     };
   }, []);
 
-  // Ctrl+C: 复制选区 / Ctrl+V: 粘贴 / 右键: 取消
+  // Ctrl+C: 复制选区 / Ctrl+V: 粘贴 / Ctrl+X: 剪切 / 右键: 取消
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && copyMode && selectionStart && selectionEnd) {
+        e.preventDefault();
+        const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
+        const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
+
+        if (coloredCount === 0) {
+          setToast('选区中没有涂色的格子');
+          setTimeout(() => setToast(null), 2000);
+          return;
+        }
+
+        setSelectionBuffer(buffer);
+
+        pushSnapshot();
+        setUserContributions((prev) => {
+          const newMap = new Map(prev);
+          const { set } = computeSelectionDates(selectionStart, selectionEnd);
+          for (const dateStr of set) {
+            newMap.delete(dateStr);
+          }
+          return newMap;
+        });
+
+        setToast(`剪切成功：${coloredCount} 个涂色格子`);
+        setTimeout(() => setToast(null), 2000);
+
+        setPastePreviewActive(true);
+        setSelectionStart(null);
+        setSelectionEnd(null);
+        setSelectionDates(new Set());
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'c' && copyMode && selectionStart && selectionEnd) {
         e.preventDefault();
         const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
@@ -871,6 +920,13 @@ function ContributionCalendar({
           applyPaste(lastHoveredDate);
         }
       }
+
+      if ((e.metaKey || e.ctrlKey) && !isDrawing) {
+        if (e.code === 'KeyZ' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -886,6 +942,12 @@ function ContributionCalendar({
     pastePreviewActive,
     lastHoveredDate,
     applyPaste,
+    isDrawing,
+    undo,
+    redo,
+    computeSelectionDates,
+    pushSnapshot,
+    setUserContributions,
   ]);
 
   const tiles = filteredContributions.map((c, i) => {
