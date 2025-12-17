@@ -862,7 +862,7 @@ function ContributionCalendar({
         const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
 
         if (coloredCount === 0) {
-          setToast('选区中没有涂色的格子');
+          setToast(t('messages.noColoredCells'));
           setTimeout(() => setToast(null), 2000);
           return;
         }
@@ -879,7 +879,7 @@ function ContributionCalendar({
           return newMap;
         });
 
-        setToast(`剪切成功：${coloredCount} 个涂色格子`);
+        setToast(t('messages.cutSuccess', { count: coloredCount }));
         setTimeout(() => setToast(null), 2000);
 
         setPastePreviewActive(true);
@@ -896,13 +896,13 @@ function ContributionCalendar({
         const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
 
         if (coloredCount === 0) {
-          setToast('选区中没有涂色的格子');
+          setToast(t('messages.noColoredCells'));
           setTimeout(() => setToast(null), 2000);
           return;
         }
 
         setSelectionBuffer(buffer);
-        setToast(`复制成功：${coloredCount} 个涂色格子`);
+        setToast(t('messages.copySuccess', { count: coloredCount }));
         setTimeout(() => setToast(null), 2000);
         // 复制后自动启用粘贴预览模式
         setPastePreviewActive(true);
