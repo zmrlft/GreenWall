@@ -2,6 +2,10 @@
 
 > 中文: [README (中文)](README_zh.md)
 
+## Project Milestones
+
+In early November, this project was recommended by YiFeng Ruan(阮一峰), and officially featured in [Tech Enthusiast Weekly Issue 372](https://www.ruanyifeng.com/blog/2025/11/weekly-issue-372.html); in mid-November, it was recommended by the well-known influencer "it咖啡馆" and featured in [GitHub Weekly Hotspots Issue 93](https://youtu.be/pjQftatKpjc?si=5pMK1bAyFXfp6oyF); in December, it was successfully selected as an "interesting project" by the renowned open-source community HelloGitHub <a href="https://hellogithub.com/repository/zmrlft/GreenWall" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c1b693c5b9244e26953733a6816eac62&claim_uid=KodS5CpL41Jj0Z8&theme=small" alt="Featured｜HelloGitHub" /></a>
+
 ## How to use
 
 Make sure Git is installed on your computer.
@@ -20,6 +24,7 @@ Once you’re logged in you’ll see your avatar and name in the upper-left corn
 
 - Right-click while painting to toggle between the brush and the eraser.
 - Use the brush intensity control to switch between different shades of green.
+- **Copy and Paste Feature**: Click the "Copy Mode" button to enter copy mode. Drag to select an area on the calendar and press `Ctrl+C` to copy. The app will show a "Copy successful" message. After copying, the selected pattern will follow the mouse as a preview. Left-click or press `Ctrl+V` to paste to the target location, right-click to cancel the paste preview. Press `Ctrl+V` to quickly restore the last copied pattern.
 
 ### Windows/Linux
 

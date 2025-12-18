@@ -2,6 +2,10 @@
 
 > English: [README (English)](README.md)
 
+## 项目里程碑：
+
+11月初，本项目获阮一峰大佬的推荐，正式收录于[科技爱好者周刊372期](https://www.ruanyifeng.com/blog/2025/11/weekly-issue-372.html)；11月中旬，获知名大V“it咖啡馆”推荐，正式收录于[Github一周热点93期](https://youtu.be/pjQftatKpjc?si=5pMK1bAyFXfp6oyF)；12月，以“有趣的项目”身份顺利入选知名开源社区“你好Github”<a href="https://hellogithub.com/repository/zmrlft/GreenWall" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c1b693c5b9244e26953733a6816eac62&claim_uid=KodS5CpL41Jj0Z8&theme=small" alt="Featured｜HelloGitHub" /></a>
+
 ## 如何使用
 
 请确保你的电脑已经安装了 git。
