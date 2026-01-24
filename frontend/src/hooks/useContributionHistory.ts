@@ -2,8 +2,6 @@ import { useState, useRef, useCallback } from 'react';
 
 export function useContributionHistory(initialMap: Map<string, number>) {
   const [userContributions, setUserContributions] = useState<Map<string, number>>(initialMap);
-  const [historyLength, setHistoryLength] = useState(0);
-  const [futureLength, setFutureLength] = useState(0);
 
   // Use refs for history stacks to avoid re-renders when history changes
   const historyRef = useRef<Map<string, number>[]>([]);
@@ -15,10 +13,6 @@ export function useContributionHistory(initialMap: Map<string, number>) {
     historyRef.current.push(new Map(userContributions));
     // Clear redo stack because we branched off
     futureRef.current = [];
-
-    // Update state to trigger re-render and update UI
-    setHistoryLength(historyRef.current.length);
-    setFutureLength(0);
   }, [userContributions]);
 
   const undo = useCallback(() => {
@@ -29,10 +23,6 @@ export function useContributionHistory(initialMap: Map<string, number>) {
       // Save current state to future before restoring past
       futureRef.current.push(new Map(userContributions));
       setUserContributions(previousState);
-
-      // Update lengths
-      setHistoryLength(historyRef.current.length);
-      setFutureLength(futureRef.current.length);
     }
   }, [userContributions]);
 
@@ -44,10 +34,6 @@ export function useContributionHistory(initialMap: Map<string, number>) {
       // Save current state to history before restoring future
       historyRef.current.push(new Map(userContributions));
       setUserContributions(nextState);
-
-      // Update lengths
-      setHistoryLength(historyRef.current.length);
-      setFutureLength(futureRef.current.length);
     }
   }, [userContributions]);
 
@@ -57,7 +43,5 @@ export function useContributionHistory(initialMap: Map<string, number>) {
     pushSnapshot,
     undo,
     redo,
-    historyLength,
-    futureLength,
   };
 }
