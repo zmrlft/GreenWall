@@ -58,6 +58,9 @@ type TranslationDict = {
     importSuccess: string;
     importError: string;
     remoteLoginRequired: string;
+    cutSuccess: string;
+    copySuccess: string;
+    noColoredCells: string;
   };
   gitInstall: {
     title: string;
@@ -215,6 +218,9 @@ const translations: Record<Language, TranslationDict> = {
       importError: 'Failed to import contributions: {{message}}',
       remoteLoginRequired:
         'Please sign in with your GitHub token before creating a remote repository.',
+      cutSuccess: 'Cut success: {{count}} colored cells',
+      copySuccess: 'Copy success: {{count}} colored cells',
+      noColoredCells: 'No colored cells in selection',
     },
     gitInstall: {
       title: 'Git Installation Required',
@@ -373,6 +379,9 @@ const translations: Record<Language, TranslationDict> = {
       importSuccess: '贡献数据已成功导入',
       importError: '导入贡献数据失败：{{message}}',
       remoteLoginRequired: '请先登录 GitHub 再创建远程仓库。',
+      cutSuccess: '剪切成功：{{count}} 个涂色格子',
+      copySuccess: '复制成功：{{count}} 个涂色格子',
+      noColoredCells: '选区中没有涂色的格子',
     },
     gitInstall: {
       title: '需要安装 Git',

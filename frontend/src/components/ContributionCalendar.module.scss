@@ -1,4 +1,4 @@
-@import '../css/mixins.scss';
+@use '../css/mixins' as *;
 .container {
   --cell: 14px;
   --gap: 4px;
