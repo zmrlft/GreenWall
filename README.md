@@ -14,6 +14,12 @@ Make sure Git is installed on your computer.
 
 Download the app, open it, and first grab a Personal Access Token (PAT) so you can sign in to GitHub. You can follow this guide: [how to get your PAT](docs/githubtoken_en.md).
 
+### New: Image → Contribution Heatmap
+
+- Upload PNG/JPG/SVG, auto-resize to a 7-row grid with N columns (N ≈ width/height × 7, clamped to 1–52), map brightness to contribution levels.
+- Optional brightness invert and threshold (clear pixels darker than the threshold before quantisation).
+- Preview directly on the calendar: hover to position, left-click to apply, right-click to cancel.
+
 Once you’re logged in you’ll see your avatar and name in the upper-left corner. Drag across the calendar to paint your design. When you’re satisfied, click **Create Remote Repo**. You can edit the repo name and description, choose whether it’s public or private, and then press **Generate & Push** to let the app create and push the repository for you automatically.
 
 > **Heads-up:** GitHub may take anywhere from 5 minutes to 2 days to show the contributions on your profile. You can keep the repo private and enable “Include private contributions” in your profile settings so others can’t see the repo content but the contribution streak still counts.

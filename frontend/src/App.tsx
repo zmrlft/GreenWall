@@ -5,7 +5,6 @@ import GitInstallSidebar from './components/GitInstallSidebar';
 import GitPathSettings from './components/GitPathSettings';
 import LoginModal from './components/LoginModal';
 import { TranslationProvider, useTranslations, Language } from './i18n';
-import { BrowserOpenURL, EventsOn } from '../wailsjs/runtime/runtime';
 import type { main } from '../wailsjs/go/models';
 
 function App() {
@@ -48,6 +47,12 @@ type AppLayoutProps = {
 };
 
 const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
+  const hasWailsApp = React.useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    const w = window as typeof window & { go?: { main?: { App?: unknown } } };
+    return Boolean(w?.go?.main?.App);
+  }, []);
+
   const { language, setLanguage, t } = useTranslations();
   const [isGitInstalled, setIsGitInstalled] = React.useState<boolean | null>(null);
   const [isGitPathSettingsOpen, setIsGitPathSettingsOpen] = React.useState<boolean>(false);
@@ -56,8 +61,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
 
   const checkGit = React.useCallback(async () => {
     try {
-      const { CheckGitInstalled } = await import('../wailsjs/go/main/App');
-      const response = await CheckGitInstalled();
+      if (typeof window !== 'undefined' && !hasWailsApp()) {
+        console.warn('CheckGitInstalled skipped: wails runtime not available (dev mode)');
+        setIsGitInstalled(false);
+        return;
+      }
+      const mod = await import('../wailsjs/go/main/App');
+      if (!mod || typeof mod.CheckGitInstalled !== 'function') {
+        throw new Error('CheckGitInstalled not available');
+      }
+      const response = await mod.CheckGitInstalled();
       setIsGitInstalled(response.installed);
     } catch (error) {
       console.error('Failed to check Git installation:', error);
@@ -72,8 +85,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   React.useEffect(() => {
     (async () => {
       try {
-        const { GetGithubLoginStatus } = await import('../wailsjs/go/main/App');
-        const status = await GetGithubLoginStatus();
+        if (typeof window !== 'undefined' && !hasWailsApp()) {
+          console.warn('GetGithubLoginStatus skipped: wails runtime not available (dev mode)');
+          return;
+        }
+        const mod = await import('../wailsjs/go/main/App');
+        if (!mod || typeof mod.GetGithubLoginStatus !== 'function') {
+          throw new Error('GetGithubLoginStatus not available');
+        }
+        const status = await mod.GetGithubLoginStatus();
         if (status.authenticated && status.user) {
           setGithubUser(status.user);
         } else {
@@ -86,16 +106,28 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   }, []);
 
   React.useEffect(() => {
-    const unsubscribe = EventsOn('github:auth-changed', (status: main.GithubLoginStatus) => {
-      if (status && status.authenticated && status.user) {
-        setGithubUser(status.user);
-        return;
+    let unsubscribe: (() => void) | undefined;
+    (async () => {
+      try {
+        const { EventsOn } = await import('../wailsjs/runtime/runtime');
+        if (typeof EventsOn === 'function') {
+          unsubscribe = EventsOn('github:auth-changed', (status: main.GithubLoginStatus) => {
+            if (status && status.authenticated && status.user) {
+              setGithubUser(status.user);
+              return;
+            }
+            setGithubUser(null);
+          });
+        }
+      } catch (error) {
+        console.warn('EventsOn not available (dev mode)', error);
       }
-      setGithubUser(null);
-    });
+    })();
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, []);
 
@@ -115,8 +147,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   const logoutLabel = language === 'zh' ? '退出' : 'Log out';
   const handleLogout = React.useCallback(async () => {
     try {
-      const { LogoutGithub } = await import('../wailsjs/go/main/App');
-      await LogoutGithub();
+      const mod = await import('../wailsjs/go/main/App');
+      if (typeof mod?.LogoutGithub === 'function') {
+        await mod.LogoutGithub();
+      }
       setGithubUser(null);
     } catch (error) {
       console.error('Failed to log out from GitHub:', error);
@@ -127,8 +161,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
   }, []);
   const displayName = githubUser?.name?.trim() || githubUser?.login || '';
 
-  const openRepository = React.useCallback(() => {
-    BrowserOpenURL('https://github.com/zmrlft/GreenWall');
+  const openRepository = React.useCallback(async () => {
+    try {
+      const { BrowserOpenURL } = await import('../wailsjs/runtime/runtime');
+      if (typeof BrowserOpenURL === 'function') {
+        BrowserOpenURL('https://github.com/zmrlft/GreenWall');
+        return;
+      }
+    } catch (error) {
+      console.warn('BrowserOpenURL not available (dev mode)', error);
+    }
+    if (typeof window !== 'undefined') {
+      window.open('https://github.com/zmrlft/GreenWall', '_blank', 'noopener,noreferrer');
+    }
   }, []);
 
   return (

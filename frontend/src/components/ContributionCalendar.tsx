@@ -9,6 +9,7 @@ import { useTranslations } from '../i18n';
 import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
 import { getPatternById, gridToBoolean } from '../data/characterPatterns';
 import { useContributionHistory } from '../hooks/useContributionHistory';
+import { ImageImportCard } from './ImageImportCard';
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -121,6 +122,10 @@ function ContributionCalendar({
   const [pastePreviewDates, setPastePreviewDates] = React.useState<Set<string>>(new Set());
   // 简单 toast
   const [toast, setToast] = React.useState<string | null>(null);
+  const contributionsSet = React.useMemo(
+    () => new Set(originalContributions.map((c) => c.date)),
+    [originalContributions]
+  );
 
   // 允许选择年份，过滤贡献数据
   const filteredContributions = originalContributions.filter(
@@ -452,6 +457,47 @@ function ContributionCalendar({
       setPastePreviewDates(new Set());
     },
     [selectionBuffer, year, isFutureDate, pushSnapshot, setUserContributions]
+  );
+
+  const handleApplyImageGrid = React.useCallback(
+    (grid: { width: number; height: number; data: number[][] }, startDateStr: string) => {
+      const base = new Date(startDateStr);
+      if (Number.isNaN(base.getTime())) {
+        window.alert(t('imageImport.invalidDate'));
+        return;
+      }
+      pushSnapshot();
+      setUserContributions((prev) => {
+        const next = new Map(prev);
+        for (let y = 0; y < grid.height; y++) {
+          for (let x = 0; x < grid.width; x++) {
+            const count = grid.data[y][x];
+            if (!count || count <= 0) continue;
+            const date = new Date(base);
+            date.setDate(date.getDate() + x * 7 + y);
+            const dateStr = date.toISOString().slice(0, 10);
+            if (!contributionsSet.has(dateStr) || isFutureDate(dateStr)) continue;
+            next.set(dateStr, count);
+          }
+        }
+        return next;
+      });
+      setYear(base.getFullYear());
+    },
+    [contributionsSet, isFutureDate, pushSnapshot, setUserContributions, t]
+  );
+
+  const handlePreviewImageGrid = React.useCallback(
+    (grid: { width: number; height: number; data: number[][] }) => {
+      setSelectionBuffer(grid);
+      setPastePreviewActive(true);
+      setPastePreviewDates(new Set());
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      setSelectionDates(new Set());
+      setPreviewMode(false);
+    },
+    []
   );
 
   // 取消字符预览
@@ -1186,7 +1232,9 @@ function ContributionCalendar({
           />
         </aside>
         <aside className="workbench__panel">
-          <p className="text-center">{t('workbench.placeholder')}</p>
+          <div className="flex flex-col gap-4">
+            <ImageImportCard onApply={handleApplyImageGrid} onPreview={handlePreviewImageGrid} />
+          </div>
         </aside>
       </div>
       {isRemoteModalOpen && (

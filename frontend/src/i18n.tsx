@@ -105,6 +105,26 @@ type TranslationDict = {
   workbench: {
     placeholder: string;
   };
+  imageImport: {
+    title: string;
+    description: string;
+    selectImage: string;
+    changeImage: string;
+    autoWidthHint: string;
+    targetWidth: string;
+    startDate: string;
+    threshold: string;
+    thresholdHint: string;
+    invert: string;
+    previewOnCalendar: string;
+    previewOnCalendarHint: string;
+    apply: string;
+    preview: string;
+    noPreview: string;
+    processing: string;
+    invalidDate: string;
+    loadFailed: string;
+  };
   characterSelector: {
     title: string;
     selectCharacter: string;
@@ -269,6 +289,27 @@ const translations: Record<Language, TranslationDict> = {
       placeholder:
         '✨ This area is under development! Got any wild feature ideas? Drop them in the issues and your creativity might ship~ Tips: Right-click to switch between the brush and eraser. In copy mode, select a pattern, press Ctrl+C to copy it, then Ctrl+V or left-click to paste.',
     },
+    imageImport: {
+      title: 'Image → Heatmap',
+      description:
+        'Upload PNG/JPG/SVG, auto-resize to 7 rows and N columns (N ≈ width/height×7, 1-52), then map brightness to contribution levels.',
+      selectImage: 'Choose image',
+      changeImage: 'Change image',
+      autoWidthHint: 'Auto width = round(image width ÷ height × 7), clamped to 1~52',
+      targetWidth: 'Target columns (N)',
+      startDate: 'Start date (top row = Sunday)',
+      threshold: 'Brightness threshold',
+      thresholdHint: 'Pixels darker than this will be cleared to 0 before quantisation (0-255)',
+      invert: 'Invert brightness',
+      previewOnCalendar: 'Preview on calendar (hover to place, click to apply)',
+      previewOnCalendarHint: 'Use hover to position; left-click to apply, right-click to cancel',
+      apply: 'Apply to calendar',
+      preview: 'Preview',
+      noPreview: 'Upload an image to see preview',
+      processing: 'Processing image...',
+      invalidDate: 'Please pick a valid start date.',
+      loadFailed: 'Failed to load image, try another file.',
+    },
     characterSelector: {
       title: 'Select Pattern',
       selectCharacter: 'Select Character (A-Z, a-z, 0-9)',
@@ -427,6 +468,26 @@ const translations: Record<Language, TranslationDict> = {
     workbench: {
       placeholder:
         '✨ 该区域正在开发中！大家有哪些脑洞大开的功能想法？快来 issues 留言，你的创意可能会被实现哦~操作说明：右键可以切换画笔和橡皮擦，复制模式下框选好图案后按 ctrl+C 复制图案，ctrl+V 或者左键粘贴图案',
+    },
+    imageImport: {
+      title: '图片转贡献图',
+      description: '上传 PNG/JPG/SVG，自动按 7 行和 N 列（N ≈ 宽高比×7，范围 1~52）量化为贡献网格，将亮度映射为不同贡献强度。',
+      selectImage: '选择图片',
+      changeImage: '更换图片',
+      autoWidthHint: '自动列数 = round(宽 ÷ 高 × 7)，限制在 1~52',
+      targetWidth: '目标列数 (N)',
+      startDate: '起始日期（最上方为周日）',
+      threshold: '亮度阈值',
+      thresholdHint: '低于此亮度的像素会先置为 0 再量化（0-255）',
+      invert: '反转亮度',
+      previewOnCalendar: '在日历中预览（悬停定位，点击应用）',
+      previewOnCalendarHint: '将鼠标移到日历上预览，左键应用，右键取消',
+      apply: '应用到贡献表',
+      preview: '预览',
+      noPreview: '上传图片后会显示预览',
+      processing: '图片处理中...',
+      invalidDate: '请选择有效的起始日期。',
+      loadFailed: '图片加载失败，请重试其他文件。',
     },
     characterSelector: {
       title: '选择图案',

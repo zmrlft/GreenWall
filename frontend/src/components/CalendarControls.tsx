@@ -185,29 +185,32 @@ export const CalendarControls: React.FC<Props> = ({
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-black">{t('labels.drawMode')}</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => onDrawModeChange('pen')}
-                className={clsx(
-                  'flex w-full items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200',
-                  drawMode === 'pen'
-                    ? 'scale-105 transform bg-black text-white shadow-lg'
-                    : 'border border-black bg-white text-black hover:bg-gray-100'
-                )}
-                title={t('titles.pen')}
-              >
-                <span>{t('drawModes.pen')}</span>
+              <div className="flex w-full flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => onDrawModeChange('pen')}
+                  className={clsx(
+                    'flex flex-1 items-center justify-center gap-2 rounded-none px-3 py-2 text-sm font-medium transition-all duration-200',
+                    drawMode === 'pen'
+                      ? 'scale-105 transform bg-black text-white shadow-lg'
+                      : 'border border-black bg-white text-black hover:bg-gray-100'
+                  )}
+                  title={t('titles.pen')}
+                >
+                  <span>{t('drawModes.pen')}</span>
+                </button>
                 {onPenIntensityChange && (
                   <button
                     type="button"
                     className={clsx(
-                      'flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200',
+                      'flex items-center justify-center gap-1 rounded-none border px-2 py-2 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200',
                       drawMode === 'pen'
-                        ? 'bg-white/15 text-white hover:bg-white/25'
-                        : 'bg-black/5 text-black'
+                        ? 'border-black bg-black text-white hover:bg-gray-900'
+                        : 'border-black bg-white text-black hover:bg-gray-100'
                     )}
                     aria-label={getPenSettingsAriaLabel()}
                     onClick={handlePenSettingsButtonClick}
+                    title={getPenSettingsAriaLabel()}
                   >
                     {penMode === 'auto' ? (
                       <span>{t('penModes.auto')}</span>
@@ -222,7 +225,7 @@ export const CalendarControls: React.FC<Props> = ({
                     )}
                   </button>
                 )}
-              </button>
+              </div>
               <button
                 type="button"
                 onClick={() => {
