@@ -18,6 +18,39 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
 const levelColors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
 const levelToCount = [0, 1, 3, 6, 9];
 
+type Mode = 'auto' | 'binary';
+
+function otsuThreshold(values: number[]): number {
+  if (values.length === 0) return 128;
+  const hist = new Array(256).fill(0);
+  for (const v of values) {
+    hist[clamp(Math.round(v), 0, 255)] += 1;
+  }
+  const total = values.length;
+  let sum = 0;
+  for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sumB = 0;
+  let wB = 0;
+  let wF = 0;
+  let varMax = 0;
+  let threshold = 128;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+    wF = total - wB;
+    if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const varBetween = wB * wF * (mB - mF) * (mB - mF);
+    if (varBetween > varMax) {
+      varMax = varBetween;
+      threshold = t;
+    }
+  }
+  return threshold;
+}
+
 function computeQuantileThresholds(values: number[], buckets: number) {
   const sorted = [...values].sort((a, b) => a - b);
   const thresholds: number[] = [];
@@ -47,6 +80,11 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
   const [manualWidth, setManualWidth] = React.useState<string>('');
   const [invert, setInvert] = React.useState<boolean>(true);
   const [threshold, setThreshold] = React.useState<number | ''>('');
+  const [mode, setMode] = React.useState<Mode>('auto');
+  const [imageSmoothing, setImageSmoothing] = React.useState<boolean>(false);
+  const [binaryRelax, setBinaryRelax] = React.useState<number>(12);
+  const [binaryRelax2, setBinaryRelax2] = React.useState<number>(0);
+  const [dilationSteps, setDilationSteps] = React.useState<number>(0);
   const [preview, setPreview] = React.useState<QuantizedGrid | null>(null);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -103,6 +141,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           throw new Error('Canvas context unavailable');
         }
         ctx.clearRect(0, 0, finalWidth, finalHeight);
+        ctx.imageSmoothingEnabled = imageSmoothing ? true : false;
         ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
         const { data } = ctx.getImageData(0, 0, finalWidth, finalHeight);
 
@@ -132,17 +171,116 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           }
         }
 
-        const thresholds = computeQuantileThresholds(brightnessValues, 5);
-        const hasVariance = brightnessValues.some((v) => v !== brightnessValues[0]);
-        const quantized: number[][] = grid.map((row) =>
+        const nonZero = brightnessValues.filter((v) => v > 0);
+        const minNonZero = nonZero.length ? Math.min(...nonZero) : 0;
+        const maxNonZero = nonZero.length ? Math.max(...nonZero) : 0;
+        const normalizeValue = (v: number) => {
+          if (v <= 0) return 0;
+          if (maxNonZero === minNonZero) return 255;
+          return clamp(Math.round(((v - minNonZero) / (maxNonZero - minNonZero)) * 255), 0, 255);
+        };
+
+        const normalizedValues: number[] = [];
+        const normalizedGrid: number[][] = grid.map((row) =>
           row.map((v) => {
-            if (!hasVariance) {
-              const linearLevel = Math.round((v / 255) * 4);
-              return levelToCount[clamp(linearLevel, 0, 4)];
-            }
-            return levelToCount[brightnessToLevel(v, thresholds)];
+            const nv = normalizeValue(v);
+            normalizedValues.push(nv);
+            return nv;
           })
         );
+
+        const effectiveValues = normalizedValues.filter((v) => v > 0);
+        const sourceForQuantile =
+          effectiveValues.length > 0 && effectiveValues.some((v) => v !== effectiveValues[0])
+            ? effectiveValues
+            : normalizedValues;
+        const thresholds = computeQuantileThresholds(sourceForQuantile, 5);
+        const hasVariance = sourceForQuantile.some((v) => v !== sourceForQuantile[0]);
+        const otsu = otsuThreshold(sourceForQuantile);
+        const binarize = (thr: number) =>
+          normalizedGrid.map((row) =>
+            row.map((v) => (v > thr ? levelToCount[4] : levelToCount[0]))
+          );
+
+        const dilate = (gridIn: number[][], steps: number) => {
+          if (steps <= 0) return gridIn;
+          const h = gridIn.length;
+          const w = gridIn[0]?.length ?? 0;
+          let current = gridIn;
+          const dirs = [
+            [0, 0],
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ];
+          for (let s = 0; s < steps; s++) {
+            const next = current.map((row) => [...row]);
+            for (let y = 0; y < h; y++) {
+              for (let x = 0; x < w; x++) {
+                if (current[y][x] === levelToCount[4]) continue;
+                for (const [dx, dy] of dirs) {
+                  const nx = x + dx;
+                  const ny = y + dy;
+                  if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                  if (current[ny][nx] === levelToCount[4]) {
+                    next[y][x] = levelToCount[4];
+                    break;
+                  }
+                }
+              }
+            }
+            current = next;
+          }
+          return current;
+        };
+
+        let quantized: number[][] = [];
+        if (mode === 'binary') {
+          const quantizedOtsu = binarize(otsu);
+          const activeOtsu = quantizedOtsu.flat().filter((v) => v > 0).length;
+          let chosen = quantizedOtsu;
+
+          if (binaryRelax > 0) {
+            const relaxedThr = clamp(otsu - binaryRelax, 0, 255);
+            const quantizedRelax = binarize(relaxedThr);
+            const activeRelax = quantizedRelax.flat().filter((v) => v > 0).length;
+            const sparseThreshold = (finalWidth * finalHeight) / 20;
+            if (activeRelax > activeOtsu || activeOtsu < sparseThreshold) {
+              chosen = quantizedRelax;
+            }
+          }
+
+          if (binaryRelax2 > 0) {
+            const relaxedThr2 = clamp(otsu - binaryRelax - binaryRelax2, 0, 255);
+            const quantizedRelax2 = binarize(relaxedThr2);
+            const activeRelax2 = quantizedRelax2.flat().filter((v) => v > 0).length;
+            const activeChosen = chosen.flat().filter((v) => v > 0).length;
+            if (activeRelax2 > activeChosen) {
+              chosen = quantizedRelax2;
+            }
+          }
+
+          if (dilationSteps > 0) {
+            chosen = dilate(chosen, dilationSteps);
+          }
+
+          quantized = chosen;
+        } else {
+          quantized = normalizedGrid.map((row) =>
+            row.map((v) => {
+              if (!hasVariance) {
+                const linearLevel = Math.round((v / 255) * 4);
+                return levelToCount[clamp(linearLevel, 0, 4)];
+              }
+              return levelToCount[brightnessToLevel(v, thresholds)];
+            })
+          );
+        }
 
         setPreview({
           width: finalWidth,
@@ -156,13 +294,15 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
         setIsProcessing(false);
       }
     },
-    [t]
+    [t, threshold, mode, invert, imageSmoothing, binaryRelax, binaryRelax2, dilationSteps]
   );
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     await processImage(file, invert);
+    // allow selecting the same filename again by resetting the input value
+    event.target.value = '';
   };
 
   const handlePreviewOnCalendar = () => {
@@ -188,7 +328,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
   };
 
   React.useEffect(() => {
-    // reprocess when invert toggles
+    // reprocess when parameters change
     if (!fileUrl) return;
     fetch(fileUrl)
       .then((r) => r.blob())
@@ -199,7 +339,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, [invert, targetWidth, threshold]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [invert, targetWidth, threshold, mode, imageSmoothing, binaryRelax, binaryRelax2, dilationSteps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
@@ -270,6 +410,91 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           />
           <span className="text-[11px] text-gray-500">{t('imageImport.thresholdHint')}</span>
         </label>
+        <label className="flex flex-col gap-1 text-sm text-black">
+          {t('imageImport.mode')}
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as Mode)}
+            className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+          >
+            <option value="auto">{t('imageImport.modeAuto')}</option>
+            <option value="binary">{t('imageImport.modeBinary')}</option>
+          </select>
+          <span className="text-[11px] text-gray-500">{t('imageImport.modeHint')}</span>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-black">
+          {t('imageImport.smoothing')}
+          <select
+            value={imageSmoothing ? 'on' : 'off'}
+            onChange={(e) => setImageSmoothing(e.target.value === 'on')}
+            className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+          >
+            <option value="off">{t('imageImport.smoothingOff')}</option>
+            <option value="on">{t('imageImport.smoothingOn')}</option>
+          </select>
+          <span className="text-[11px] text-gray-500">{t('imageImport.smoothingHint')}</span>
+        </label>
+        {mode === 'binary' && (
+          <>
+            <label className="flex flex-col gap-1 text-sm text-black">
+              {t('imageImport.binaryRelax')}
+              <input
+                type="number"
+                min={0}
+                max={64}
+                value={binaryRelax}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isNaN(v)) {
+                    setBinaryRelax(clamp(Math.floor(v), 0, 64));
+                  }
+                }}
+                onBlur={handleReprocessWithWidth}
+                className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="0-64"
+              />
+              <span className="text-[11px] text-gray-500">{t('imageImport.binaryRelaxHint')}</span>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-black">
+              {t('imageImport.binaryRelax2')}
+              <input
+                type="number"
+                min={0}
+                max={64}
+                value={binaryRelax2}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isNaN(v)) {
+                    setBinaryRelax2(clamp(Math.floor(v), 0, 64));
+                  }
+                }}
+                onBlur={handleReprocessWithWidth}
+                className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="0-64"
+              />
+              <span className="text-[11px] text-gray-500">{t('imageImport.binaryRelax2Hint')}</span>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-black">
+              {t('imageImport.dilation')}
+              <input
+                type="number"
+                min={0}
+                max={3}
+                value={dilationSteps}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isNaN(v)) {
+                    setDilationSteps(clamp(Math.floor(v), 0, 3));
+                  }
+                }}
+                onBlur={handleReprocessWithWidth}
+                className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="0-3"
+              />
+              <span className="text-[11px] text-gray-500">{t('imageImport.dilationHint')}</span>
+            </label>
+          </>
+        )}
         <label className="mt-5 flex items-center gap-2 text-sm text-black sm:mt-auto">
           <input
             type="checkbox"

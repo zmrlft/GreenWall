@@ -122,10 +122,6 @@ function ContributionCalendar({
   const [pastePreviewDates, setPastePreviewDates] = React.useState<Set<string>>(new Set());
   // 简单 toast
   const [toast, setToast] = React.useState<string | null>(null);
-  const contributionsSet = React.useMemo(
-    () => new Set(originalContributions.map((c) => c.date)),
-    [originalContributions]
-  );
 
   // 允许选择年份，过滤贡献数据
   const filteredContributions = originalContributions.filter(
@@ -457,34 +453,6 @@ function ContributionCalendar({
       setPastePreviewDates(new Set());
     },
     [selectionBuffer, year, isFutureDate, pushSnapshot, setUserContributions]
-  );
-
-  const handleApplyImageGrid = React.useCallback(
-    (grid: { width: number; height: number; data: number[][] }, startDateStr: string) => {
-      const base = new Date(startDateStr);
-      if (Number.isNaN(base.getTime())) {
-        window.alert(t('imageImport.invalidDate'));
-        return;
-      }
-      pushSnapshot();
-      setUserContributions((prev) => {
-        const next = new Map(prev);
-        for (let y = 0; y < grid.height; y++) {
-          for (let x = 0; x < grid.width; x++) {
-            const count = grid.data[y][x];
-            if (!count || count <= 0) continue;
-            const date = new Date(base);
-            date.setDate(date.getDate() + x * 7 + y);
-            const dateStr = date.toISOString().slice(0, 10);
-            if (!contributionsSet.has(dateStr) || isFutureDate(dateStr)) continue;
-            next.set(dateStr, count);
-          }
-        }
-        return next;
-      });
-      setYear(base.getFullYear());
-    },
-    [contributionsSet, isFutureDate, pushSnapshot, setUserContributions, t]
   );
 
   const handlePreviewImageGrid = React.useCallback(
@@ -994,6 +962,7 @@ function ContributionCalendar({
     computeSelectionDates,
     pushSnapshot,
     setUserContributions,
+    t,
   ]);
 
   const tiles = filteredContributions.map((c, i) => {
@@ -1233,7 +1202,7 @@ function ContributionCalendar({
         </aside>
         <aside className="workbench__panel">
           <div className="flex flex-col gap-4">
-            <ImageImportCard onApply={handleApplyImageGrid} onPreview={handlePreviewImageGrid} />
+            <ImageImportCard onPreview={handlePreviewImageGrid} />
           </div>
         </aside>
       </div>

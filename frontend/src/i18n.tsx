@@ -115,6 +115,20 @@ type TranslationDict = {
     startDate: string;
     threshold: string;
     thresholdHint: string;
+    mode: string;
+    modeAuto: string;
+    modeBinary: string;
+    modeHint: string;
+    smoothing: string;
+    smoothingOn: string;
+    smoothingOff: string;
+    smoothingHint: string;
+    binaryRelax: string;
+    binaryRelaxHint: string;
+    binaryRelax2: string;
+    binaryRelax2Hint: string;
+    dilation: string;
+    dilationHint: string;
     invert: string;
     previewOnCalendar: string;
     previewOnCalendarHint: string;
@@ -300,6 +314,20 @@ const translations: Record<Language, TranslationDict> = {
       startDate: 'Start date (top row = Sunday)',
       threshold: 'Brightness threshold',
       thresholdHint: 'Pixels darker than this will be cleared to 0 before quantisation (0-255)',
+      mode: 'Quantisation mode',
+      modeAuto: 'Auto (quantiles)',
+      modeBinary: 'Binary (Otsu)',
+      modeHint: 'Auto is suitable for grayscale images, Binary is more suitable for black and white line art/text',
+      smoothing: 'Scaling filter',
+      smoothingOn: 'Bilinear (smoother)',
+      smoothingOff: 'Nearest (preserve sharp edges)',
+      smoothingHint: 'If thin strokes break, try Nearest; if blocky, try Bilinear',
+      binaryRelax: 'Binary stroke recovery',
+      binaryRelaxHint: 'Lower Otsu threshold by this value when result is too sparse (0–64)',
+      binaryRelax2: 'Secondary recovery',
+      binaryRelax2Hint: 'Additional threshold reduction after the first recovery (0–64)',
+      dilation: 'Stroke dilation (steps)',
+      dilationHint: 'Apply 3×3 dilation steps after binarisation to reconnect strokes',
       invert: 'Invert brightness',
       previewOnCalendar: 'Preview on calendar (hover to place, click to apply)',
       previewOnCalendarHint: 'Use hover to position; left-click to apply, right-click to cancel',
@@ -351,7 +379,7 @@ const translations: Record<Language, TranslationDict> = {
         'GreenWall will reuse your generated commits, create a GitHub repository, add it as origin, and push everything for you.',
       nameLabel: 'Repository Name',
       namePlaceholder: 'my-contributions',
-      nameHelp: 'Use letters, numbers, ".", "_" or "-" (up to 100 characters).',
+      nameHelp: 'Use letters, numbers, ".", "_", or "-" (up to 100 characters).',
       privacyLabel: 'Visibility',
       publicOption: 'Public',
       privateOption: 'Private',
@@ -361,7 +389,7 @@ const translations: Record<Language, TranslationDict> = {
       confirm: 'Generate & Push',
       confirming: 'Working...',
       nameRequired: 'Repository name is required.',
-      nameInvalid: 'Repository name can only include letters, numbers, ".", "_" or "-".',
+      nameInvalid: 'Repository name can only include letters, numbers, ".", "_", or "-".',
     },
   },
   zh: {
@@ -479,9 +507,23 @@ const translations: Record<Language, TranslationDict> = {
       startDate: '起始日期（最上方为周日）',
       threshold: '亮度阈值',
       thresholdHint: '低于此亮度的像素会先置为 0 再量化（0-255）',
+      mode: '量化模式',
+      modeAuto: '自动（分位数）',
+      modeBinary: '二值化（Otsu）',
+      modeHint: '自动适合灰度图，二值化更适合黑白线稿/文字',
+      smoothing: '缩放平滑',
+      smoothingOn: '双线性（更平滑）',
+      smoothingOff: '邻近点（保细节）',
+      smoothingHint: '笔画断裂选邻近，颗粒感重选双线性',
+      binaryRelax: '二值补笔画强度',
+      binaryRelaxHint: '当二值结果太稀疏时，下调 Otsu 阈值的幅度（0-64）',
+      binaryRelax2: '二次补笔画',
+      binaryRelax2Hint: '在第一次补笔画后再下调的幅度（0-64）',
+      dilation: '膨胀步数',
+      dilationHint: '二值后执行 3×3 膨胀步数以连通笔画',
       invert: '反转亮度',
       previewOnCalendar: '在日历中预览（悬停定位，点击应用）',
-      previewOnCalendarHint: '将鼠标移到日历上预览，左键应用，右键取消',
+      previewOnCalendarHint: '鼠标悬停定位，左键应用，右键取消',
       apply: '应用到贡献表',
       preview: '预览',
       noPreview: '上传图片后会显示预览',
