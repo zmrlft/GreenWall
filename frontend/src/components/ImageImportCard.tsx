@@ -92,6 +92,14 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const lastProcessKey = React.useRef<string | null>(null);
 
+  React.useEffect(() => {
+    return () => {
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+      }
+    };
+  }, [fileUrl]);
+
   const targetWidth = React.useMemo(() => {
     const parsed = Number(manualWidth);
     if (!Number.isNaN(parsed) && parsed > 0) {
