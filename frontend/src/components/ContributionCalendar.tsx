@@ -9,6 +9,7 @@ import { useTranslations } from '../i18n';
 import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
 import { getPatternById, gridToBoolean } from '../data/characterPatterns';
 import { useContributionHistory } from '../hooks/useContributionHistory';
+import { ImageImportCard } from './ImageImportCard';
 
 // 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -452,6 +453,19 @@ function ContributionCalendar({
       setPastePreviewDates(new Set());
     },
     [selectionBuffer, year, isFutureDate, pushSnapshot, setUserContributions]
+  );
+
+  const handlePreviewImageGrid = React.useCallback(
+    (grid: { width: number; height: number; data: number[][] }) => {
+      setSelectionBuffer(grid);
+      setPastePreviewActive(true);
+      setPastePreviewDates(new Set());
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      setSelectionDates(new Set());
+      setPreviewMode(false);
+    },
+    []
   );
 
   // 取消字符预览
@@ -948,6 +962,7 @@ function ContributionCalendar({
     computeSelectionDates,
     pushSnapshot,
     setUserContributions,
+    t,
   ]);
 
   const tiles = filteredContributions.map((c, i) => {
@@ -1186,7 +1201,9 @@ function ContributionCalendar({
           />
         </aside>
         <aside className="workbench__panel">
-          <p className="text-center">{t('workbench.placeholder')}</p>
+          <div className="flex flex-col gap-4">
+            <ImageImportCard onPreview={handlePreviewImageGrid} />
+          </div>
         </aside>
       </div>
       {isRemoteModalOpen && (
