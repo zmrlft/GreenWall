@@ -110,8 +110,10 @@ type TranslationDict = {
     description: string;
     selectImage: string;
     changeImage: string;
-    autoWidthHint: string;
     targetWidth: string;
+    targetWidthHint: string;
+    targetHeight: string;
+    targetHeightHint: string;
     startDate: string;
     threshold: string;
     thresholdHint: string;
@@ -127,8 +129,6 @@ type TranslationDict = {
     binaryRelaxHint: string;
     binaryRelax2: string;
     binaryRelax2Hint: string;
-    dilation: string;
-    dilationHint: string;
     invert: string;
     previewOnCalendar: string;
     previewOnCalendarHint: string;
@@ -305,19 +305,20 @@ const translations: Record<Language, TranslationDict> = {
     },
     imageImport: {
       title: 'Image → Heatmap',
-      description:
-        'Upload PNG/JPG/SVG, auto-resize to 7 rows and N columns (N ≈ width/height×7, 1-52), then map brightness to contribution levels.',
+      description: '',
       selectImage: 'Choose image',
       changeImage: 'Change image',
-      autoWidthHint: 'Auto width = round(image width ÷ height × 7), clamped to 1~52',
-      targetWidth: 'Target columns (N)',
+      targetWidth: 'Target columns',
+      targetWidthHint: 'Fill manually to scale (1–52)',
+      targetHeight: 'Target rows',
+      targetHeightHint: 'Fill manually to scale (1–7)',
       startDate: 'Start date (top row = Sunday)',
       threshold: 'Brightness threshold',
-      thresholdHint: 'Pixels darker than this will be cleared to 0 before quantisation (0-255)',
+      thresholdHint: 'Pixels below this brightness in the source will be set to 0 (0-255)',
       mode: 'Quantisation mode',
-      modeAuto: 'Auto (quantiles)',
-      modeBinary: 'Binary (Otsu)',
-      modeHint: 'Auto is suitable for grayscale images, Binary is more suitable for black and white line art/text',
+      modeAuto: 'Auto (grayscale)',
+      modeBinary: 'Binary (pure black/white)',
+      modeHint: 'Auto: grayscale | Binary: pure black/white',
       smoothing: 'Scaling filter',
       smoothingOn: 'Bilinear (smoother)',
       smoothingOff: 'Nearest (preserve sharp edges)',
@@ -326,8 +327,6 @@ const translations: Record<Language, TranslationDict> = {
       binaryRelaxHint: 'Lower Otsu threshold by this value when result is too sparse (0–64)',
       binaryRelax2: 'Secondary recovery',
       binaryRelax2Hint: 'Additional threshold reduction after the first recovery (0–64)',
-      dilation: 'Stroke dilation (steps)',
-      dilationHint: 'Apply 3×3 dilation steps after binarisation to reconnect strokes',
       invert: 'Invert brightness',
       previewOnCalendar: 'Preview on calendar (hover to place, click to apply)',
       previewOnCalendarHint: 'Use hover to position; left-click to apply, right-click to cancel',
@@ -499,18 +498,20 @@ const translations: Record<Language, TranslationDict> = {
     },
     imageImport: {
       title: '图片转贡献图',
-      description: '上传 PNG/JPG/SVG，自动按 7 行和 N 列（N ≈ 宽高比×7，范围 1~52）量化为贡献网格，将亮度映射为不同贡献强度。',
+      description: '',
       selectImage: '选择图片',
       changeImage: '更换图片',
-      autoWidthHint: '自动列数 = round(宽 ÷ 高 × 7)，限制在 1~52',
-      targetWidth: '目标列数 (N)',
+      targetWidth: '目标列数',
+      targetWidthHint: '可手动填写以缩放（1~52）',
+      targetHeight: '目标行数',
+      targetHeightHint: '可手动填写以缩放（1~7）',
       startDate: '起始日期（最上方为周日）',
       threshold: '亮度阈值',
-      thresholdHint: '低于此亮度的像素会先置为 0 再量化（0-255）',
+      thresholdHint: '原图中低于此亮度的像素会置为 0（0-255）',
       mode: '量化模式',
-      modeAuto: '自动（分位数）',
-      modeBinary: '二值化（Otsu）',
-      modeHint: '自动适合灰度图，二值化更适合黑白线稿/文字',
+      modeAuto: '自动（灰度图）',
+      modeBinary: '二值化（纯黑白）',
+      modeHint: '自动：灰度图｜二值化：纯黑白',
       smoothing: '缩放平滑',
       smoothingOn: '双线性（更平滑）',
       smoothingOff: '邻近点（保细节）',
@@ -519,8 +520,6 @@ const translations: Record<Language, TranslationDict> = {
       binaryRelaxHint: '当二值结果太稀疏时，下调 Otsu 阈值的幅度（0-64）',
       binaryRelax2: '二次补笔画',
       binaryRelax2Hint: '在第一次补笔画后再下调的幅度（0-64）',
-      dilation: '膨胀步数',
-      dilationHint: '二值后执行 3×3 膨胀步数以连通笔画',
       invert: '反转亮度',
       previewOnCalendar: '在日历中预览（悬停定位，点击应用）',
       previewOnCalendarHint: '鼠标悬停定位，左键应用，右键取消',

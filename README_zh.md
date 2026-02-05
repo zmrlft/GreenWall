@@ -16,9 +16,29 @@
 
 ### 新增：图片转贡献图
 
-- 支持上传 PNG/JPG/SVG，自动按 7 行与 N 列生成贡献网格（N ≈ 宽高比 × 7，范围 1~52），并按亮度映射为贡献强度。
-- 可选反转亮度、亮度阈值（先将低于阈值的像素清零再量化）。
-- 直接在日历上预览：鼠标悬停定位，左键应用，右键取消。
+- 上传图片（PNG/JPG/SVG），一键生成贡献热力图。
+  - 尽量选择线条清晰、对比度的照片，但是细节不宜过多，否则将被压缩的难以辨认。
+- 自由设置行数（1~7）和列数（1~52），匹配图片形状。
+- 两种模式：
+  - **自动** – 出来会有色阶变化
+  - **二值化** – 出来是最深和无色
+- 可调亮度反转、阈值、缩放平滑、笔画补强。
+- 在日历上悬停定位，左键应用，右键取消。
+
+**小贴士**
+- 二值化结果太稀疏时，加大“二值补笔画强度”
+- 文字清晰优先选“邻近点（保细节）”。
+- 又想要色阶变化，又想要文字清晰，可以适当调高亮度阈值
+
+**成果示例**
+![success_example1](docs/images/success_example1.png)
+![success_example2](docs/images/success_example2.png)
+![success_example3](docs/images/success_example3.png)
+![success_example4](docs/images/success_example4.png) 
+**失败示例**
+![failure_example1](docs/images/failure_example1.png)
+![failure_example2](docs/images/failure_example2.png)
+![failure_example3](docs/images/failure_example3.png) 
 
 登录成功左上角会显示你的头像和名字。拖动鼠标在日历上尽情画画，发挥你的艺术才能！画完后点击创建远程仓库，你可以自定义仓库名称和描述，选择仓库是否公开，确认无误后点击生成并且推送，软件会自动在你的GitHub上创建对应的仓库。
 

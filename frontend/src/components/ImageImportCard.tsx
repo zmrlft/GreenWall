@@ -78,17 +78,19 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
   const [fileUrl, setFileUrl] = React.useState<string | null>(null);
   const [autoWidth, setAutoWidth] = React.useState<number | null>(null);
   const [manualWidth, setManualWidth] = React.useState<string>('');
+  const [autoHeight, setAutoHeight] = React.useState<number | null>(null);
+  const [manualHeight, setManualHeight] = React.useState<string>('');
   const [invert, setInvert] = React.useState<boolean>(true);
   const [threshold, setThreshold] = React.useState<number | ''>('');
   const [mode, setMode] = React.useState<Mode>('auto');
-  const [imageSmoothing, setImageSmoothing] = React.useState<boolean>(false);
+  const [imageSmoothing, setImageSmoothing] = React.useState<boolean>(true);
   const [binaryRelax, setBinaryRelax] = React.useState<number>(12);
   const [binaryRelax2, setBinaryRelax2] = React.useState<number>(0);
-  const [dilationSteps, setDilationSteps] = React.useState<number>(0);
   const [preview, setPreview] = React.useState<QuantizedGrid | null>(null);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const lastProcessKey = React.useRef<string | null>(null);
 
   const targetWidth = React.useMemo(() => {
     const parsed = Number(manualWidth);
@@ -101,12 +103,28 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
     return 14; // safe default
   }, [manualWidth, autoWidth]);
 
+  const targetHeight = React.useMemo(() => {
+    const parsed = Number(manualHeight);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return clamp(Math.floor(parsed), 1, 7);
+    }
+    if (autoHeight !== null) {
+      return clamp(autoHeight, 1, 7);
+    }
+    return null;
+  }, [manualHeight, autoHeight]);
+
   const handlePickFile = () => {
     fileInputRef.current?.click();
   };
 
   const processImage = React.useCallback(
-    async (file: File, invertBrightness: boolean, widthOverride?: number) => {
+    async (
+      file: File,
+      invertBrightness: boolean,
+      widthOverride?: number,
+      heightOverride?: number
+    ) => {
       setIsProcessing(true);
       try {
         const objectUrl = URL.createObjectURL(file);
@@ -128,7 +146,10 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
         setAutoWidth(suggestedWidth);
 
         const finalWidth = clamp(widthOverride ?? suggestedWidth, 1, 52);
-        const finalHeight = 7;
+        const suggestedHeight = clamp(Math.round((h / w) * finalWidth), 1, 7);
+        setAutoHeight(suggestedHeight);
+
+        const finalHeight = clamp(heightOverride ?? suggestedHeight, 1, 7);
 
         const canvas = canvasRef.current;
         if (!canvas) {
@@ -202,43 +223,6 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
             row.map((v) => (v > thr ? levelToCount[4] : levelToCount[0]))
           );
 
-        const dilate = (gridIn: number[][], steps: number) => {
-          if (steps <= 0) return gridIn;
-          const h = gridIn.length;
-          const w = gridIn[0]?.length ?? 0;
-          let current = gridIn;
-          const dirs = [
-            [0, 0],
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-            [1, 1],
-            [1, -1],
-            [-1, 1],
-            [-1, -1],
-          ];
-          for (let s = 0; s < steps; s++) {
-            const next = current.map((row) => [...row]);
-            for (let y = 0; y < h; y++) {
-              for (let x = 0; x < w; x++) {
-                if (current[y][x] === levelToCount[4]) continue;
-                for (const [dx, dy] of dirs) {
-                  const nx = x + dx;
-                  const ny = y + dy;
-                  if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-                  if (current[ny][nx] === levelToCount[4]) {
-                    next[y][x] = levelToCount[4];
-                    break;
-                  }
-                }
-              }
-            }
-            current = next;
-          }
-          return current;
-        };
-
         let quantized: number[][] = [];
         if (mode === 'binary') {
           const quantizedOtsu = binarize(otsu);
@@ -264,11 +248,6 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
               chosen = quantizedRelax2;
             }
           }
-
-          if (dilationSteps > 0) {
-            chosen = dilate(chosen, dilationSteps);
-          }
-
           quantized = chosen;
         } else {
           quantized = normalizedGrid.map((row) =>
@@ -287,6 +266,18 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           height: finalHeight,
           data: quantized,
         });
+        const processKey = [
+          objectUrl,
+          finalWidth,
+          finalHeight,
+          invertBrightness ? 1 : 0,
+          thresholdValue ?? 'none',
+          mode,
+          imageSmoothing ? 1 : 0,
+          binaryRelax,
+          binaryRelax2,
+        ].join('|');
+        lastProcessKey.current = processKey;
       } catch (error) {
         console.error(error);
         window.alert(t('imageImport.loadFailed'));
@@ -294,7 +285,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
         setIsProcessing(false);
       }
     },
-    [t, threshold, mode, invert, imageSmoothing, binaryRelax, binaryRelax2, dilationSteps]
+    [t, threshold, mode, invert, imageSmoothing, binaryRelax, binaryRelax2]
   );
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,27 +310,50 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
       .then((r) => r.blob())
       .then((blob) => {
         const file = new File([blob], 'reprocess', { type: blob.type });
-        return processImage(file, invert, targetWidth);
+        return processImage(file, invert, targetWidth, targetHeight ?? undefined);
       })
       .catch((error) => {
         console.error(error);
         window.alert(t('imageImport.loadFailed'));
       });
   };
-
   React.useEffect(() => {
-    // reprocess when parameters change
-    if (!fileUrl) return;
+    // reprocess when parameters change, but skip if same key (avoid flicker loops)
+    if (!fileUrl || isProcessing) return;
+    const desiredKey = [
+      fileUrl,
+      targetWidth,
+      targetHeight,
+      invert ? 1 : 0,
+      threshold === '' ? 'none' : threshold,
+      mode,
+      imageSmoothing ? 1 : 0,
+      binaryRelax,
+      binaryRelax2,
+    ].join('|');
+    if (lastProcessKey.current === desiredKey) return;
+
     fetch(fileUrl)
       .then((r) => r.blob())
       .then((blob) => {
         const file = new File([blob], 'reprocess', { type: blob.type });
-        return processImage(file, invert, targetWidth);
+        return processImage(file, invert, targetWidth, targetHeight ?? undefined);
       })
       .catch((error) => {
         console.error(error);
       });
-  }, [invert, targetWidth, threshold, mode, imageSmoothing, binaryRelax, binaryRelax2, dilationSteps]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    invert,
+    targetWidth,
+    targetHeight,
+    threshold,
+    mode,
+    imageSmoothing,
+    binaryRelax,
+    binaryRelax2,
+    fileUrl,
+    isProcessing,
+  ]);
 
   return (
     <div
@@ -350,7 +364,9 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
     >
       <div className="flex flex-col gap-1">
         <div className="text-base font-semibold text-black">{t('imageImport.title')}</div>
-        <p className="text-sm text-gray-600">{t('imageImport.description')}</p>
+        {t('imageImport.description') && (
+          <p className="text-sm text-gray-600">{t('imageImport.description')}</p>
+        )}
       </div>
 
       <input
@@ -369,10 +385,9 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
         >
           {fileUrl ? t('imageImport.changeImage') : t('imageImport.selectImage')}
         </button>
-        <div className="text-xs text-gray-600">{t('imageImport.autoWidthHint')}</div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         <label className="flex flex-col gap-1 text-sm text-black">
           {t('imageImport.targetWidth')}
           <input
@@ -383,8 +398,23 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
             onChange={(e) => setManualWidth(e.target.value)}
             onBlur={handleReprocessWithWidth}
             className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-            placeholder={autoWidth ? String(autoWidth) : undefined}
+            placeholder={autoWidth ? String(autoWidth) : '自动'}
           />
+          <span className="text-[11px] text-gray-500">{t('imageImport.targetWidthHint')}</span>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-black">
+          {t('imageImport.targetHeight')}
+          <input
+            type="number"
+            min={1}
+            max={7}
+            value={manualHeight}
+            onChange={(e) => setManualHeight(e.target.value)}
+            onBlur={handleReprocessWithWidth}
+            className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            placeholder={autoHeight ? String(autoHeight) : '自动'}
+          />
+          <span className="text-[11px] text-gray-500">{t('imageImport.targetHeightHint')}</span>
         </label>
         <label className="flex flex-col gap-1 text-sm text-black">
           {t('imageImport.threshold')}
@@ -474,25 +504,6 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
               />
               <span className="text-[11px] text-gray-500">{t('imageImport.binaryRelax2Hint')}</span>
             </label>
-            <label className="flex flex-col gap-1 text-sm text-black">
-              {t('imageImport.dilation')}
-              <input
-                type="number"
-                min={0}
-                max={3}
-                value={dilationSteps}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (!Number.isNaN(v)) {
-                    setDilationSteps(clamp(Math.floor(v), 0, 3));
-                  }
-                }}
-                onBlur={handleReprocessWithWidth}
-                className="rounded-none border border-black px-3 py-2 text-base transition-colors focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="0-3"
-              />
-              <span className="text-[11px] text-gray-500">{t('imageImport.dilationHint')}</span>
-            </label>
           </>
         )}
         <label className="mt-5 flex items-center gap-2 text-sm text-black sm:mt-auto">
@@ -514,7 +525,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           )}
           {!isProcessing && preview && (
             <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-0.5">
+              <div className="flex flex-col gap-0.5">
                 {preview.data.map((row, y) => (
                   <div key={y} className="flex flex-row gap-0.5">
                     {row.map((val, x) => {
