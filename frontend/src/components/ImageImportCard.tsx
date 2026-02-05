@@ -126,12 +126,25 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
       heightOverride?: number
     ) => {
       setIsProcessing(true);
+      let attemptedKey: string | null = null;
+      let objectUrl: string = '';
       try {
-        const objectUrl = URL.createObjectURL(file);
+        objectUrl = URL.createObjectURL(file);
         setFileUrl((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return objectUrl;
         });
+        attemptedKey = [
+          objectUrl,
+          widthOverride ?? targetWidth,
+          heightOverride ?? targetHeight,
+          invertBrightness ? 1 : 0,
+          threshold === '' ? 'none' : threshold,
+          mode,
+          imageSmoothing ? 1 : 0,
+          binaryRelax,
+          binaryRelax2,
+        ].join('|');
 
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const image = new Image();
@@ -277,15 +290,29 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
           binaryRelax,
           binaryRelax2,
         ].join('|');
+        attemptedKey = processKey;
         lastProcessKey.current = processKey;
       } catch (error) {
         console.error(error);
         window.alert(t('imageImport.loadFailed'));
       } finally {
+        if (attemptedKey) {
+          lastProcessKey.current = attemptedKey;
+        }
         setIsProcessing(false);
       }
     },
-    [t, threshold, mode, invert, imageSmoothing, binaryRelax, binaryRelax2]
+    [
+      t,
+      threshold,
+      mode,
+      invert,
+      imageSmoothing,
+      binaryRelax,
+      binaryRelax2,
+      targetWidth,
+      targetHeight,
+    ]
   );
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
