@@ -105,6 +105,40 @@ type TranslationDict = {
   workbench: {
     placeholder: string;
   };
+  imageImport: {
+    title: string;
+    description: string;
+    selectImage: string;
+    changeImage: string;
+    targetWidth: string;
+    targetWidthHint: string;
+    targetHeight: string;
+    targetHeightHint: string;
+    startDate: string;
+    threshold: string;
+    thresholdHint: string;
+    mode: string;
+    modeAuto: string;
+    modeBinary: string;
+    modeHint: string;
+    smoothing: string;
+    smoothingOn: string;
+    smoothingOff: string;
+    smoothingHint: string;
+    binaryRelax: string;
+    binaryRelaxHint: string;
+    binaryRelax2: string;
+    binaryRelax2Hint: string;
+    invert: string;
+    previewOnCalendar: string;
+    previewOnCalendarHint: string;
+    apply: string;
+    preview: string;
+    noPreview: string;
+    processing: string;
+    invalidDate: string;
+    loadFailed: string;
+  };
   characterSelector: {
     title: string;
     selectCharacter: string;
@@ -269,6 +303,40 @@ const translations: Record<Language, TranslationDict> = {
       placeholder:
         '✨ This area is under development! Got any wild feature ideas? Drop them in the issues and your creativity might ship~ Tips: Right-click to switch between the brush and eraser. In copy mode, select a pattern, press Ctrl+C to copy it, then Ctrl+V or left-click to paste.',
     },
+    imageImport: {
+      title: 'Image → Heatmap',
+      description: '',
+      selectImage: 'Choose image',
+      changeImage: 'Change image',
+      targetWidth: 'Target columns',
+      targetWidthHint: 'Fill manually to scale (1–52)',
+      targetHeight: 'Target rows',
+      targetHeightHint: 'Fill manually to scale (1–7)',
+      startDate: 'Start date (top row = Sunday)',
+      threshold: 'Brightness threshold',
+      thresholdHint: 'Pixels below this brightness in the source will be set to 0 (0-255)',
+      mode: 'Quantisation mode',
+      modeAuto: 'Auto (grayscale)',
+      modeBinary: 'Binary (pure black/white)',
+      modeHint: 'Auto: grayscale | Binary: pure black/white',
+      smoothing: 'Scaling filter',
+      smoothingOn: 'Bilinear (smoother)',
+      smoothingOff: 'Nearest (preserve sharp edges)',
+      smoothingHint: 'If thin strokes break, try Nearest; if blocky, try Bilinear',
+      binaryRelax: 'Binary stroke recovery',
+      binaryRelaxHint: 'Lower Otsu threshold by this value when result is too sparse (0–64)',
+      binaryRelax2: 'Secondary recovery',
+      binaryRelax2Hint: 'Additional threshold reduction after the first recovery (0–64)',
+      invert: 'Invert brightness',
+      previewOnCalendar: 'Preview on calendar (hover to place, click to apply)',
+      previewOnCalendarHint: 'Use hover to position; left-click to apply, right-click to cancel',
+      apply: 'Apply to calendar',
+      preview: 'Preview',
+      noPreview: 'Upload an image to see preview',
+      processing: 'Processing image...',
+      invalidDate: 'Please pick a valid start date.',
+      loadFailed: 'Failed to load image, try another file.',
+    },
     characterSelector: {
       title: 'Select Pattern',
       selectCharacter: 'Select Character (A-Z, a-z, 0-9)',
@@ -310,7 +378,7 @@ const translations: Record<Language, TranslationDict> = {
         'GreenWall will reuse your generated commits, create a GitHub repository, add it as origin, and push everything for you.',
       nameLabel: 'Repository Name',
       namePlaceholder: 'my-contributions',
-      nameHelp: 'Use letters, numbers, ".", "_" or "-" (up to 100 characters).',
+      nameHelp: 'Use letters, numbers, ".", "_", or "-" (up to 100 characters).',
       privacyLabel: 'Visibility',
       publicOption: 'Public',
       privateOption: 'Private',
@@ -320,7 +388,7 @@ const translations: Record<Language, TranslationDict> = {
       confirm: 'Generate & Push',
       confirming: 'Working...',
       nameRequired: 'Repository name is required.',
-      nameInvalid: 'Repository name can only include letters, numbers, ".", "_" or "-".',
+      nameInvalid: 'Repository name can only include letters, numbers, ".", "_", or "-".',
     },
   },
   zh: {
@@ -427,6 +495,40 @@ const translations: Record<Language, TranslationDict> = {
     workbench: {
       placeholder:
         '✨ 该区域正在开发中！大家有哪些脑洞大开的功能想法？快来 issues 留言，你的创意可能会被实现哦~操作说明：右键可以切换画笔和橡皮擦，复制模式下框选好图案后按 ctrl+C 复制图案，ctrl+V 或者左键粘贴图案',
+    },
+    imageImport: {
+      title: '图片转贡献图',
+      description: '',
+      selectImage: '选择图片',
+      changeImage: '更换图片',
+      targetWidth: '目标列数',
+      targetWidthHint: '可手动填写以缩放（1~52）',
+      targetHeight: '目标行数',
+      targetHeightHint: '可手动填写以缩放（1~7）',
+      startDate: '起始日期（最上方为周日）',
+      threshold: '亮度阈值',
+      thresholdHint: '原图中低于此亮度的像素会置为 0（0-255）',
+      mode: '量化模式',
+      modeAuto: '自动（灰度图）',
+      modeBinary: '二值化（纯黑白）',
+      modeHint: '自动：灰度图｜二值化：纯黑白',
+      smoothing: '缩放平滑',
+      smoothingOn: '双线性（更平滑）',
+      smoothingOff: '邻近点（保细节）',
+      smoothingHint: '笔画断裂选邻近，颗粒感重选双线性',
+      binaryRelax: '二值补笔画强度',
+      binaryRelaxHint: '当二值结果太稀疏时，下调 Otsu 阈值的幅度（0-64）',
+      binaryRelax2: '二次补笔画',
+      binaryRelax2Hint: '在第一次补笔画后再下调的幅度（0-64）',
+      invert: '反转亮度',
+      previewOnCalendar: '在日历中预览（悬停定位，点击应用）',
+      previewOnCalendarHint: '鼠标悬停定位，左键应用，右键取消',
+      apply: '应用到贡献表',
+      preview: '预览',
+      noPreview: '上传图片后会显示预览',
+      processing: '图片处理中...',
+      invalidDate: '请选择有效的起始日期。',
+      loadFailed: '图片加载失败，请重试其他文件。',
     },
     characterSelector: {
       title: '选择图案',

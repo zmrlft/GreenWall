@@ -14,6 +14,39 @@ Make sure Git is installed on your computer.
 
 Download the app, open it, and first grab a Personal Access Token (PAT) so you can sign in to GitHub. You can follow this guide: [how to get your PAT](docs/githubtoken_en.md).
 
+### New: Image → Contribution Heatmap
+
+- Upload any image (PNG/JPG/SVG) and turn it into a contribution heatmap.
+- Choose rows (1–7) and columns (1–52) to fit your image’s shape.
+- Pick a mode:
+  - **Auto** – works for most photos and grayscale images.
+  - **Binary** – best for black‑on‑white text or line art.
+- Fine‑tune with brightness invert, threshold, scaling filter, and stroke recovery.
+- Hover on the calendar to place the pattern, click to apply, right‑click to cancel.
+
+#### Quick guide
+
+| # | What you have | Recommended settings |
+|---|---------------|----------------------|
+| 1 | Black text on white background | Mode: Binary; Invert: on; Smoothing: Nearest; Threshold: 0–10; Recovery 1: 12–24; Dilation: 0–1 |
+| 2 | Low‑contrast photo or drawing | Mode: Auto; Smoothing: Bilinear; Threshold: 0–15 |
+| 3 | Very thin lines (≤2px) | Mode: Binary; Invert: on; Smoothing: Nearest; Recovery 1: 20–28; Dilation: 1–2 |
+| 4 | Bright/noisy photo | Mode: Auto; Smoothing: Bilinear; Threshold: 5–20 |
+
+**Tips**
+- Use “Target rows” to keep tall images from being flattened.
+- If Binary mode looks too empty, increase “Binary stroke recovery” or add “Stroke dilation”.
+- For sharp text, keep “Scaling filter” on “Nearest (preserve sharp edges)”.
+
+**Examples**
+- ![success_example1](docs/images/success_example1.png) – Black text, Binary mode
+- ![success_example2](docs/images/success_example2.png) – Grayscale photo, Auto mode
+- ![success_example3](docs/images/success_example3.png) – Thin line art, Binary + dilation
+- ![success_example4](docs/images/success_example4.png) – Balanced photo, Auto mode
+- ![failure_example1](docs/images/failure_example1.png) – Over‑exposed photo (try higher threshold or invert off)
+- ![failure_example2](docs/images/failure_example2.png) – Low contrast (increase threshold or use Binary + recovery)
+- ![failure_example3](docs/images/failure_example3.png) – Noisy background (crop or smooth, then raise threshold)
+
 Once you’re logged in you’ll see your avatar and name in the upper-left corner. Drag across the calendar to paint your design. When you’re satisfied, click **Create Remote Repo**. You can edit the repo name and description, choose whether it’s public or private, and then press **Generate & Push** to let the app create and push the repository for you automatically.
 
 > **Heads-up:** GitHub may take anywhere from 5 minutes to 2 days to show the contributions on your profile. You can keep the repo private and enable “Include private contributions” in your profile settings so others can’t see the repo content but the contribution streak still counts.

@@ -14,6 +14,32 @@
 
 下载软件，打开后，首先要获取你的PAT来登录github，你可以参考这个：[如何获取你的github访问令牌](docs/githubtoken.md)
 
+### 新增：图片转贡献图
+
+- 上传图片（PNG/JPG/SVG），一键生成贡献热力图。
+  - 尽量选择线条清晰、对比度的照片，但是细节不宜过多，否则将被压缩的难以辨认。
+- 自由设置行数（1~7）和列数（1~52），匹配图片形状。
+- 两种模式：
+  - **自动** – 出来会有色阶变化
+  - **二值化** – 出来是最深和无色
+- 可调亮度反转、阈值、缩放平滑、笔画补强。
+- 在日历上悬停定位，左键应用，右键取消。
+
+**小贴士**
+- 二值化结果太稀疏时，加大“二值补笔画强度”
+- 文字清晰优先选“邻近点（保细节）”。
+- 又想要色阶变化，又想要文字清晰，可以适当调高亮度阈值
+
+**成果示例**
+![success_example1](docs/images/success_example1.png)
+![success_example2](docs/images/success_example2.png)
+![success_example3](docs/images/success_example3.png)
+![success_example4](docs/images/success_example4.png) 
+**失败示例**
+![failure_example1](docs/images/failure_example1.png)
+![failure_example2](docs/images/failure_example2.png)
+![failure_example3](docs/images/failure_example3.png) 
+
 登录成功左上角会显示你的头像和名字。拖动鼠标在日历上尽情画画，发挥你的艺术才能！画完后点击创建远程仓库，你可以自定义仓库名称和描述，选择仓库是否公开，确认无误后点击生成并且推送，软件会自动在你的GitHub上创建对应的仓库。
 
 注意： GitHub 可能需要 5 分钟至两天才会显示你的贡献度图案。你可以把仓库设置为私人仓库，并在贡献统计中允许显示私人仓库的贡献，这样他人看不到仓库内容但可以看到贡献记录。
