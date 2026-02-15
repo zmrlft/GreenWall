@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import styles from './ContributionCalendar.module.scss';
 import { CalendarControls } from './CalendarControls';
 import RemoteRepoModal, { RemoteRepoPayload } from './RemoteRepoModal';
+import RandomPaintModal from './RandomPaintModal'; // 新增导入
 import { GenerateRepo, ExportContributions, ImportContributions } from '../../wailsjs/go/main/App';
 import { main } from '../../wailsjs/go/models';
 import { useTranslations } from '../i18n';
@@ -100,6 +101,7 @@ function ContributionCalendar({
   const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
   const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
   const [isRemoteModalOpen, setIsRemoteModalOpen] = React.useState<boolean>(false);
+  const [isRandomModalOpen, setIsRandomModalOpen] = React.useState<boolean>(false); // 新增：随机刷墙模态框状态
   const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [containerVars, setContainerVars] = React.useState<ContainerVars>({});
@@ -265,6 +267,41 @@ function ContributionCalendar({
     setPastePreviewActive(false);
     setPastePreviewDates(new Set());
   }, []);
+
+  // 打开随机刷墙模态框
+  const handleOpenRandomModal = React.useCallback(() => {
+    setIsRandomModalOpen(true);
+  }, []);
+
+  // 关闭随机刷墙模态框
+  const handleCloseRandomModal = React.useCallback(() => {
+    setIsRandomModalOpen(false);
+  }, []);
+
+  // 应用随机数据
+  const handleApplyRandomContributions = React.useCallback(
+    (newContributions: { date: string; count: number }[]) => {
+      console.log('收到随机数据:', newContributions.length);
+
+      if (!newContributions || newContributions.length === 0) {
+        alert('没有收到随机数据');
+        return;
+      }
+
+      const updatedMap = new Map(userContributions);
+
+      newContributions.forEach((day) => {
+        if (day.date && day.count > 0) {
+          updatedMap.set(day.date, day.count);
+        }
+      });
+
+      setUserContributions(updatedMap);
+      alert('成功应用 ' + newContributions.length + ' 天随机数据');
+      setIsRandomModalOpen(false);
+    },
+    [userContributions]
+  );
 
   // helper: convert date -> {row, col}
   const getDateCoord = React.useCallback(
@@ -1198,6 +1235,8 @@ function ContributionCalendar({
                 return next;
               });
             }}
+            // 随机刷墙相关 - 新增
+            onOpenRandomModal={handleOpenRandomModal}
           />
         </aside>
         <aside className="workbench__panel">
@@ -1215,6 +1254,14 @@ function ContributionCalendar({
           isSubmitting={isGeneratingRepo}
           onClose={() => setIsRemoteModalOpen(false)}
           onSubmit={handleRemoteModalSubmit}
+        />
+      )}
+      {/* 随机刷墙模态框 - 新增 */}
+      {isRandomModalOpen && (
+        <RandomPaintModal
+          open={isRandomModalOpen}
+          onClose={handleCloseRandomModal}
+          onApply={handleApplyRandomContributions}
         />
       )}
     </div>
