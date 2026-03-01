@@ -76,7 +76,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
       console.error('Failed to check Git installation:', error);
       setIsGitInstalled(false);
     }
-  }, []);
+  }, [hasWailsApp]);
 
   React.useEffect(() => {
     checkGit();
@@ -103,7 +103,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ contributions }) => {
         console.error('Failed to fetch GitHub login status:', error);
       }
     })();
-  }, []);
+  }, [hasWailsApp]);
 
   React.useEffect(() => {
     let unsubscribe: (() => void) | undefined;
