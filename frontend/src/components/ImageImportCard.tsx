@@ -314,7 +314,6 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
       t,
       threshold,
       mode,
-      invert,
       imageSmoothing,
       binaryRelax,
       binaryRelax2,
@@ -388,6 +387,7 @@ export const ImageImportCard: React.FC<Props> = ({ onPreview, className }) => {
     binaryRelax2,
     fileUrl,
     isProcessing,
+    processImage,
   ]);
 
   return (
