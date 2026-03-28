@@ -2,11 +2,23 @@
 
 > 中文: [README (中文)](README_zh.md)
 
+## Contents
+
+- [Project Milestones](#project-milestones)
+- [How to Use](#how-to-use)
+  - [Image → Contribution Heatmap](#image--contribution-heatmap)
+  - [Quick Tips](#quick-tips)
+  - [Platform Notes](#platform-notes)
+- [Rendering Examples](#rendering-examples)
+- [Development Guide](#development-guide)
+- [Star History](#star-history)
+- [Disclaimer](#disclaimer)
+
 ## Project Milestones
 
 In early November, this project was recommended by YiFeng Ruan(阮一峰), and officially featured in [Tech Enthusiast Weekly Issue 372](https://www.ruanyifeng.com/blog/2025/11/weekly-issue-372.html); in mid-November, it was recommended by the well-known influencer "it咖啡馆" and featured in [GitHub Weekly Hotspots Issue 93](https://youtu.be/pjQftatKpjc?si=5pMK1bAyFXfp6oyF); in December, it was successfully selected as an "interesting project" by the renowned open-source community HelloGitHub <a href="https://hellogithub.com/repository/zmrlft/GreenWall" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=c1b693c5b9244e26953733a6816eac62&claim_uid=KodS5CpL41Jj0Z8&theme=small" alt="Featured｜HelloGitHub" /></a>
 
-## How to use
+## How to Use
 
 Make sure Git is installed on your computer.
 
@@ -14,7 +26,7 @@ Make sure Git is installed on your computer.
 
 Download the app, open it, and first grab a Personal Access Token (PAT) so you can sign in to GitHub. You can follow this guide: [how to get your PAT](docs/githubtoken_en.md).
 
-### New: Image → Contribution Heatmap
+### Image → Contribution Heatmap
 
 - Upload any image (PNG/JPG/SVG) and turn it into a contribution heatmap.
 - Choose rows (1–7) and columns (1–52) to fit your image’s shape.
@@ -59,11 +71,13 @@ Once you’re logged in you’ll see your avatar and name in the upper-left corn
 - Use the brush intensity control to switch between different shades of green.
 - **Copy and Paste Feature**: Click the "Copy Mode" button to enter copy mode. Drag to select an area on the calendar and press `Ctrl+C` to copy. The app will show a "Copy successful" message. After copying, the selected pattern will follow the mouse as a preview. Left-click or press `Ctrl+V` to paste to the target location, right-click to cancel the paste preview. Press `Ctrl+V` to quickly restore the last copied pattern.
 
-### Windows/Linux
+### Platform Notes
+
+#### Windows/Linux
 
 Download and run the application directly.
 
-### macOS
+#### macOS
 
 Since this application is not yet signed, you may encounter security restrictions on first launch. Follow these steps to resolve:
 
@@ -77,62 +91,55 @@ sudo xattr -r -d com.apple.quarantine ./green-wall.app
 
 **Warning:** The commands will not automatically launch the application. You need to manually double-click the app to start it (the commands only modify file attributes).
 
-## Rendering
+## Rendering Examples
 
-![text](docs/images/cailg.png)
-![catfish](docs/images/cat.png)
-![lovecat](docs/images/darkcat.jpg)
-![helloWorld](docs/images/darkhw.png)
-![androidlife](docs/images/darkandroid.png)
+| ![text](docs/images/cailg.png) | ![catfish](docs/images/cat.png) |
+| --- | --- |
+| ![lovecat](docs/images/darkcat.jpg) | ![helloWorld](docs/images/darkhw.png) |
+| ![androidlife](docs/images/darkandroid.png) |  |
 
 ## Development Guide
 
-- Environmental Preparation
+### Environment setup
 
-  Install Go 1.23+
+- Install Go 1.24+
+- Install Node.js (v22+)
+- Install Git
 
-  Install Node.js (v22+)
+### Install dependent tools
 
-  Install Git
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+```
 
-- Install dependent tools
+### Project workflow
 
-  ```
-  go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
-  ```
+Clone the repository and enter the directory:
 
-- Project operation
+```bash
+git clone https://github.com/zmrlft/GreenWall.git
+cd GreenWall
+```
 
-  Clone the repository and enter the directory:
+Install front-end dependencies:
 
-  ```
-  git clone https://github.com/zmrlft/GreenWall.git
-  cd GreenWall
-  ```
+```bash
+cd frontend && npm install
+```
 
-  Install front-end dependencies:
+Start the development environment:
 
-  ```
-  cd frontend && npm install
-  ```
+```bash
+wails dev
+```
 
-  Start the development environment
+Build:
 
-  ```
-  wails dev
-  ```
+```bash
+wails build
+```
 
-  Construction
-
-  ```
-  wails build
-  ```
-
-  Output path: build/bin/
-
-## Future features
-
-We may add support for creating repositories in custom languages. For example, if you want a Java repository, the tool would generate one and it would be reflected in your GitHub language statistics.
+Output path: `build/bin/`
 
 ## Star History
 

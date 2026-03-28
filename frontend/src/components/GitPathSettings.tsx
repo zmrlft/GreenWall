@@ -34,7 +34,6 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain
       });
 
       if (result.success) {
-        // 成功设置后，清空输入框并重新检查git状态
         setCustomGitPath('');
         setTimeout(() => {
           onCheckAgain();
@@ -129,7 +128,7 @@ const GitPathSettings: React.FC<GitPathSettingsProps> = ({ onClose, onCheckAgain
             <button
               onClick={handleSetGitPath}
               disabled={!customGitPath.trim() || isSettingPath}
-              className="border border-black bg-black px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:border-gray-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="border border-black bg-black px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
             >
               {isSettingPath ? t('gitPathSettings.setting') : t('gitPathSettings.setPath')}
             </button>

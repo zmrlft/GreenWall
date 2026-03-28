@@ -1,17 +1,18 @@
 import React from 'react';
 import clsx from 'clsx';
-import styles from './ContributionCalendar.module.scss';
-import { CalendarControls } from './CalendarControls';
-import RemoteRepoModal, { RemoteRepoPayload } from './RemoteRepoModal';
-import { GenerateRepo, ExportContributions, ImportContributions } from '../../wailsjs/go/main/App';
-import { main } from '../../wailsjs/go/models';
+import {
+  useContributionEditor,
+  type OneDay,
+  type PenIntensity,
+} from '../hooks/useContributionEditor';
 import { useTranslations } from '../i18n';
-import { WindowIsMaximised, WindowIsFullscreen } from '../../wailsjs/runtime/runtime';
-import { getPatternById, gridToBoolean } from '../data/characterPatterns';
-import { useContributionHistory } from '../hooks/useContributionHistory';
+import type { main } from '../../wailsjs/go/models';
+import styles from './ContributionCalendar.module.scss';
+import { CharacterSelector } from './CharacterSelector';
 import { ImageImportCard } from './ImageImportCard';
+import RemoteRepoModal from './RemoteRepoModal';
+import { parseIsoDate } from '../utils/date';
 
-// 根据贡献数量计算level
 function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   if (count >= 1 && count <= 2) return 1;
   if (count >= 3 && count <= 5) return 2;
@@ -20,988 +21,419 @@ function calculateLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   return 0;
 }
 
-// 逐步递进贡献次数 (0 → 1 → 3 → 6 → 9)
-function getNextContribution(current: number): number {
-  if (current < 1) return 1;
-  if (current < 3) return 3;
-  if (current < 6) return 6;
-  if (current < 9) return 9;
-  return current; // 已是最大值
-}
+type IconProps = {
+  className?: string;
+};
 
-// 将字符转换为像素图案 - 使用预定义的图案数据
-function characterToPattern(char: string): boolean[][] {
-  const pattern = getPatternById(char);
-  if (pattern) {
-    return gridToBoolean(pattern.grid);
-  }
+const InfoIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6" />
+    <circle cx="12" cy="7.25" r=".7" fill="currentColor" stroke="none" />
+  </svg>
+);
 
-  // 如果找不到预定义图案，返回空图案
-  return Array(7)
-    .fill(null)
-    .map(() => Array(5).fill(false));
-}
+const BookIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M4.75 5.75A2.75 2.75 0 0 1 7.5 3h11.75v15H7.5a2.75 2.75 0 0 0-2.75 2.75V5.75Zm0 0A2.75 2.75 0 0 0 2 8.5v9.75h5.5"
+    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 7.5h7M9 11h7" />
+  </svg>
+);
 
-export type OneDay = { level: number; count: number; date: string };
+const ImportIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v11" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m8 10 4 4 4-4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 20h14" />
+  </svg>
+);
 
-/**
- * 仿 GitHub 的贡献图，支持交互式点击和拖拽绘制贡献次数。
- *
- * 功能说明：
- * - 画笔模式：点击画笔按钮显示悬浮滑动条，选择画笔强度（1、3、6、9），点击或拖拽绘制格子
- * - 橡皮擦模式：点击或拖拽清除格子贡献
- * - 画笔强度对应不同的绿色深度：1（浅绿）、3（中绿）、6（深绿）、9（最深绿）
- * - 可以输入不同年份查看（2008年-当前年份）
- * - 清除按钮会重置所有用户设置
- * - 支持鼠标左键长按拖拽连续绘制
- *
- * 数据可以用 /script/fetch-contributions.js 抓取。
- *
- * @example
- * const data = [{ level: 1, count: 5, date: 1728272654618 }, ...];
- * <ContributionCalendar contributions={data}/>
- */
+const ExportIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21V10" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m16 14-4-4-4 4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14" />
+  </svg>
+);
+
+const GenerateIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6h6" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M7.5 13.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5c0 1.17-.447 2.235-1.18 3.034L12 21l-3.32-4.466A4.482 4.482 0 0 1 7.5 13.5Z"
+    />
+  </svg>
+);
+
+const PenIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m14.7 4.3 5 5L8.25 20.75H3.25v-5L14.7 4.3Zm0 0 2.75-2.75a1.768 1.768 0 0 1 2.5 2.5L17.2 6.8"
+    />
+  </svg>
+);
+
+const EraserIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m7 14.5 7.25-7.25a2.475 2.475 0 0 1 3.5 0l2 2a2.475 2.475 0 0 1 0 3.5L14.5 18H8.75L5 14.25a1.768 1.768 0 0 1 0-2.5l5-5"
+    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 18H20" />
+  </svg>
+);
+
+const CopyIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <rect x="9" y="9" width="10" height="10" rx="2" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"
+    />
+  </svg>
+);
+
+const ImageIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <circle cx="8.25" cy="10" r="1.6" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m5.5 16 4.25-4.5L13 14l2.25-2.25L18.5 16"
+    />
+  </svg>
+);
+
+const TypeIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 6h14M12 6v12M8 18h8" />
+  </svg>
+);
+
+const AutoIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M13.5 2 6 13h4l-1.5 9L18 11h-4.25L13.5 2Z"
+    />
+  </svg>
+);
+
+const LogoutIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 8.25 20 12l-4.25 3.75" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h11" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10.5 4.75H7A2.25 2.25 0 0 0 4.75 7v10A2.25 2.25 0 0 0 7 19.25h3.5"
+    />
+  </svg>
+);
+
+const UserIcon = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <circle cx="12" cy="8.25" r="3.25" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+  </svg>
+);
+
 type Props = {
   contributions: OneDay[];
   className?: string;
   githubUser?: main.GithubUserProfile | null;
+  isGitInstalled: boolean | null;
+  onOpenGitSettings: () => void;
+  onOpenLogin: () => void;
+  onLogout: () => void | Promise<void>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-type DrawMode = 'pen' | 'eraser';
-
-// 画笔强度类型：对应不同的贡献次数
-type PenIntensity = 1 | 3 | 6 | 9;
-
-type ContainerVars = React.CSSProperties & {
-  '--cell'?: string;
-  '--gap'?: string;
+const penIntensityColors: Record<PenIntensity, string> = {
+  1: '#b9edc1',
+  3: '#79d792',
+  6: '#4db66c',
+  9: '#2f8048',
 };
 
 function ContributionCalendar({
   contributions: originalContributions,
   className,
   githubUser,
+  isGitInstalled,
+  onOpenGitSettings,
+  onOpenLogin,
+  onLogout,
   ...rest
 }: Props) {
   const { style: externalStyle, ...divProps } = rest;
-  // 选中日期状态 - 改为存储每个日期的贡献次数
-  const { t, dictionary } = useTranslations();
-  const monthNames = dictionary.months;
-
-  const { userContributions, setUserContributions, pushSnapshot, undo, redo } =
-    useContributionHistory(new Map());
-  const [year, setYear] = React.useState<number>(new Date().getFullYear());
-
-  // 绘画模式状态
-  const [drawMode, setDrawMode] = React.useState<DrawMode>('pen');
-  const [penIntensity, setPenIntensity] = React.useState<PenIntensity>(1); // 画笔强度，默认为1
-  const [penMode, setPenMode] = React.useState<'manual' | 'auto'>('auto'); // 画笔模式：manual 手动强度，auto 自动逐步递进
-  const [isDrawing, setIsDrawing] = React.useState<boolean>(false);
-  const [lastHoveredDate, setLastHoveredDate] = React.useState<string | null>(null);
-  const [isGeneratingRepo, setIsGeneratingRepo] = React.useState<boolean>(false);
-  const [isRemoteModalOpen, setIsRemoteModalOpen] = React.useState<boolean>(false);
-  const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [containerVars, setContainerVars] = React.useState<ContainerVars>({});
-
-  // 字符预览状态
-  const [previewMode, setPreviewMode] = React.useState<boolean>(false);
-  const [previewCharacter, setPreviewCharacter] = React.useState<string>('');
-  const [previewDates, setPreviewDates] = React.useState<Set<string>>(new Set());
-  // 复制/粘贴相关状态
-  const [copyMode, setCopyMode] = React.useState<boolean>(false);
-  const [selectionStart, setSelectionStart] = React.useState<string | null>(null);
-  const [selectionEnd, setSelectionEnd] = React.useState<string | null>(null);
-  const [selectionDates, setSelectionDates] = React.useState<Set<string>>(new Set());
-  const [selectionBuffer, setSelectionBuffer] = React.useState<{
-    width: number;
-    height: number;
-    data: number[][];
-  } | null>(null);
-  const [pastePreviewActive, setPastePreviewActive] = React.useState<boolean>(false);
-  const [pastePreviewDates, setPastePreviewDates] = React.useState<Set<string>>(new Set());
-  // 简单 toast
-  const [toast, setToast] = React.useState<string | null>(null);
-
-  // 允许选择年份，过滤贡献数据
-  const filteredContributions = originalContributions.filter(
-    (c) => new Date(c.date).getFullYear() === year
-  );
-
-  // 计算当前日期与明天零点，用于判断未来日期
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const todayStart = new Date(currentYear, now.getMonth(), now.getDate());
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  const tomorrowTime = tomorrowStart.getTime();
-  const remoteRepoDefaultName = githubUser?.login?.trim()
-    ? `${githubUser.login.trim()}-${year}`
-    : `green-wall-${year}`;
-  const isCurrentYear = year === currentYear;
-
-  const isFutureDate = React.useCallback(
-    (dateStr: string) => {
-      if (!isCurrentYear) {
-        return false;
-      }
-      const parsed = new Date(dateStr);
-      const localDate = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-      return localDate.getTime() >= tomorrowTime;
-    },
-    [isCurrentYear, tomorrowTime]
-  );
-
-  // 计算字符预览的日期列表 - 以指定日期为中心
-  const calculatePreviewDates = React.useCallback(
-    (char: string, centerDateStr: string | null) => {
-      if (!char || !centerDateStr || filteredContributions.length === 0) {
-        return new Set<string>();
-      }
-
-      const pattern = characterToPattern(char);
-      const previewDatesSet = new Set<string>();
-
-      // 找到中心日期在日历中的位置
-      const centerContribution = filteredContributions.find((c) => c.date === centerDateStr);
-      if (!centerContribution) return new Set<string>();
-
-      const centerDate = new Date(centerDateStr);
-      const yearStart = new Date(year, 0, 1);
-      const daysSinceYearStart = Math.floor(
-        (centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // 计算中心日期的行列位置
-      const firstDayOfWeek = yearStart.getDay(); // 0=周日, 1=周一, ...
-      const centerDayOfWeek = centerDate.getDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const centerRow = centerDayOfWeek;
-
-      // 图案尺寸
-      const patternHeight = pattern.length;
-      const patternWidth = pattern[0]?.length || 0;
-
-      // 以图案中心为基准计算偏移
-      const patternCenterY = Math.floor(patternHeight / 2);
-      const patternCenterX = Math.floor(patternWidth / 2);
-
-      // 遍历图案的每个像素
-      for (let patternY = 0; patternY < patternHeight; patternY++) {
-        for (let patternX = 0; patternX < patternWidth; patternX++) {
-          if (pattern[patternY][patternX]) {
-            // 计算相对于中心的偏移
-            const offsetY = patternY - patternCenterY;
-            const offsetX = patternX - patternCenterX;
-
-            // 计算目标位置
-            const targetRow = centerRow + offsetY;
-            const targetCol = centerWeek + offsetX;
-
-            // 检查是否在日历范围内
-            if (targetRow >= 0 && targetRow < 7 && targetCol >= 0) {
-              // 计算目标日期
-              const daysOffset = targetCol * 7 + targetRow - (centerWeek * 7 + centerRow);
-              const targetDate = new Date(centerDate);
-              targetDate.setDate(targetDate.getDate() + daysOffset);
-
-              const dateStr = targetDate.toISOString().slice(0, 10);
-
-              // 检查该日期是否存在于贡献数据中且不是未来日期
-              const contribution = filteredContributions.find((c) => c.date === dateStr);
-              if (contribution && !isFutureDate(dateStr)) {
-                previewDatesSet.add(dateStr);
-              }
-            }
-          }
-        }
-      }
-
-      return previewDatesSet;
-    },
-    [filteredContributions, year, isFutureDate]
-  );
-
-  const getTooltip = React.useCallback(
-    (oneDay: OneDay, date: Date) => {
-      const s = date.toISOString().split('T')[0];
-      if (isFutureDate(oneDay.date)) {
-        return t('calendar.tooltipFuture', { date: s });
-      }
-      if (oneDay.count === 0) {
-        return t('calendar.tooltipNone', { date: s });
-      }
-      return t('calendar.tooltipSome', { count: oneDay.count, date: s });
-    },
-    [isFutureDate, t]
-  );
-
-  // 清除所有选中
-  const handleReset = () => {
-    pushSnapshot();
-    setUserContributions(new Map());
-  };
-
-  // 将可编辑的格子全部填充为最深绿色（计数为 9）
-  const handleFillAllGreen = () => {
-    pushSnapshot();
-    setUserContributions((prev) => {
-      const newMap = new Map(prev);
-      for (const c of filteredContributions) {
-        if (!isFutureDate(c.date)) {
-          newMap.set(c.date, 9);
-        }
-      }
-      return newMap;
-    });
-  };
-
-  // 开始字符预览
-  const handleStartCharacterPreview = React.useCallback((char: string) => {
-    setPreviewCharacter(char);
-    setPreviewDates(new Set()); // 初始为空，等待鼠标悬停
-    setPreviewMode(true);
-    // 清除粘贴预览状态，避免冲突
-    setPastePreviewActive(false);
-    setPastePreviewDates(new Set());
-  }, []);
-
-  // helper: convert date -> {row, col}
-  const getDateCoord = React.useCallback(
-    (dateStr: string) => {
-      const date = new Date(dateStr);
-      const yearStart = new Date(year, 0, 1);
-      const firstDayOfWeek = yearStart.getDay();
-      const daysSinceYearStart = Math.floor(
-        (date.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const col = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const row = date.getDay();
-      return { row, col };
-    },
-    [year]
-  );
-
-  const computeSelectionDates = React.useCallback(
-    (startDate: string, endDate: string) => {
-      const a = getDateCoord(startDate);
-      const b = getDateCoord(endDate);
-      const minRow = Math.min(a.row, b.row);
-      const maxRow = Math.max(a.row, b.row);
-      const minCol = Math.min(a.col, b.col);
-      const maxCol = Math.max(a.col, b.col);
-
-      const set = new Set<string>();
-      for (const c of filteredContributions) {
-        const coord = getDateCoord(c.date);
-        if (
-          coord.row >= minRow &&
-          coord.row <= maxRow &&
-          coord.col >= minCol &&
-          coord.col <= maxCol
-        ) {
-          set.add(c.date);
-        }
-      }
-      return { set, minRow, minCol, maxRow, maxCol };
-    },
-    [filteredContributions, getDateCoord]
-  );
-
-  const buildBufferFromSelection = React.useCallback(
-    (startDate: string, endDate: string) => {
-      const { set } = computeSelectionDates(startDate, endDate);
-
-      // 首先收集所有有颜色的格子
-      const coloredCells: { row: number; col: number; value: number }[] = [];
-
-      for (const dateStr of set) {
-        const coord = getDateCoord(dateStr);
-        const current =
-          userContributions.get(dateStr) ??
-          filteredContributions.find((x) => x.date === dateStr)?.count ??
-          0;
-        // 只收集有贡献的格子
-        if (current > 0) {
-          coloredCells.push({
-            row: coord.row,
-            col: coord.col,
-            value: current,
-          });
-        }
-      }
-
-      // 如果没有涂色的格子，返回空buffer
-      if (coloredCells.length === 0) {
-        return { width: 0, height: 0, data: [] };
-      }
-
-      // 计算涂色格子的边界
-      const coloredMinRow = Math.min(...coloredCells.map((c) => c.row));
-      const coloredMaxRow = Math.max(...coloredCells.map((c) => c.row));
-      const coloredMinCol = Math.min(...coloredCells.map((c) => c.col));
-      const coloredMaxCol = Math.max(...coloredCells.map((c) => c.col));
-
-      const width = coloredMaxCol - coloredMinCol + 1;
-      const height = coloredMaxRow - coloredMinRow + 1;
-      const data: number[][] = Array.from({ length: height }, () => Array(width).fill(0));
-
-      // 将涂色格子填入data数组
-      for (const cell of coloredCells) {
-        const r = cell.row - coloredMinRow;
-        const c = cell.col - coloredMinCol;
-        data[r][c] = cell.value;
-      }
-
-      return { width, height, data };
-    },
-    [computeSelectionDates, getDateCoord, userContributions, filteredContributions]
-  );
-
-  const calculateBufferPreviewDates = React.useCallback(
-    (buffer: { width: number; height: number; data: number[][] }, centerDateStr: string) => {
-      if (!buffer || !centerDateStr) return new Set<string>();
-      const previewSet = new Set<string>();
-      const pattern = buffer.data;
-      const patternHeight = buffer.height;
-      const patternWidth = buffer.width;
-      const patternCenterY = Math.floor(patternHeight / 2);
-      const patternCenterX = Math.floor(patternWidth / 2);
-
-      const centerDate = new Date(centerDateStr);
-      const yearStart = new Date(year, 0, 1);
-      const daysSinceYearStart = Math.floor(
-        (centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const firstDayOfWeek = yearStart.getDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const centerRow = centerDate.getDay();
-
-      for (let py = 0; py < patternHeight; py++) {
-        for (let px = 0; px < patternWidth; px++) {
-          const val = pattern[py][px];
-          // 只预览有贡献的格子
-          if (!val || val === 0) continue;
-          const offsetY = py - patternCenterY;
-          const offsetX = px - patternCenterX;
-          const targetRow = centerRow + offsetY;
-          const targetCol = centerWeek + offsetX;
-          if (targetRow >= 0 && targetRow < 7 && targetCol >= 0) {
-            const daysOffset = targetCol * 7 + targetRow - (centerWeek * 7 + centerRow);
-            const targetDate = new Date(centerDate);
-            targetDate.setDate(targetDate.getDate() + daysOffset);
-            const dateStr = targetDate.toISOString().slice(0, 10);
-            const contribution = filteredContributions.find((c) => c.date === dateStr);
-            if (contribution && !isFutureDate(dateStr)) {
-              previewSet.add(dateStr);
-            }
-          }
-        }
-      }
-      return previewSet;
-    },
-    [filteredContributions, year, isFutureDate]
-  );
-
-  // 将 buffer 写回网格（以中心日期为锚点）
-  const applyPaste = React.useCallback(
-    (centerDateStr: string) => {
-      if (!selectionBuffer || !centerDateStr) return;
-      const buffer = selectionBuffer;
-      const pattern = buffer.data;
-      const patternHeight = buffer.height;
-      const patternWidth = buffer.width;
-      const patternCenterY = Math.floor(patternHeight / 2);
-      const patternCenterX = Math.floor(patternWidth / 2);
-
-      const centerDate = new Date(centerDateStr);
-      const yearStart = new Date(year, 0, 1);
-      const daysSinceYearStart = Math.floor(
-        (centerDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const firstDayOfWeek = yearStart.getDay();
-      const centerWeek = Math.floor((daysSinceYearStart + firstDayOfWeek) / 7);
-      const centerRow = centerDate.getDay();
-
-      pushSnapshot();
-      setUserContributions((prev: Map<string, number>) => {
-        const newMap = new Map(prev);
-        for (let py = 0; py < patternHeight; py++) {
-          for (let px = 0; px < patternWidth; px++) {
-            const val = pattern[py][px];
-            // 只处理有颜色的格子，跳过空格子
-            if (!val || val === 0) continue;
-            const offsetY = py - patternCenterY;
-            const offsetX = px - patternCenterX;
-            const targetRow = centerRow + offsetY;
-            const targetCol = centerWeek + offsetX;
-            if (targetRow >= 0 && targetRow < 7 && targetCol >= 0) {
-              const daysOffset = targetCol * 7 + targetRow - (centerWeek * 7 + centerRow);
-              const targetDate = new Date(centerDate);
-              targetDate.setDate(targetDate.getDate() + daysOffset);
-              const dateStr = targetDate.toISOString().slice(0, 10);
-              if (isFutureDate(dateStr)) continue;
-              newMap.set(dateStr, val);
-            }
-          }
-        }
-        return newMap;
-      });
-
-      // 应用粘贴后清除预览状态
-      setPastePreviewActive(false);
-      setPastePreviewDates(new Set());
-    },
-    [selectionBuffer, year, isFutureDate, pushSnapshot, setUserContributions]
-  );
-
-  const handlePreviewImageGrid = React.useCallback(
-    (grid: { width: number; height: number; data: number[][] }) => {
-      setSelectionBuffer(grid);
-      setPastePreviewActive(true);
-      setPastePreviewDates(new Set());
-      setSelectionStart(null);
-      setSelectionEnd(null);
-      setSelectionDates(new Set());
-      setPreviewMode(false);
-    },
-    []
-  );
-
-  // 取消字符预览
-  const handleCancelCharacterPreview = React.useCallback(() => {
-    setPreviewMode(false);
-    setPreviewCharacter('');
-    setPreviewDates(new Set());
-  }, []);
-
-  // 应用字符预览到贡献图
-  const handleApplyCharacterPreview = React.useCallback(() => {
-    if (!previewMode || previewDates.size === 0) return;
-
-    pushSnapshot();
-    setUserContributions((prev: Map<string, number>) => {
-      const newMap = new Map(prev);
-      for (const dateStr of previewDates) {
-        const current = prev.get(dateStr) ?? 0;
-
-        if (penMode === 'auto') {
-          // auto 模式：逐步递进
-          newMap.set(dateStr, getNextContribution(current));
-        } else {
-          // manual 模式：直接设置为选定的画笔强度值
-          newMap.set(dateStr, penIntensity);
-        }
-      }
-      return newMap;
-    });
-
-    // 取消预览
-    handleCancelCharacterPreview();
-  }, [
-    previewMode,
-    previewDates,
-    handleCancelCharacterPreview,
+  const { language, setLanguage, t, dictionary } = useTranslations();
+  const {
+    MIN_YEAR,
+    currentYear,
+    year,
+    setYear,
+    filteredContributions,
+    userContributions,
+    total,
+    drawMode,
+    setDrawMode,
     penIntensity,
+    setPenIntensity,
     penMode,
-    pushSnapshot,
-    setUserContributions,
-  ]);
-
-  // 检测窗口是否最大化/全屏，用于切换布局与放大样式
-  React.useEffect(() => {
-    let disposed = false;
-    const check = async () => {
-      try {
-        const m = await WindowIsMaximised();
-        const f = await WindowIsFullscreen();
-        if (!disposed) setIsMaximized(m || f);
-      } catch (error) {
-        console.warn('Failed to determine window state', error);
-      }
-    };
-    check();
-    const onResize = () => {
-      check();
-    };
-    window.addEventListener('resize', onResize);
-    return () => {
-      disposed = true;
-      window.removeEventListener('resize', onResize);
-    };
-  }, []);
-
-  // 在最大化/全屏时，计算不超出窗口宽度的单元格尺寸，避免横向滚动
-  React.useEffect(() => {
-    const recalc = () => {
-      if (!isMaximized) {
-        setContainerVars({});
-        return;
-      }
-      const el = containerRef.current;
-      const wrapper = el?.parentElement; // 外层 overflow 容器
-      const wrapperWidth = wrapper?.clientWidth ?? window.innerWidth;
-
-      // 变量与常量（应尽量与样式中的值一致）
-      const paddingX = 40; // .container 左右 padding: 20 + 20
-      const borderX = 2; // 左右边框近似 1px + 1px
-      const cols = 53; // 一年最多 53 列
-      const gaps = 53; // 列与列之间的 gap 数（54 列 -> 53 间隔），包含周标签列与第一列之间
-      const preferredGap = 6; // maximized 下默认 gap
-      const minGap = 2; // 允许缩小的最小 gap
-      const preferredCell = 20; // maximized 下默认 cell
-      const minCell = 8; // 兜底格子尺寸
-
-      // 估计左侧周标签列宽度：取三个星期标签的最大宽度
-      let labelW = 48; // 更保守的兜底
-      try {
-        const weeks = el?.querySelectorAll(`.${styles.week}`);
-        if (weeks && weeks.length) {
-          weeks.forEach((node) => {
-            const elem = node as HTMLElement;
-            const w = elem.offsetWidth || 0;
-            // 叠加 margin-right 作为 track 的近似宽度
-            const cs = window.getComputedStyle(elem);
-            const mr = parseFloat(cs.marginRight || '0') || 0;
-            const track = w + mr;
-            if (w > labelW) labelW = w;
-            if (track > labelW) labelW = track;
-          });
-        }
-      } catch (error) {
-        console.warn('Failed to measure calendar layout', error);
-      }
-
-      // 预留少量余量，避免四舍五入导致轻微溢出
-      const safety = 6;
-      const availForTracks = wrapperWidth - paddingX - borderX - labelW - safety;
-
-      // 先尽量用较大的 cell，再退而缩小 gap，最后兜底为最小 cell + 最小 gap
-      let finalGap = preferredGap;
-      let finalCell = preferredCell;
-
-      // 如果首选组合超出，按顺序降低
-      const fits = (cell: number, gap: number) => cols * cell + gaps * gap <= availForTracks;
-      if (!fits(finalCell, finalGap)) {
-        // 优先保证 cell 大小，计算允许的最大 gap
-        const maxGap = Math.floor((availForTracks - cols * minCell) / gaps);
-        finalGap = Math.max(minGap, Math.min(preferredGap, maxGap));
-        // 再计算在该 gap 下允许的最大 cell
-        const maxCell = Math.floor((availForTracks - gaps * finalGap) / cols);
-        finalCell = Math.max(minCell, Math.min(preferredCell, maxCell));
-        // 如仍不 fit，则进一步把 gap 降到最小并重算 cell
-        if (!fits(finalCell, finalGap)) {
-          finalGap = minGap;
-          const maxCell2 = Math.floor((availForTracks - gaps * finalGap) / cols);
-          finalCell = Math.max(minCell, Math.min(preferredCell, maxCell2));
-        }
-      }
-
-      const nextVars: ContainerVars = {
-        '--cell': `${finalCell}px`,
-        '--gap': `${finalGap}px`,
-        maxWidth: '100%',
-      };
-      setContainerVars(nextVars);
-    };
-
-    recalc();
-    const onResize = () => recalc();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [isMaximized]);
-
-  const runGenerateRepo = React.useCallback(
-    async (remoteRepoOptions: RemoteRepoPayload) => {
-      const githubLogin = githubUser?.login?.trim() ?? '';
-      const githubEmail =
-        githubUser?.email?.trim() || (githubLogin ? `${githubLogin}@users.noreply.github.com` : '');
-
-      if (githubLogin === '' || githubEmail === '') {
-        window.alert(t('messages.remoteLoginRequired'));
-        return;
-      }
-
-      const contributionsForBackend = filteredContributions
-        .map((c) => {
-          const override = userContributions.get(c.date);
-          const finalCount = override !== undefined ? override : c.count;
-          return { date: c.date, count: finalCount };
-        })
-        .filter((entry) => entry.count > 0);
-
-      if (contributionsForBackend.length === 0) {
-        window.alert(t('messages.noContributions'));
-        return;
-      }
-
-      setIsGeneratingRepo(true);
-      try {
-        const payload = main.GenerateRepoRequest.createFrom({
-          year,
-          githubUsername: githubLogin,
-          githubEmail,
-          repoName: remoteRepoOptions.name.trim(),
-          contributions: contributionsForBackend,
-          remoteRepo: {
-            enabled: true,
-            name: remoteRepoOptions.name.trim(),
-            private: remoteRepoOptions.isPrivate,
-            description: remoteRepoOptions.description.trim(),
-          },
-        });
-        const result = await GenerateRepo(payload);
-        const baseMessage = `Repository created at ${result.repoPath} with ${result.commitCount} commits.`;
-        const fullMessage =
-          result.remoteUrl && result.remoteUrl !== ''
-            ? `${baseMessage}\nRemote repository: ${result.remoteUrl}`
-            : baseMessage;
-        window.alert(fullMessage);
-      } catch (error) {
-        console.error('Failed to generate repository', error);
-        const message = error instanceof Error ? error.message : String(error);
-        window.alert(t('messages.generateRepoError', { message }));
-      } finally {
-        setIsGeneratingRepo(false);
-      }
-    },
-    [filteredContributions, githubUser, t, userContributions, year]
-  );
-
-  const handleRemoteModalSubmit = React.useCallback(
-    (payload: RemoteRepoPayload) => {
-      setIsRemoteModalOpen(false);
-      runGenerateRepo(payload);
-    },
-    [runGenerateRepo]
-  );
-
-  const handleOpenRemoteModal = React.useCallback(() => {
-    if (!githubUser?.login) {
-      window.alert(t('messages.remoteLoginRequired'));
-      return;
-    }
-    setIsRemoteModalOpen(true);
-  }, [githubUser, t]);
-
-  const handleExportContributions = React.useCallback(async () => {
-    const contributionsToExport = filteredContributions
-      .map((c) => {
-        const override = userContributions.get(c.date);
-        const finalCount = override !== undefined ? override : c.count;
-        return {
-          date: c.date,
-          count: finalCount,
-        };
-      })
-      .filter((entry) => entry.count > 0);
-
-    try {
-      const payload = main.ExportContributionsRequest.createFrom({
-        contributions: contributionsToExport,
-      });
-      const result = await ExportContributions(payload);
-      window.alert(t('messages.exportSuccess', { filePath: result.filePath }));
-    } catch (error) {
-      console.error('Failed to export contributions', error);
-      const message = error instanceof Error ? error.message : String(error);
-      window.alert(t('messages.exportError', { message }));
-    }
-  }, [filteredContributions, userContributions, t]);
-
-  const handleImportContributions = React.useCallback(async () => {
-    try {
-      const result = await ImportContributions();
-      const importedMap = new Map<string, number>();
-      result.contributions.forEach((c) => {
-        importedMap.set(c.date, c.count);
-      });
-      pushSnapshot();
-      setUserContributions(importedMap);
-      window.alert(t('messages.importSuccess'));
-    } catch (error) {
-      console.error('Failed to import contributions', error);
-      const message = error instanceof Error ? error.message : String(error);
-      window.alert(t('messages.importError', { message }));
-    }
-  }, [t, pushSnapshot, setUserContributions]);
-
-  // 计算总贡献次数（考虑用户设置的数据）
-  const total = filteredContributions.reduce((sum, c) => {
-    const userContribution = userContributions.get(c.date) || 0;
-    const displayCount = userContribution > 0 ? userContribution : c.count;
-    return sum + displayCount;
-  }, 0);
-
-  const hasContributions = filteredContributions.length > 0;
-  const firstContribution = hasContributions ? filteredContributions[0] : undefined;
-  const firstDate = firstContribution ? new Date(firstContribution.date) : new Date(year, 0, 1);
-  const startRow = firstDate.getDay();
-  const months: (React.ReactElement | undefined)[] = [];
-  let latestMonth = -1;
-
-  // 处理格子点击或绘制
-  const handleTileAction = (dateStr: string, mode: DrawMode) => {
-    if (isFutureDate(dateStr)) {
-      return;
-    }
-    if (mode === 'pen') {
-      setUserContributions((prev: Map<string, number>) => {
-        const newMap = new Map(prev);
-
-        if (penMode === 'auto') {
-          // auto 模式：逐步递进 0 → 1 → 3 → 6 → 9
-          const current = prev.get(dateStr) ?? 0;
-          // 改为调用方法
-          const nextCount = getNextContribution(current);
-
-          newMap.set(dateStr, nextCount);
-        } else {
-          // manual 模式：直接设置为选定的画笔强度值
-          newMap.set(dateStr, penIntensity);
-        }
-
-        return newMap;
-      });
-    } else if (mode === 'eraser') {
-      setUserContributions((prev: Map<string, number>) => {
-        const newMap = new Map(prev);
-        newMap.delete(dateStr);
-        return newMap;
-      });
-    }
-  };
-
-  // 鼠标事件处理
-  const handleMouseDown = (dateStr: string, event: React.MouseEvent) => {
-    if (isFutureDate(dateStr)) {
-      return;
-    }
-    // 如果处于复制模式，开始/结束选择或触发粘贴
-    if (copyMode) {
-      // 右键在复制模式下取消选择/预览
-      if (event.button === 2) {
-        event.preventDefault();
-        // 取消选择或取消粘贴预览
-        setSelectionStart(null);
-        setSelectionEnd(null);
-        setSelectionDates(new Set());
-        setPastePreviewActive(false);
-        setPastePreviewDates(new Set());
-        return;
-      }
-
-      // 左键开始选择
-      setSelectionStart(dateStr);
-      setSelectionEnd(dateStr);
-      const { set } = computeSelectionDates(dateStr, dateStr);
-      setSelectionDates(set);
-      setLastHoveredDate(dateStr);
-      return;
-    }
-
-    // 非复制模式，保留原有行为
-    // 阻止默认右键菜单
-    if (event.button === 2) {
-      event.preventDefault();
-      setDrawMode((prevMode) => (prevMode === 'pen' ? 'eraser' : 'pen'));
-      return;
-    }
-
-    setIsDrawing(true);
-    setLastHoveredDate(dateStr);
-    handleTileAction(dateStr, drawMode);
-  };
-
-  const handleMouseEnter = (dateStr: string) => {
-    if (isFutureDate(dateStr)) {
-      return;
-    }
-
-    // 预览模式：字符预览（优先级最高）
-    if (previewMode && previewCharacter) {
-      const newPreviewDates = calculatePreviewDates(previewCharacter, dateStr);
-      setPreviewDates(newPreviewDates);
-      return;
-    }
-
-    // 粘贴预览跟随鼠标
-    if (pastePreviewActive && selectionBuffer) {
-      setLastHoveredDate(dateStr);
-      const newPreview = calculateBufferPreviewDates(selectionBuffer, dateStr);
-      setPastePreviewDates(newPreview);
-      return;
-    }
-
-    // 处于复制模式并且正在拖动选择
-    if (copyMode && selectionStart) {
-      if (dateStr !== selectionEnd) {
-        setSelectionEnd(dateStr);
-        const { set } = computeSelectionDates(selectionStart, dateStr);
-        setSelectionDates(set);
-      }
-      return;
-    }
-
-    // 绘制模式
-    if (isDrawing && dateStr !== lastHoveredDate) {
-      setLastHoveredDate(dateStr);
-      handleTileAction(dateStr, drawMode);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDrawing(false);
-    setLastHoveredDate(null);
-  };
-
-  React.useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      setIsDrawing(false);
-      setLastHoveredDate(null);
-    };
-
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => {
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, []);
-
-  // Ctrl+C: 复制选区 / Ctrl+V: 粘贴 / Ctrl+X: 剪切 / 右键: 取消
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && copyMode && selectionStart && selectionEnd) {
-        e.preventDefault();
-        const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
-        const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
-
-        if (coloredCount === 0) {
-          setToast(t('messages.noColoredCells'));
-          setTimeout(() => setToast(null), 2000);
-          return;
-        }
-
-        setSelectionBuffer(buffer);
-
-        pushSnapshot();
-        setUserContributions((prev) => {
-          const newMap = new Map(prev);
-          const { set } = computeSelectionDates(selectionStart, selectionEnd);
-          for (const dateStr of set) {
-            newMap.delete(dateStr);
-          }
-          return newMap;
-        });
-
-        setToast(t('messages.cutSuccess', { count: coloredCount }));
-        setTimeout(() => setToast(null), 2000);
-
-        setPastePreviewActive(true);
-        setSelectionStart(null);
-        setSelectionEnd(null);
-        setSelectionDates(new Set());
-      }
-
-      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && copyMode && selectionStart && selectionEnd) {
-        e.preventDefault();
-        const buffer = buildBufferFromSelection(selectionStart, selectionEnd);
-
-        // 统计复制的有色格子数量
-        const coloredCount = buffer.data.flat().filter((v) => v > 0).length;
-
-        if (coloredCount === 0) {
-          setToast(t('messages.noColoredCells'));
-          setTimeout(() => setToast(null), 2000);
-          return;
-        }
-
-        setSelectionBuffer(buffer);
-        setToast(t('messages.copySuccess', { count: coloredCount }));
-        setTimeout(() => setToast(null), 2000);
-        // 复制后自动启用粘贴预览模式
-        setPastePreviewActive(true);
-        // 清除选择区域
-        setSelectionStart(null);
-        setSelectionEnd(null);
-        setSelectionDates(new Set());
-      }
-
-      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && selectionBuffer) {
-        e.preventDefault();
-        if (!pastePreviewActive) {
-          setPastePreviewActive(true);
-        } else if (lastHoveredDate) {
-          applyPaste(lastHoveredDate);
-        }
-      }
-
-      if ((e.metaKey || e.ctrlKey) && !isDrawing) {
-        if (e.code === 'KeyZ' && !e.shiftKey) {
-          e.preventDefault();
-          undo();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [
+    setPenMode,
     copyMode,
-    selectionStart,
-    selectionEnd,
-    buildBufferFromSelection,
-    selectionBuffer,
+    toggleCopyMode,
+    previewMode,
+    previewCharacter,
+    previewDates,
+    startCharacterPreview,
+    cancelCharacterPreview,
+    applyCharacterPreview,
+    selectionDates,
     pastePreviewActive,
-    lastHoveredDate,
+    pastePreviewDates,
+    previewImageGrid,
+    cancelPastePreview,
     applyPaste,
-    isDrawing,
-    undo,
-    redo,
-    computeSelectionDates,
-    pushSnapshot,
-    setUserContributions,
-    t,
-  ]);
+    getTooltip,
+    isFutureDate,
+    handleTileMouseDown,
+    handleTileMouseEnter,
+    handleTileMouseUp,
+    reset,
+    fillAllGreen,
+    exportContributions,
+    importContributions,
+    openRemoteModal,
+    closeRemoteModal,
+    submitRemoteModal,
+    isRemoteModalOpen,
+    remoteRepoDefaultName,
+    isGeneratingRepo,
+    toast,
+  } = useContributionEditor({
+    contributions: originalContributions,
+    githubUser,
+  });
 
-  const tiles = filteredContributions.map((c, i) => {
-    const date = new Date(c.date);
-    const month = date.getMonth();
-    const future = isFutureDate(c.date);
+  const [isImageImportOpen, setIsImageImportOpen] = React.useState(false);
+  const [isCharacterSelectorOpen, setIsCharacterSelectorOpen] = React.useState(false);
 
-    // 计算实际显示的贡献次数（用户设置的优先）
-    const userContribution = userContributions.get(c.date) || 0;
-    const displayCount = userContribution > 0 ? userContribution : c.count;
+  const displayName = githubUser?.name?.trim() || githubUser?.login || 'GreenWall';
+  const languageOptions = [
+    { value: 'en' as const, label: t('languageSwitcher.english') },
+    { value: 'zh' as const, label: t('languageSwitcher.chinese') },
+  ];
 
-    // 在星期天的月份出现变化的列上面显示月份。
-    if (date.getDay() === 0 && month !== latestMonth) {
-      // 计算月份对应的列，从 1 开始、左上角格子留空所以 +2
-      const gridColumn = 2 + Math.floor((i + startRow) / 7);
-      latestMonth = month;
-      months.push(
-        <span className={styles.month} key={i} style={{ gridColumn }}>
-          {monthNames[date.getMonth()]}
-        </span>
-      );
+  const openExternalUrl = React.useCallback(async (url: string) => {
+    try {
+      const { BrowserOpenURL } = await import('../../wailsjs/runtime/runtime');
+      if (typeof BrowserOpenURL === 'function') {
+        BrowserOpenURL(url);
+        return;
+      }
+    } catch (error) {
+      console.warn('BrowserOpenURL not available (dev mode)', error);
     }
 
-    // 计算显示的level：用户设置的优先，否则用原始数据
-    let displayLevel = userContribution > 0 ? calculateLevel(userContribution) : c.level;
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
 
-    // 如果在预览模式且该日期在预览列表中，显示预览样式
-    const isCharacterPreviewDate = previewMode && previewDates.has(c.date);
-    const isPastePreviewDate = pastePreviewActive && pastePreviewDates.has(c.date);
+  const openRepository = React.useCallback(() => {
+    openExternalUrl('https://github.com/zmrlft/GreenWall');
+  }, [openExternalUrl]);
+
+  const openDocumentation = React.useCallback(() => {
+    const url =
+      language === 'zh'
+        ? 'https://github.com/zmrlft/GreenWall/blob/main/README_zh.md'
+        : 'https://github.com/zmrlft/GreenWall/blob/main/README.md';
+    openExternalUrl(url);
+  }, [language, openExternalUrl]);
+
+  const handleCharacterButtonClick = React.useCallback(() => {
+    if (previewMode) {
+      cancelCharacterPreview();
+      return;
+    }
+    setIsCharacterSelectorOpen(true);
+  }, [cancelCharacterPreview, previewMode]);
+
+  const handleImagePreview = React.useCallback(
+    (grid: { width: number; height: number; data: number[][] }) => {
+      previewImageGrid(grid);
+      setIsImageImportOpen(false);
+    },
+    [previewImageGrid]
+  );
+
+  const calendarMeta = React.useMemo(() => {
+    if (filteredContributions.length === 0) {
+      return {
+        renderedMonths: [] as React.ReactElement[],
+        startRow: 0,
+      };
+    }
+
+    const firstDate = parseIsoDate(filteredContributions[0].date);
+    const startRow = firstDate.getDay();
+    const months: (React.ReactElement | undefined)[] = [];
+    let latestMonth = -1;
+
+    filteredContributions.forEach((entry, index) => {
+      const date = parseIsoDate(entry.date);
+      const month = date.getMonth();
+      if (date.getDay() === 0 && month !== latestMonth) {
+        const gridColumn = 2 + Math.floor((index + startRow) / 7);
+        latestMonth = month;
+        months.push(
+          <span className={styles.month} key={entry.date} style={{ gridColumn }}>
+            {dictionary.months[month]}
+          </span>
+        );
+      }
+    });
+
+    const firstMonth = months[0];
+    if (firstMonth && dictionary.months[firstDate.getMonth()] === firstMonth.props.children) {
+      months[0] = React.cloneElement(firstMonth, {
+        style: { ...(firstMonth.props.style || {}), gridColumn: 2 },
+      });
+    }
+
+    if (months.length > 1 && months[0] && months[1]) {
+      const firstColumn = months[0]?.props?.style?.gridColumn as number | undefined;
+      const secondColumn = months[1]?.props?.style?.gridColumn as number | undefined;
+      if (
+        typeof firstColumn === 'number' &&
+        typeof secondColumn === 'number' &&
+        secondColumn - firstColumn < 3
+      ) {
+        months[0] = undefined;
+      }
+    }
+
+    const lastMonth = months.at(-1);
+    if (
+      lastMonth &&
+      typeof lastMonth.props?.style?.gridColumn === 'number' &&
+      lastMonth.props.style.gridColumn > 53
+    ) {
+      months[months.length - 1] = undefined;
+    }
+
+    return {
+      renderedMonths: months.filter(Boolean) as React.ReactElement[],
+      startRow,
+    };
+  }, [dictionary.months, filteredContributions]);
+
+  const tiles = filteredContributions.map((entry, index) => {
+    const isCharacterPreviewDate = previewMode && previewDates.has(entry.date);
+    const isPastePreviewDate = pastePreviewActive && pastePreviewDates.has(entry.date);
     const isPreviewDate = isCharacterPreviewDate || isPastePreviewDate;
-    if (isPreviewDate) {
-      displayLevel = 4; // 预览时显示最深绿色
-    }
-
-    // 选择高亮
-    const isSelectionDate = selectionDates.has(c.date);
-
-    // 创建新的tip信息，反映用户设置的贡献次数
-    const displayOneDay = { level: displayLevel, count: displayCount, date: c.date };
+    const isSelectionDate = selectionDates.has(entry.date);
+    const future = isFutureDate(entry.date);
+    const userContribution = userContributions.get(entry.date) || 0;
+    const displayCount = userContribution > 0 ? userContribution : entry.count;
+    const displayLevel = isPreviewDate
+      ? 4
+      : userContribution > 0
+        ? calculateLevel(userContribution)
+        : entry.level;
 
     return (
       <i
@@ -1010,50 +442,40 @@ function ContributionCalendar({
           isPreviewDate && styles.preview,
           isSelectionDate && styles.selection
         )}
-        key={i}
+        key={`${entry.date}-${index}`}
         data-level={displayLevel}
         data-future={future ? 'true' : undefined}
         title={
           isPreviewDate
             ? t('characterSelector.previewTooltip', { char: previewCharacter })
-            : getTooltip(displayOneDay, date)
+            : getTooltip({ date: entry.date, count: displayCount, level: displayLevel })
         }
-        onMouseDown={(e) => {
-          // 处理字符预览应用/取消（预览模式下所有格子都响应，不仅仅是预览格子）
+        onMouseDown={(event) => {
           if (previewMode) {
-            if (e.button === 0) {
-              // 左键应用预览
-              handleApplyCharacterPreview();
-            } else if (e.button === 2) {
-              // 右键取消预览
-              e.preventDefault();
-              handleCancelCharacterPreview();
+            if (event.button === 0) {
+              applyCharacterPreview();
+            } else if (event.button === 2) {
+              event.preventDefault();
+              cancelCharacterPreview();
             }
             return;
           }
 
-          // 处理粘贴预览：左键任意位置应用粘贴（以点击位置为中心），右键任意位置取消预览
           if (pastePreviewActive) {
-            if (e.button === 0) {
-              // 左键应用粘贴，以当前点击的格子为中心
-              applyPaste(c.date);
-            } else if (e.button === 2) {
-              // 右键任意位置都可以取消预览
-              e.preventDefault();
-              setPastePreviewActive(false);
-              setPastePreviewDates(new Set());
+            if (event.button === 0) {
+              applyPaste(entry.date);
+            } else if (event.button === 2) {
+              event.preventDefault();
+              cancelPastePreview();
             }
             return;
           }
 
-          // 非预览时，默认行为（包括复制选择逻辑）
-          handleMouseDown(c.date, e);
+          handleTileMouseDown(entry.date, event);
         }}
-        onMouseEnter={() => handleMouseEnter(c.date)}
-        onMouseUp={handleMouseUp}
-        onContextMenu={(e) => {
-          e.preventDefault(); // 始终阻止默认右键菜单
-        }}
+        onMouseEnter={() => handleTileMouseEnter(entry.date)}
+        onMouseUp={handleTileMouseUp}
+        onContextMenu={(event) => event.preventDefault()}
         style={{
           cursor: future
             ? 'not-allowed'
@@ -1062,150 +484,363 @@ function ContributionCalendar({
               : drawMode === 'pen'
                 ? 'crosshair'
                 : 'grab',
-          // userSelect: 'none'
         }}
       />
     );
   });
 
-  // 第一格不一定是周日，此时前面会有空白，需要设置下起始行。
   if (tiles.length > 0) {
-    tiles[0] = React.cloneElement(tiles[0], {
-      style: { gridRow: startRow + 1 },
+    const firstTile = tiles[0];
+    tiles[0] = React.cloneElement(firstTile, {
+      style: { ...(firstTile.props.style || {}), gridRow: calendarMeta.startRow + 1 },
     });
   }
-  // 如果第一格不是周日，则首月可能跑到第二列，需要再检查下。
-  // Safely adjust months. Use optional chaining and avoid mutating props directly.
-  if (months.length > 0) {
-    const first = months[0];
-    if (first && monthNames[firstDate.getMonth()] === (first.props && first.props.children)) {
-      // create a new element with adjusted style instead of mutating props
-      months[0] = React.cloneElement(first, {
-        style: { ...(first.props.style || {}), gridColumn: 2 },
-      });
-    }
-  }
 
-  if (months.length > 1 && months[0] && months[1]) {
-    const m0 = months[0];
-    const m1 = months[1];
-    const g0 = m0?.props?.style?.gridColumn as number | undefined;
-    const g1 = m1?.props?.style?.gridColumn as number | undefined;
-    if (typeof g0 === 'number' && typeof g1 === 'number' && g1 - g0 < 3) {
-      months[0] = undefined;
-    }
-  }
+  const stageStatus = previewMode
+    ? t('characterSelector.previewTooltip', { char: previewCharacter })
+    : pastePreviewActive
+      ? t('imageImport.previewOnCalendarHint')
+      : copyMode
+        ? t('titles.copyMode')
+        : drawMode === 'eraser'
+          ? t('titles.eraser')
+          : penMode === 'auto'
+            ? t('penModes.auto')
+            : t('titles.penIntensity', { intensity: penIntensity });
 
-  const last = months.at(-1);
-  if (last && last.props && last.props.style && typeof last.props.style.gridColumn === 'number') {
-    if (last.props.style.gridColumn > 53) {
-      months[months.length - 1] = undefined;
-    }
-  }
-
-  const renderedMonths = months.filter(Boolean) as React.ReactElement[];
-
-  if (!hasContributions) {
-    return null;
-  }
+  const gitBadgeState =
+    isGitInstalled === false ? 'is-warning' : isGitInstalled === true ? 'is-ready' : '';
 
   return (
-    <div className="workbench">
-      <div className="workbench__canvas">
-        <div
-          {...divProps}
-          ref={containerRef}
-          className={clsx(styles.container, isMaximized && styles.maximized, className)}
-          style={{
-            ...(externalStyle ?? {}),
-            ...(isMaximized ? containerVars : {}),
-          }}
-          onMouseUp={handleMouseUp}
-        >
-          {renderedMonths}
-          <span className={styles.week}>Mon</span>
-          <span className={styles.week}>Wed</span>
-          <span className={styles.week}>Fri</span>
+    <div
+      {...divProps}
+      className={clsx('workspace', className)}
+      style={externalStyle}
+      onMouseUp={handleTileMouseUp}
+    >
+      <aside className="workspace__sidebar">
+        <div className="workspace__nav">
+          <button
+            type="button"
+            className="workspace__icon-button"
+            onClick={openDocumentation}
+            aria-label="Open documentation"
+            title="Open documentation"
+          >
+            <InfoIcon className="workspace__icon" />
+          </button>
+          <button
+            type="button"
+            className="workspace__icon-button"
+            onClick={openRepository}
+            aria-label="Open repository"
+            title="Open repository"
+          >
+            <BookIcon className="workspace__icon" />
+          </button>
+        </div>
 
-          <div className={styles.tiles}>{tiles}</div>
-          <div className={styles.total}>
-            {t('calendar.totalContributions', { count: total, year })}
+        <div className="workspace__sidebar-spacer" />
+
+        <div className="workspace__profile">
+          {githubUser ? (
+            <>
+              {githubUser.avatarUrl ? (
+                <img
+                  src={githubUser.avatarUrl}
+                  alt={displayName}
+                  className="workspace__avatar"
+                  referrerPolicy="no-referrer"
+                  title={displayName}
+                />
+              ) : (
+                <div className="workspace__avatar workspace__avatar--fallback" title={displayName}>
+                  {displayName.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <button
+                type="button"
+                className="workspace__icon-button workspace__icon-button--ghost"
+                onClick={() => {
+                  void onLogout();
+                }}
+                aria-label="Log out"
+                title="Log out"
+              >
+                <LogoutIcon className="workspace__icon workspace__icon--small" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="workspace__avatar workspace__avatar--login"
+              onClick={onOpenLogin}
+              aria-label={t('loginModal.title')}
+              title={t('loginModal.title')}
+            >
+              <UserIcon className="workspace__icon" />
+            </button>
+          )}
+        </div>
+      </aside>
+
+      <main className="workspace__main">
+        <header className="workspace__topbar">
+          <div className="workspace__toolbar-group">
+            <div className="workspace__language" role="group" aria-label={t('labels.language')}>
+              {languageOptions.map((option) => {
+                const isActive = option.value === language;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={clsx('workspace__language-button', isActive && 'is-active')}
+                    aria-pressed={isActive}
+                    onClick={() => setLanguage(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className={clsx('workspace__git-badge', gitBadgeState)}
+              onClick={onOpenGitSettings}
+              title={t('gitPathSettings.title')}
+            >
+              <span className="workspace__git-dot" />
+              <span>Git</span>
+            </button>
           </div>
-          <div className={styles.legend}>
-            {t('calendar.legendLess')}
-            <i className={styles.tile} data-level={0} />
-            <i className={styles.tile} data-level={1} />
-            <i className={styles.tile} data-level={2} />
-            <i className={styles.tile} data-level={3} />
-            <i className={styles.tile} data-level={4} />
-            {t('calendar.legendMore')}
+
+          <div className="workspace__brand">GreenWall</div>
+
+          <div className="workspace__toolbar-group workspace__toolbar-group--end">
+            <button type="button" className="workspace__command" onClick={importContributions}>
+              <ImportIcon className="workspace__command-icon" />
+              <span>{t('buttons.import')}</span>
+            </button>
+            <button type="button" className="workspace__command" onClick={exportContributions}>
+              <ExportIcon className="workspace__command-icon" />
+              <span>{t('buttons.export')}</span>
+            </button>
+            <button
+              type="button"
+              className="workspace__command workspace__command--primary"
+              onClick={openRemoteModal}
+              disabled={isGeneratingRepo}
+            >
+              <GenerateIcon className="workspace__command-icon" />
+              <span>{isGeneratingRepo ? t('buttons.generating') : t('buttons.generateRepo')}</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="workspace__content">
+          <section className="workspace__stage">
+            <div className="workspace__stage-card">
+              <div className="workspace__stage-meta">
+                <span className="workspace__stage-status" title={stageStatus}>
+                  {stageStatus}
+                </span>
+                <span className="workspace__stage-total">
+                  {t('calendar.totalContributions', { count: total, year })}
+                </span>
+              </div>
+
+              <div className="workspace__calendar-frame">
+                <div className="workspace__calendar-scroll">
+                  <div className={styles.container}>
+                    {calendarMeta.renderedMonths}
+                    <span className={styles.week} data-week-label="true">
+                      {dictionary.weekdays.mon}
+                    </span>
+                    <span className={styles.week} data-week-label="true">
+                      {dictionary.weekdays.wed}
+                    </span>
+                    <span className={styles.week} data-week-label="true">
+                      {dictionary.weekdays.fri}
+                    </span>
+
+                    <div className={styles.tiles}>{tiles}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="workspace__year-switcher">
+                <span className="workspace__year-label">{t('labels.year')}:</span>
+                <div className="workspace__year-control">
+                  <button
+                    type="button"
+                    className="workspace__year-button"
+                    onClick={() => setYear(year - 1)}
+                    disabled={year <= MIN_YEAR}
+                    aria-label="Previous year"
+                  >
+                    ‹
+                  </button>
+                  <span className="workspace__year-value">{year}</span>
+                  <button
+                    type="button"
+                    className="workspace__year-button"
+                    onClick={() => setYear(year + 1)}
+                    disabled={year >= currentYear}
+                    aria-label="Next year"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="workspace__dock">
+            <button
+              type="button"
+              className={clsx('workspace__dock-button', drawMode === 'pen' && 'is-active')}
+              onClick={() => setDrawMode('pen')}
+              title={t('titles.pen')}
+            >
+              <PenIcon className="workspace__dock-icon" />
+              <span>{t('drawModes.pen')}</span>
+            </button>
+            <button
+              type="button"
+              className={clsx('workspace__dock-button', drawMode === 'eraser' && 'is-active')}
+              onClick={() => setDrawMode('eraser')}
+              title={t('titles.eraser')}
+            >
+              <EraserIcon className="workspace__dock-icon" />
+              <span>{t('drawModes.eraser')}</span>
+            </button>
+            <button
+              type="button"
+              className={clsx('workspace__dock-button', copyMode && 'is-active')}
+              onClick={toggleCopyMode}
+              title={t('titles.copyMode')}
+            >
+              <CopyIcon className="workspace__dock-icon" />
+              <span>{t('buttons.copyMode')}</span>
+            </button>
+            <button
+              type="button"
+              className={clsx('workspace__dock-button', previewMode && 'is-active')}
+              onClick={handleCharacterButtonClick}
+              title={
+                previewMode
+                  ? t('characterSelector.cancelPreview')
+                  : t('characterSelector.character')
+              }
+            >
+              <TypeIcon className="workspace__dock-icon" />
+              <span>
+                {previewMode
+                  ? t('characterSelector.cancelPreview')
+                  : t('characterSelector.character')}
+              </span>
+            </button>
+            <button
+              type="button"
+              className={clsx('workspace__dock-button', pastePreviewActive && 'is-active')}
+              onClick={() => setIsImageImportOpen(true)}
+              title={t('imageImport.title')}
+            >
+              <ImageIcon className="workspace__dock-icon" />
+              <span>{t('imageImport.title')}</span>
+            </button>
+
+            <div className="workspace__dock-divider" />
+
+            <div className="workspace__swatches">
+              <button
+                type="button"
+                className={clsx(
+                  'workspace__swatch workspace__swatch--auto',
+                  penMode === 'auto' && drawMode === 'pen' && 'is-active'
+                )}
+                onClick={() => {
+                  setDrawMode('pen');
+                  setPenMode('auto');
+                }}
+                title={t('penModes.auto')}
+              >
+                <AutoIcon className="workspace__dock-icon" />
+              </button>
+              {(Object.keys(penIntensityColors) as Array<`${PenIntensity}`>).map((key) => {
+                const value = Number(key) as PenIntensity;
+                const isActive =
+                  drawMode === 'pen' && penMode === 'manual' && penIntensity === value;
+
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={clsx('workspace__swatch', isActive && 'is-active')}
+                    style={{ backgroundColor: penIntensityColors[value] }}
+                    onClick={() => {
+                      setDrawMode('pen');
+                      setPenMode('manual');
+                      setPenIntensity(value);
+                    }}
+                    title={t('titles.penIntensity', { intensity: value })}
+                  >
+                    <span className="sr-only">
+                      {t('titles.penIntensity', { intensity: value })}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="workspace__dock-divider" />
+
+            <button type="button" className="workspace__dock-button" onClick={fillAllGreen}>
+              <span>{t('buttons.allGreen')}</span>
+            </button>
+            <button type="button" className="workspace__dock-button" onClick={reset}>
+              <span>{t('buttons.reset')}</span>
+            </button>
           </div>
         </div>
-        {/* Simple toast */}
-        {toast && (
-          <div
-            style={{
-              position: 'fixed',
-              top: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: '#000',
-              color: '#fff',
-              padding: '10px 20px',
-              borderRadius: '4px',
-              fontSize: '14px',
-              zIndex: 9999,
-            }}
-          >
-            {toast}
-          </div>
-        )}
-      </div>
+      </main>
 
-      <div className="flex flex-row gap-5">
-        <aside className="workbench__panel">
-          <CalendarControls
-            year={year}
-            drawMode={drawMode}
-            penIntensity={penIntensity}
-            onYearChange={setYear}
-            onDrawModeChange={setDrawMode}
-            onPenIntensityChange={setPenIntensity}
-            onReset={handleReset}
-            onFillAllGreen={handleFillAllGreen}
-            onOpenRemoteRepoModal={handleOpenRemoteModal}
-            canCreateRemoteRepo={Boolean(githubUser)}
-            isGeneratingRepo={isGeneratingRepo}
-            onExportContributions={handleExportContributions}
-            onImportContributions={handleImportContributions}
-            // 字符预览相关
-            onStartCharacterPreview={handleStartCharacterPreview}
-            previewMode={previewMode}
-            onCancelCharacterPreview={handleCancelCharacterPreview}
-            penMode={penMode}
-            onPenModeChange={setPenMode}
-            // 复制模式
-            copyMode={copyMode}
-            onCopyModeToggle={() => {
-              setCopyMode((v) => {
-                const next = !v;
-                if (!next) {
-                  // 关闭复制模式时清空选择
-                  setSelectionStart(null);
-                  setSelectionEnd(null);
-                  setSelectionDates(new Set());
-                }
-                return next;
-              });
-            }}
-          />
-        </aside>
-        <aside className="workbench__panel">
-          <div className="flex flex-col gap-4">
-            <ImageImportCard onPreview={handlePreviewImageGrid} />
+      {toast && <div className="workspace__toast">{toast}</div>}
+
+      {isCharacterSelectorOpen && (
+        <CharacterSelector
+          onSelect={(char) => {
+            startCharacterPreview(char);
+            setIsCharacterSelectorOpen(false);
+          }}
+          onClose={() => setIsCharacterSelectorOpen(false)}
+        />
+      )}
+
+      {isImageImportOpen && (
+        <div className="modal__backdrop" role="presentation">
+          <div className="workspace__tool-modal" role="dialog" aria-modal="true">
+            <div className="workspace__tool-modal-header">
+              <div>
+                <h2>{t('imageImport.title')}</h2>
+                <p>{t('imageImport.previewOnCalendarHint')}</p>
+              </div>
+              <button
+                type="button"
+                className="workspace__tool-modal-close"
+                onClick={() => setIsImageImportOpen(false)}
+                aria-label={t('gitInstall.close')}
+              >
+                ×
+              </button>
+            </div>
+            <div className="workspace__tool-modal-body">
+              <ImageImportCard onPreview={handleImagePreview} className="workspace__image-card" />
+            </div>
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
+
       {isRemoteModalOpen && (
         <RemoteRepoModal
           open={isRemoteModalOpen}
@@ -1213,13 +848,13 @@ function ContributionCalendar({
           defaultDescription=""
           defaultPrivate
           isSubmitting={isGeneratingRepo}
-          onClose={() => setIsRemoteModalOpen(false)}
-          onSubmit={handleRemoteModalSubmit}
+          onClose={closeRemoteModal}
+          onSubmit={submitRemoteModal}
         />
       )}
     </div>
   );
 }
 
-// 里头需要循环 365 次，耗时 3ms，还是用 memo 包装下吧。
+export type { OneDay };
 export default React.memo(ContributionCalendar);

@@ -1,4 +1,5 @@
 @use '../css/mixins' as *;
+
 .container {
   --cell: 14px;
   --gap: 4px;
@@ -6,67 +7,46 @@
 
   display: grid;
   grid-template-columns: auto repeat(53, var(--cell));
-  grid-template-rows: auto repeat(7, var(--cell)) auto;
+  grid-template-rows: auto repeat(7, var(--cell));
   gap: var(--gap);
-
   width: fit-content;
-  font-size: 12px;
-  padding: 0px;
-  
-  border-radius: 0px;
   margin: 0 auto;
-  background: #ffffff;
-  box-shadow: none;
+  font-size: 13px;
+  user-select: none;
 
-  // 当窗口更大（例如最大化）时，自动放大格子与字体
-  @media (min-width: 1280px) {
-    --cell: 14px;
-    --gap: 4px;
-    --tile-extra: 2px;
-    font-size: 14px;
-  }
-
-  @media (min-width: 1600px) {
-    --cell: 16px;
+  @media (min-width: 1440px) {
+    --cell: 15px;
     --gap: 5px;
-    --tile-extra: 2px;
-    font-size: 15px;
   }
 
-  // 最大化窗口时进一步放大
-  &.maximized {
-    --cell: 20px;
-    --gap: 6px;
-    --tile-extra: 2px;
-    font-size: 16px;
-  }
-
-  // 作为备用：单独的 maximized 类，确保样式可导出与应用
-  .maximized {
-    --cell: 20px;
-    --gap: 6px;
-    --tile-extra: 2px;
-    font-size: 16px;
+  @media (max-width: 960px) {
+    --cell: 12px;
+    --gap: 3px;
+    font-size: 12px;
   }
 
   @include mobile-layout {
-    display: none; /* 太长手机显示不下 */
+    --cell: 10px;
+    --gap: 2px;
+    font-size: 10px;
   }
 }
+
 .month {
-  grid-row: 1/2;
-  margin-bottom: -3px;
-  color: #000000;
-  font-weight: 500;
+  grid-row: 1 / 2;
+  margin-bottom: 2px;
+  color: #9aa6a1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .week {
+  grid-column: 1 / 2;
   grid-row: 3;
-  grid-column: 1/2;
   line-height: var(--cell);
-  margin-right: 3px;
-  color: #000000;
-  font-weight: 500;
+  margin-right: 6px;
+  color: #a6b1a8;
+  font-weight: 700;
 
   & + .week {
     grid-row: 5;
@@ -78,9 +58,8 @@
 }
 
 .tiles {
-  grid-column: 2/55;
-  grid-row: 2/9;
-
+  grid-column: 2 / 55;
+  grid-row: 2 / 9;
   display: grid;
   grid-auto-flow: column;
   grid-template-columns: subgrid;
@@ -91,119 +70,87 @@
   display: block;
   width: calc(var(--cell) + var(--tile-extra));
   height: calc(var(--cell) + var(--tile-extra));
-  border-radius: calc((var(--cell) + var(--tile-extra)) / 4);
-
-  outline: 1px solid rgba(27, 35, 36, 0.06);
+  border-radius: calc((var(--cell) + var(--tile-extra)) / 3.3);
+  outline: 1px solid rgba(35, 46, 38, 0.06);
   outline-offset: -1px;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
   border: 1px solid transparent;
+  transition:
+    transform 0.14s ease,
+    outline-color 0.14s ease,
+    box-shadow 0.14s ease;
 
   &[data-level='0'] {
-    background: #ebedf0;
-    border-color: rgba(235, 237, 240, 0.3);
+    background: #edf1ed;
+    border-color: rgba(237, 241, 237, 0.65);
   }
+
   &[data-level='1'] {
-    background: #9be9a8;
-    border-color: rgba(155, 233, 168, 0.3);
+    background: #b9edc1;
+    border-color: rgba(185, 237, 193, 0.4);
   }
+
   &[data-level='2'] {
-    background: #40c463;
-    border-color: rgba(64, 196, 99, 0.3);
+    background: #79d792;
+    border-color: rgba(121, 215, 146, 0.35);
   }
+
   &[data-level='3'] {
-    background: #30a14e;
-    border-color: rgba(48, 161, 78, 0.3);
+    background: #4db66c;
+    border-color: rgba(77, 182, 108, 0.32);
   }
+
   &[data-level='4'] {
-    background: #216e39;
-    border-color: rgba(33, 110, 57, 0.3);
+    background: #2f8048;
+    border-color: rgba(47, 128, 72, 0.32);
   }
 
   &[data-future='true'] {
     background: #000000 !important;
-    border-color: #000000 !important;
+    border-color: rgba(0, 0, 0, 0.95) !important;
+    outline: 1px solid rgba(0, 0, 0, 0.8);
     cursor: not-allowed;
-    outline: none;
-    outline-offset: 0;
-    transform: none;
-    box-shadow: none;
+    opacity: 1;
 
     &:hover {
-      outline: none;
       transform: none;
       box-shadow: none;
+      outline: 1px solid rgba(0, 0, 0, 0.8);
+      outline-offset: -1px;
     }
   }
 
-  // Enhanced hover effects
   &:hover {
-    outline: 2px solid #000000;
+    transform: scale(1.12);
+    outline: 2px solid rgba(24, 48, 33, 0.68);
     outline-offset: 1px;
-    transform: scale(1.2);
-    box-shadow: none;
+    box-shadow: 0 10px 18px rgba(19, 39, 26, 0.14);
     z-index: 10;
   }
 
-  // 预览状态样式
   &.preview {
-    background: #216e39 !important;
-    border-color: rgba(33, 110, 57, 0.8) !important;
-    outline: 2px solid #ff6b35 !important;
+    background: #2f8048 !important;
+    border-color: rgba(47, 128, 72, 0.5) !important;
+    outline: 2px solid #ff8c42 !important;
     outline-offset: 1px;
     animation: pulse 1.5s infinite;
   }
 
-  // 选择状态样式 - 只加边框，保持原有颜色
   &.selection {
-    outline: 2px solid #2563eb !important;
+    outline: 2px solid #3b82f6 !important;
     outline-offset: 1px;
   }
+}
 
-  @keyframes pulse {
-    0% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-    100% {
-      opacity: 1;
-    }
+@keyframes pulse {
+  0% {
+    opacity: 1;
   }
-}
 
-.total {
-  grid-column: 2/30;
-  margin-top: 4px;
-  color: #000000 !important;
-  font-size: 16px;
-  font-weight: bold;
-}
+  50% {
+    opacity: 0.72;
+  }
 
-.legend {
-  grid-column: 30/53;
-  margin-top: 4px;
-
-  display: flex;
-  gap: 6px;
-  justify-content: right;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #000000 !important;
-
-  .tile {
-    cursor: default;
-    transition: none;
-
-    // Disable hover effects for legend tiles
-    &:hover {
-      outline: none;
-      transform: none;
-      box-shadow: none;
-    }
+  100% {
+    opacity: 1;
   }
 }
