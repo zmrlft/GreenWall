@@ -28,6 +28,7 @@ type TranslationDict = {
   };
   buttons: {
     allGreen: string;
+    randomActive: string;
     reset: string;
     copyMode: string;
     generateRepo: string;
@@ -43,6 +44,7 @@ type TranslationDict = {
     penManualMode: string;
     penAutoMode: string;
     allGreen: string;
+    randomActive: string;
     reset: string;
     copyMode: string;
     generate: string;
@@ -220,6 +222,7 @@ const translations: Record<Language, TranslationDict> = {
     },
     buttons: {
       allGreen: 'All Green',
+      randomActive: 'Random Active',
       reset: 'Reset',
       copyMode: 'Copy Mode',
       generateRepo: 'Generate Repo',
@@ -235,6 +238,7 @@ const translations: Record<Language, TranslationDict> = {
       penManualMode: 'Manual Mode',
       penAutoMode: 'Auto Mode',
       allGreen: 'Set all contributions to green',
+      randomActive: 'Randomly generate a realistic frequent contributor pattern',
       reset: 'Clear all customised contribution data',
       generate: 'Create a local git repository matching this contribution calendar',
       export: 'Export current contributions to a JSON file',
@@ -417,6 +421,7 @@ const translations: Record<Language, TranslationDict> = {
     },
     buttons: {
       allGreen: '全绿',
+      randomActive: '随机活跃',
       reset: '重置',
       copyMode: '复制模式',
       generateRepo: '生成仓库',
@@ -432,6 +437,7 @@ const translations: Record<Language, TranslationDict> = {
       penManualMode: '手动模式',
       penAutoMode: '自动模式',
       allGreen: '将所有贡献设置为绿色',
+      randomActive: '随机生成真实的高频贡献者分布',
       reset: '清除所有自定义贡献数据',
       generate: '创建与当前贡献图匹配的本地 Git 仓库',
       export: '导出当前贡献数据到 JSON 文件',

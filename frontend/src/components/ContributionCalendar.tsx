@@ -293,6 +293,7 @@ function ContributionCalendar({
     handleTileMouseUp,
     reset,
     fillAllGreen,
+    randomActiveContributions,
     exportContributions,
     importContributions,
     openRemoteModal,
@@ -797,6 +798,15 @@ function ContributionCalendar({
 
             <button type="button" className="workspace__dock-button" onClick={fillAllGreen}>
               <span>{t('buttons.allGreen')}</span>
+            </button>
+            <button
+              type="button"
+              className="workspace__dock-button"
+              onClick={randomActiveContributions}
+              title={t('titles.randomActive')}
+            >
+              <AutoIcon className="workspace__dock-icon" />
+              <span>{t('buttons.randomActive')}</span>
             </button>
             <button type="button" className="workspace__dock-button" onClick={reset}>
               <span>{t('buttons.reset')}</span>

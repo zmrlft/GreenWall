@@ -26,6 +26,36 @@ function getNextContribution(current: number): number {
   return current;
 }
 
+function getRandomActiveContribution(dateStr: string, previousWasActive: boolean): number {
+  const date = parseIsoDate(dateStr);
+  const day = date.getDay();
+  const isWeekend = day === 0 || day === 6;
+  const monthWave = 0.08 * Math.sin((date.getMonth() / 12) * Math.PI * 2);
+  const streakBoost = previousWasActive ? 0.12 : 0;
+  const activityChance = clampProbability((isWeekend ? 0.48 : 0.87) + monthWave + streakBoost);
+
+  if (Math.random() > activityChance) {
+    return 0;
+  }
+
+  const roll = Math.random();
+  if (isWeekend) {
+    if (roll < 0.58) return 1;
+    if (roll < 0.86) return 3;
+    if (roll < 0.97) return 6;
+    return 9;
+  }
+
+  if (roll < 0.18) return 1;
+  if (roll < 0.52) return 3;
+  if (roll < 0.84) return 6;
+  return 9;
+}
+
+function clampProbability(value: number): number {
+  return Math.min(Math.max(value, 0.05), 0.98);
+}
+
 function characterToPattern(char: string): boolean[][] {
   const pattern = getPatternById(char);
   if (pattern) {
@@ -453,6 +483,31 @@ export function useContributionEditor({
           nextMap.set(entry.date, 9);
         }
       }
+      return nextMap;
+    });
+  }, [filteredContributions, isFutureDate, pushSnapshot, setUserContributions]);
+
+  const randomActiveContributions = React.useCallback(() => {
+    pushSnapshot();
+    setUserContributions((previous) => {
+      const nextMap = new Map(previous);
+      let previousWasActive = false;
+
+      for (const entry of filteredContributions) {
+        if (isFutureDate(entry.date)) {
+          continue;
+        }
+
+        const count = getRandomActiveContribution(entry.date, previousWasActive);
+        previousWasActive = count > 0;
+
+        if (count > 0) {
+          nextMap.set(entry.date, count);
+        } else {
+          nextMap.delete(entry.date);
+        }
+      }
+
       return nextMap;
     });
   }, [filteredContributions, isFutureDate, pushSnapshot, setUserContributions]);
@@ -890,6 +945,7 @@ export function useContributionEditor({
     handleTileMouseUp,
     reset,
     fillAllGreen,
+    randomActiveContributions,
     exportContributions,
     importContributions,
     openRemoteModal,
