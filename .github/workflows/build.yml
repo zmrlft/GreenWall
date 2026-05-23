@@ -140,6 +140,23 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           go run github.com/wailsapp/wails/v2/cmd/wails@latest build -clean -ldflags "-w -s"
+          echo "=== Copying app icon to Resources directory ==="
+          APP_PATH="build/bin/green-wall.app"
+          RESOURCES_PATH="$APP_PATH/Contents/Resources"
+          mkdir -p "$RESOURCES_PATH"
+          cp "build/darwin/appIcon.icns" "$RESOURCES_PATH/"
+
+      - name: Create signature (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "=== Creating Ad-hoc signature for macOS app ==="
+          APP_PATH="build/bin/green-wall.app"
+          echo "Signing app with Ad-hoc signature..."
+          codesign --sign - --deep --force "$APP_PATH"
+          echo "Verifying signature..."
+          codesign --verify --verbose "$APP_PATH"
+          echo "Displaying signature info..."
+          codesign --display --verbose=4 "$APP_PATH"
 
       - name: List build output (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -169,8 +186,16 @@ jobs:
       - name: Create macOS archive
         if: matrix.os == 'macos-latest'
         run: |
+          echo "=== Creating macOS DMG with signed app ==="
+          APP_PATH="build/bin/green-wall.app"
+          echo "Verifying app signature before DMG creation..."
+          codesign --verify --verbose "$APP_PATH"
+          echo "Creating DMG..."
+          npm install --global create-dmg
           cd build/bin
-          zip -r ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.zip green-wall.app
+          create-dmg --no-code-sign "green-wall.app" .
+          mv *.dmg ../../green-wall-${{ matrix.name }}-${{ runner.arch }}.dmg
+          echo "DMG created successfully with signed app"
 
       - name: Create Linux archive
         if: matrix.os == 'ubuntu-latest'
@@ -190,7 +215,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: green-wall-${{ matrix.name }}-${{ runner.arch }}
-          path: green-wall-${{ matrix.name }}-${{ runner.arch }}.zip
+          path: green-wall-${{ matrix.name }}-${{ runner.arch }}.dmg
           if-no-files-found: error
           retention-days: 30
 
